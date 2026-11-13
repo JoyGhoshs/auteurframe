@@ -117,8 +117,7 @@ function LegalCard({ health }) {
       <b>AuteurFrame by Joy Ghosh</b><br />
       Copyright (c) 2026 Joy Ghosh. AuteurFrame is free software: you can redistribute it and modify it under the terms of the
       GNU Affero General Public License version 3 with the additional permission and terms in LICENSE-EXCEPTIONS.md.
-      It comes with absolutely no warranty. Commercial licenses are available from the author.<br />
-      AuteurFrame™ and the AuteurFrame logo are unregistered trademarks of Joy Ghosh.
+      It comes with absolutely no warranty. Commercial licenses are available from the author.
     </div>
     <div class="row" style=${{ flexWrap: 'wrap', gap: '6px', marginTop: '10px' }}>${links.map(([label, href, icon]) => html`<a class="btn ghost sm" href=${href} target="_blank" rel="noopener"><${Icon} name=${icon} size=${12} />${label}</a>`)}</div>
   </div>`;

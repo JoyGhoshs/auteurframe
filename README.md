@@ -492,8 +492,8 @@ scripts/      vendor build, font fetcher, component manifest, template publisher
 .github/      Check and Release bot workflows, pull request template, code owners and branch ruleset
 release.json  version, release notes and the template feed
 changelog.txt every change merged into main, newest first
-LICENSE       GNU AGPL v3; LICENSE-EXCEPTIONS.md adds the GSAP permission, attribution and trademark terms
-COMMERCIAL.md, TRADEMARKS.md, THIRD_PARTY_NOTICES.md, NOTICE.txt
+LICENSE       GNU AGPL v3; LICENSE-EXCEPTIONS.md adds the GSAP permission and the attribution term
+COMMERCIAL.md, THIRD_PARTY_NOTICES.md, NOTICE.txt
 ```
 
 ## Releasing a new version
@@ -528,8 +528,8 @@ Set up branch protection by importing [.github/rulesets/main.json](.github/rules
 
 ## License
 
-AuteurFrame is **open source** under the [GNU Affero General Public License v3](LICENSE), with the GSAP permission,
-attribution term and trademark term in [LICENSE-EXCEPTIONS.md](LICENSE-EXCEPTIONS.md). Copyright (c) 2026 Joy Ghosh.
+AuteurFrame is **open source** under the [GNU Affero General Public License v3](LICENSE), with the GSAP permission
+and the attribution term in [LICENSE-EXCEPTIONS.md](LICENSE-EXCEPTIONS.md). Copyright (c) 2026 Joy Ghosh.
 A **commercial license** is available for anyone who cannot meet the AGPL's conditions.
 
 | Free under the AGPL | Needs a commercial license |
@@ -537,11 +537,10 @@ A **commercial license** is available for anyone who cannot meet the AGPL's cond
 | Use it for anything, including paid client work and monetised films; your rendered films are yours | Host it as a SaaS, API or service without publishing your source code |
 | Change it and share your changes, with the full source, under the AGPL | Embed it in a closed-source or proprietary product |
 | Run a modified version as a service, as long as its users can get the full source | Distribute a modified version without releasing your changes |
-| Contribute templates, skills and fixes | Remove the "AuteurFrame by Joy Ghosh" notice or ship it under your own brand |
+| Contribute templates, skills and fixes | Remove the "AuteurFrame by Joy Ghosh" notice |
 
 Ask for a commercial license by opening an issue titled **Commercial license request**; see [COMMERCIAL.md](COMMERCIAL.md).
-AuteurFrame™ and its logo are unregistered trademarks of Joy Ghosh and are covered by [TRADEMARKS.md](TRADEMARKS.md),
-so forks must be renamed. Third-party components keep
+Third-party components keep
 their own licenses, listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ## Contributing and credits

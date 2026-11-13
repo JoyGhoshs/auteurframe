@@ -20,8 +20,7 @@ AGPL. In practice:
   [NOTICE.txt](NOTICE.txt).
 - **Running it as a service.** If you let people use a modified AuteurFrame over a network, such as a hosted studio,
   SaaS or API, you must offer those users the complete source code of your modified version under the AGPL.
-- **Keeping the credit.** Modified versions keep the "AuteurFrame by Joy Ghosh" notice in their interface and must use
-  a different name ([TRADEMARKS.md](TRADEMARKS.md)).
+- **Keeping the credit.** Modified versions keep the "AuteurFrame by Joy Ghosh" notice in their interface.
 
 ## When you need a commercial license
 
@@ -30,7 +29,7 @@ Buy a commercial license if you want to do any of these without the AGPL's condi
 - offer AuteurFrame, or a product built on it, as a hosted service, SaaS or API **without** publishing your source code;
 - embed AuteurFrame, its runtime, templates or skills in a closed-source or proprietary product;
 - distribute a modified version without releasing your changes;
-- remove the in-app attribution or ship it under your own brand;
+- remove the in-app "AuteurFrame by Joy Ghosh" attribution;
 - get warranties, indemnity, support or terms your company's legal team requires.
 
 If you are unsure which applies to you, ask. It costs nothing to ask.
@@ -46,6 +45,6 @@ merged pull request does not.
 
 ## Reporting misuse
 
-If you find AuteurFrame hosted, sold or rebranded without its source code or without permission, open an issue with a
+If you find AuteurFrame hosted or sold without its source code, or without its attribution, open an issue with a
 link or contact [@joyghoshs](https://github.com/joyghoshs). Under section 8 of the AGPL, a violator's rights end; someone
 notified of a first violation keeps them only by fixing it within 30 days of the notice.

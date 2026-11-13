@@ -27,6 +27,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: main
+          ssh-key: ${{ secrets.RELEASE_BOT_KEY }}
 
       - uses: actions/setup-python@v5
         with:
@@ -85,7 +86,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "Nothing to update."
           else
-            git commit -m "Update release.json and changelog.txt for $VERSION"
+            git commit -m "Update release.json and changelog.txt for $VERSION [skip ci]"
             for attempt in 1 2 3; do
               if git push origin HEAD:main; then break; fi
               git pull --rebase origin main

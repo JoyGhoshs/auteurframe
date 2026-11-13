@@ -140,26 +140,32 @@ else is deployed.
 
 ## Maintainer guide
 
-### Branch protection
+### Branch protection (optional)
 
-The repository includes a ruleset in [.github/rulesets/main.json](.github/rulesets/main.json). Import it under
-**Settings → Rules → Rulesets → New ruleset → Import a ruleset**. It:
+Without any ruleset, the release bot commits with GitHub's built-in token and everything works. Only you can push to
+`main` anyway; contributors work through forks and pull requests, and the **Check** workflow runs on every one.
 
-- blocks force pushes and deletion of `main`;
-- requires a pull request with one approving review from a code owner (see [.github/CODEOWNERS](.github/CODEOWNERS)),
-  approval of the latest push and resolved review threads;
-- requires the **Validate templates** check to pass on an up-to-date branch;
-- lets repository admins bypass the rules only through a pull request, so you can merge your own changes;
-- lets the GitHub Actions app push to `main`, which the release bot needs to commit `release.json` and `changelog.txt`.
-  Pull requests from forks run with a read-only token, so they cannot use this.
+Allow the bot to write once: **Settings → Actions → General → Workflow permissions → Read and write permissions**.
 
-If GitHub rejects the GitHub Actions bypass during import, remove it from the JSON, import the rest, then add
-**GitHub Actions** under **Bypass list → Add bypass → Apps** and set it to **Always allow**.
+If you later want stricter protection, the repository includes a ruleset in
+[.github/rulesets/main.json](.github/rulesets/main.json). Import it under
+**Settings → Rules → Rulesets → New ruleset → Import a ruleset**. It blocks force pushes and deletion of `main`,
+requires a reviewed pull request and a passing **Validate templates** check, lets admins merge their own pull requests,
+and lets deploy keys push. Because personal accounts cannot exempt the GitHub Actions app, the bot then needs a deploy
+key:
 
-The **Validate templates** check appears in the ruleset's status-check list after the **Check** workflow has run once.
-Open any pull request, or run **Check** from the **Actions** tab, then select it in the ruleset.
+```bash
+ssh-keygen -t ed25519 -N "" -C "auteurframe release bot" -f release_bot_key
+```
 
-Also allow the bot to write: **Settings → Actions → General → Workflow permissions → Read and write permissions**.
+1. **Settings → Deploy keys → Add deploy key**: paste `release_bot_key.pub`, name it *release bot*, tick
+   **Allow write access**.
+2. **Settings → Secrets and variables → Actions → New repository secret**: name it `RELEASE_BOT_KEY` and paste the
+   whole private key file `release_bot_key`.
+3. Delete both key files from your machine.
+
+The release workflow uses `RELEASE_BOT_KEY` automatically when it exists. The bot's commits end with `[skip ci]`, so
+they do not start another run.
 
 ### Automation
 

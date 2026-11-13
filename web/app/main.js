@@ -74,7 +74,7 @@ function FirstLaunchNotice({ legal, onDone }) {
         ${' '}${link('Commercial licenses', '/blob/main/COMMERCIAL.md')} are available if you cannot meet those conditions.</p>
       <p><b>No warranty.</b> AuteurFrame comes as is, without any warranty, to the extent permitted by law. You are responsible for the films you make,
         for checking the licenses of media you collect, and for the terms of the AI and voice services you connect.</p>
-      <p style=${{ marginBottom: 0 }}>AuteurFrame™ and its logo are unregistered trademarks of Joy Ghosh. Modified versions must use a different name.
+      <p style=${{ marginBottom: 0 }}>Modified versions must keep the "AuteurFrame by Joy Ghosh" notice.
         ${' '}${link('Full license', '/blob/main/LICENSE')} · ${link('Source code', '')} · ${link('Third-party notices', '/blob/main/THIRD_PARTY_NOTICES.md')}</p>
     </div>
   </${Modal}>`;
