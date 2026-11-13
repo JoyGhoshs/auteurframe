@@ -4,6 +4,7 @@ AuteurFrame changelog
 Newest first. The release bot adds an entry for every change merged into main.
 
 Unreleased
+  2026-11-13  Release bot: Legal group for license files and correct titles for direct pushes: Automation: .github/workflows/release.yml; Scripts: scripts/release_bot.py (@JoyGhoshs)
   2026-11-13  Other: COMMERCIAL.md, LICENSE-EXCEPTIONS.md, NOTICE.txt
   2026-11-13  Docs: CONTRIBUTING.md, README.md
   2026-11-13  Dependencies: package.json
