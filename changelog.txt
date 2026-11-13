@@ -4,7 +4,10 @@ AuteurFrame changelog
 Newest first. The release bot adds an entry for every change merged into main.
 
 Unreleased
-  No changes yet.
+  2026-11-13  Automation: .github/rulesets/main.json, .github/workflows/release.yml
+  2026-11-13  Other: COMMERCIAL.md, LICENSE-EXCEPTIONS.md, NOTICE.txt, TRADEMARKS.md
+  2026-11-13  Docs: CONTRIBUTING.md, README.md
+  2026-11-13  Studio: web/app/main.js, web/app/settings.js
 
 1.0.0 (2026-11-13)
   * First public release of AuteurFrame.
