@@ -1,0 +1,1814 @@
+{
+ "common": {
+  "at": {
+   "type": "number",
+   "default": 0.2,
+   "doc": "start time in scene seconds"
+  },
+  "duration": {
+   "type": "number",
+   "default": null,
+   "doc": "seconds visible; default lasts until the scene ends"
+  },
+  "x": {
+   "type": "number",
+   "default": null,
+   "doc": "left edge in % of frame width (component default if omitted)"
+  },
+  "y": {
+   "type": "number",
+   "default": null,
+   "doc": "top edge in % of frame height"
+  },
+  "w": {
+   "type": "number",
+   "default": null,
+   "doc": "width in % of frame width"
+  },
+  "exit": {
+   "type": "boolean",
+   "default": true,
+   "doc": "animate out at the end of duration"
+  },
+  "layer": {
+   "type": "string",
+   "default": null,
+   "doc": "data-layer id for the editor; auto if omitted"
+  }
+ },
+ "components": [
+  {
+   "name": "title",
+   "category": "type",
+   "description": "Kinetic headline with optional kicker and subtitle. Styles: rise (word rise), mask (line mask), slam (scale punch per word), chars (character flip), blur.",
+   "params": {
+    "text": {
+     "type": "string",
+     "default": "Your headline",
+     "doc": "headline; wrap a word in *asterisks* to accent it"
+    },
+    "kicker": {
+     "type": "string",
+     "default": "",
+     "doc": "small label above"
+    },
+    "subtitle": {
+     "type": "string",
+     "default": "",
+     "doc": "line below"
+    },
+    "style": {
+     "type": "enum",
+     "default": "rise",
+     "options": [
+      "rise",
+      "mask",
+      "slam",
+      "chars",
+      "blur"
+     ]
+    },
+    "size": {
+     "type": "enum",
+     "default": "xl",
+     "options": [
+      "hero",
+      "xl",
+      "lg",
+      "md"
+     ]
+    },
+    "align": {
+     "type": "enum",
+     "default": "center",
+     "options": [
+      "left",
+      "center",
+      "right"
+     ]
+    }
+   },
+   "example": "component('title', { text: 'The ocean *breathes*', kicker: 'Tides', style: 'mask', at: 0.1 })"
+  },
+  {
+   "name": "lower-third",
+   "category": "broadcast",
+   "description": "Name and role bar that slides in with an accent bar, like a news or interview lower third.",
+   "params": {
+    "name": {
+     "type": "string",
+     "default": "Name Surname"
+    },
+    "role": {
+     "type": "string",
+     "default": "Role or place"
+    },
+    "side": {
+     "type": "enum",
+     "default": "left",
+     "options": [
+      "left",
+      "right"
+     ]
+    }
+   },
+   "example": "component('lower-third', { name: 'Dr Amara Lee', role: 'Oceanographer', at: 1.0, duration: 4 })"
+  },
+  {
+   "name": "callout",
+   "category": "annotation",
+   "description": "Label with a drawn leader line pointing at a point in the frame, with a pulsing dot at the target. Use to explain parts of an image, diagram or UI.",
+   "params": {
+    "text": {
+     "type": "string",
+     "default": "This part"
+    },
+    "tx": {
+     "type": "number",
+     "default": 50,
+     "doc": "target x in % of frame"
+    },
+    "ty": {
+     "type": "number",
+     "default": 50,
+     "doc": "target y in % of frame"
+    },
+    "lx": {
+     "type": "number",
+     "default": 70,
+     "doc": "label x in %"
+    },
+    "ly": {
+     "type": "number",
+     "default": 25,
+     "doc": "label y in %"
+    }
+   },
+   "example": "component('callout', { text: 'Tidal bulge', tx: 62, ty: 48, lx: 72, ly: 22, at: 2 })"
+  },
+  {
+   "name": "highlight",
+   "category": "annotation",
+   "description": "Hand-drawn mark over an existing element: underline, circle, box, strike or marker swipe, drawn on like a pen.",
+   "params": {
+    "target": {
+     "type": "string",
+     "default": ".scene h1",
+     "doc": "CSS selector of the element to mark"
+    },
+    "kind": {
+     "type": "enum",
+     "default": "underline",
+     "options": [
+      "underline",
+      "circle",
+      "box",
+      "strike",
+      "marker"
+     ]
+    },
+    "color": {
+     "type": "string",
+     "default": "--accent"
+    }
+   },
+   "example": "component('highlight', { target: '.headline em', kind: 'circle', at: 1.4 })"
+  },
+  {
+   "name": "stat",
+   "category": "data",
+   "description": "Big animated number that counts up, with prefix, suffix, decimals and a label below.",
+   "params": {
+    "value": {
+     "type": "number",
+     "default": 42
+    },
+    "prefix": {
+     "type": "string",
+     "default": ""
+    },
+    "suffix": {
+     "type": "string",
+     "default": ""
+    },
+    "decimals": {
+     "type": "number",
+     "default": 0
+    },
+    "label": {
+     "type": "string",
+     "default": ""
+    },
+    "count": {
+     "type": "number",
+     "default": 1.4,
+     "doc": "seconds the count takes"
+    }
+   },
+   "example": "component('stat', { value: 3.8, decimals: 1, suffix: ' cm', label: 'every year', at: 0.6 })"
+  },
+  {
+   "name": "bar-chart",
+   "category": "data",
+   "description": "Bar chart that grows bar by bar with values; one bar can be highlighted.",
+   "params": {
+    "data": {
+     "type": "array",
+     "default": [
+      {
+       "label": "A",
+       "value": 3
+      },
+      {
+       "label": "B",
+       "value": 7
+      },
+      {
+       "label": "C",
+       "value": 5
+      }
+     ],
+     "doc": "[{label, value}]"
+    },
+    "unit": {
+     "type": "string",
+     "default": ""
+    },
+    "highlight": {
+     "type": "number",
+     "default": null,
+     "doc": "index of the bar to accent"
+    },
+    "h": {
+     "type": "number",
+     "default": 46,
+     "doc": "height in % of frame"
+    }
+   },
+   "example": "component('bar-chart', { data: [{label:'2019',value:12},{label:'2024',value:31}], unit: '%', highlight: 1, at: 0.5 })"
+  },
+  {
+   "name": "line-chart",
+   "category": "data",
+   "description": "Line chart that draws itself; series values over labels.",
+   "params": {
+    "series": {
+     "type": "array",
+     "default": [
+      {
+       "name": "Value",
+       "values": [
+        2,
+        4,
+        3,
+        7,
+        9
+       ]
+      }
+     ],
+     "doc": "[{name, values:[...]}]"
+    },
+    "labels": {
+     "type": "array",
+     "default": []
+    },
+    "h": {
+     "type": "number",
+     "default": 46
+    }
+   },
+   "example": "component('line-chart', { series: [{ name: 'CO2', values: [280, 310, 340, 380, 420] }], labels: ['1900','1950','1980','2000','2024'] })"
+  },
+  {
+   "name": "donut",
+   "category": "data",
+   "description": "Donut chart whose segments sweep in; good for shares and percentages.",
+   "params": {
+    "parts": {
+     "type": "array",
+     "default": [
+      {
+       "label": "Yes",
+       "value": 64
+      },
+      {
+       "label": "No",
+       "value": 36
+      }
+     ],
+     "doc": "[{label, value}]"
+    },
+    "size": {
+     "type": "number",
+     "default": 36,
+     "doc": "diameter in % of the short side"
+    }
+   },
+   "example": "component('donut', { parts: [{label:'Ocean',value:71},{label:'Land',value:29}] })"
+  },
+  {
+   "name": "progress",
+   "category": "data",
+   "description": "Progress bar or ring that fills to a percentage with the number counting.",
+   "params": {
+    "value": {
+     "type": "number",
+     "default": 72,
+     "doc": "0-100"
+    },
+    "kind": {
+     "type": "enum",
+     "default": "bar",
+     "options": [
+      "bar",
+      "ring"
+     ]
+    },
+    "label": {
+     "type": "string",
+     "default": ""
+    }
+   },
+   "example": "component('progress', { value: 80, kind: 'ring', label: 'charged', at: 0.4 })"
+  },
+  {
+   "name": "list",
+   "category": "type",
+   "description": "Bulleted list where items reveal one by one with icons; optional title.",
+   "params": {
+    "items": {
+     "type": "array",
+     "default": [
+      "First point",
+      "Second point",
+      "Third point"
+     ]
+    },
+    "title": {
+     "type": "string",
+     "default": ""
+    },
+    "icons": {
+     "type": "array",
+     "default": [],
+     "doc": "Lucide icon names per item"
+    },
+    "gap": {
+     "type": "number",
+     "default": 0.45,
+     "doc": "seconds between items"
+    }
+   },
+   "example": "component('list', { title: 'Why it matters', items: ['Longer days', 'Weaker tides', 'No more eclipses'], icons: ['sun','waves','moon'] })"
+  },
+  {
+   "name": "steps",
+   "category": "explainer",
+   "description": "Process or timeline: numbered steps joined by a line that draws between them, each step lighting up in turn.",
+   "params": {
+    "steps": {
+     "type": "array",
+     "default": [
+      "Collect",
+      "Analyse",
+      "Decide"
+     ],
+     "doc": "step labels"
+    },
+    "direction": {
+     "type": "enum",
+     "default": "auto",
+     "options": [
+      "auto",
+      "row",
+      "column"
+     ]
+    },
+    "gap": {
+     "type": "number",
+     "default": 0.6
+    }
+   },
+   "example": "component('steps', { steps: ['Moon pulls', 'Bulge forms', 'Earth spins ahead', 'Moon drifts out'], at: 0.3 })"
+  },
+  {
+   "name": "quote",
+   "category": "type",
+   "description": "Quote card with large quotation mark, words revealing, and attribution.",
+   "params": {
+    "text": {
+     "type": "string",
+     "default": "Quote text"
+    },
+    "by": {
+     "type": "string",
+     "default": ""
+    }
+   },
+   "example": "component('quote', { text: 'We barely know what lives there.', by: 'Marine biologist' })"
+  },
+  {
+   "name": "image",
+   "category": "media",
+   "description": "Image from project assets with a reveal (wipe, iris, rise, zoom) and a slow Ken Burns move; optional rounded frame and caption.",
+   "params": {
+    "src": {
+     "type": "string",
+     "default": "",
+     "doc": "asset id or name"
+    },
+    "reveal": {
+     "type": "enum",
+     "default": "wipe",
+     "options": [
+      "wipe",
+      "iris",
+      "rise",
+      "zoom",
+      "none"
+     ]
+    },
+    "kenburns": {
+     "type": "number",
+     "default": 1.08,
+     "doc": "end scale of the slow push"
+    },
+    "fit": {
+     "type": "enum",
+     "default": "cover",
+     "options": [
+      "cover",
+      "contain"
+     ]
+    },
+    "radius": {
+     "type": "number",
+     "default": 18
+    },
+    "caption": {
+     "type": "string",
+     "default": ""
+    },
+    "h": {
+     "type": "number",
+     "default": null,
+     "doc": "height in % of frame"
+    },
+    "focus": {
+     "type": "array",
+     "default": null,
+     "doc": "[x%, y%] point the crop centres on and the slow push moves toward (faces or subject from analyze_image)"
+    }
+   },
+   "example": "component('image', { src: 'as_12ab34cd56', reveal: 'iris', x: 10, y: 15, w: 80, h: 55 })"
+  },
+  {
+   "name": "clip",
+   "category": "media",
+   "description": "Video asset as a layer (footage, an engine-rendered clip, or an edited media output). Seeks frame-accurately with the scene. Transparent webm clips composite over the scene.",
+   "params": {
+    "src": {
+     "type": "string",
+     "default": "",
+     "doc": "asset id of a video"
+    },
+    "from": {
+     "type": "number",
+     "default": 0,
+     "doc": "source in-point in seconds"
+    },
+    "h": {
+     "type": "number",
+     "default": null
+    },
+    "fit": {
+     "type": "enum",
+     "default": "cover",
+     "options": [
+      "cover",
+      "contain"
+     ]
+    },
+    "radius": {
+     "type": "number",
+     "default": 0
+    },
+    "reveal": {
+     "type": "enum",
+     "default": "none",
+     "options": [
+      "none",
+      "fade",
+      "wipe",
+      "rise"
+     ]
+    }
+   },
+   "example": "component('clip', { src: 'as_manimclip01', x: 0, y: 0, w: 100, h: 100, fit: 'contain' })"
+  },
+  {
+   "name": "device",
+   "category": "media",
+   "description": "Phone or laptop frame showing an image or video asset, sliding in with a gentle tilt and optional screen scroll.",
+   "params": {
+    "kind": {
+     "type": "enum",
+     "default": "phone",
+     "options": [
+      "phone",
+      "laptop"
+     ]
+    },
+    "src": {
+     "type": "string",
+     "default": ""
+    },
+    "video": {
+     "type": "boolean",
+     "default": false
+    },
+    "scroll": {
+     "type": "number",
+     "default": 0,
+     "doc": "screen scroll in % of content height"
+    }
+   },
+   "example": "component('device', { kind: 'phone', src: 'as_screen01', scroll: 40, at: 0.3 })"
+  },
+  {
+   "name": "cursor",
+   "category": "ui",
+   "description": "Animated mouse cursor that travels through points and clicks with a ripple; for UI walkthroughs.",
+   "params": {
+    "path": {
+     "type": "array",
+     "default": [
+      [
+       30,
+       40
+      ],
+      [
+       60,
+       55
+      ]
+     ],
+     "doc": "[[x%, y%], ...] waypoints"
+    },
+    "clicks": {
+     "type": "array",
+     "default": [
+      1
+     ],
+     "doc": "indexes of waypoints that click"
+    },
+    "speed": {
+     "type": "number",
+     "default": 0.7,
+     "doc": "seconds per segment"
+    }
+   },
+   "example": "component('cursor', { path: [[20,30],[55,42],[70,70]], clicks: [1,2], at: 1 })"
+  },
+  {
+   "name": "chat",
+   "category": "ui",
+   "description": "Messaging thread: bubbles appear one by one with a typing indicator before each incoming message.",
+   "params": {
+    "messages": {
+     "type": "array",
+     "default": [
+      {
+       "from": "them",
+       "text": "Did you see the tide today?"
+      },
+      {
+       "from": "me",
+       "text": "Twice!"
+      }
+     ],
+     "doc": "[{from: 'me'|'them', text}]"
+    },
+    "gap": {
+     "type": "number",
+     "default": 1
+    }
+   },
+   "example": "component('chat', { messages: [{from:'them',text:'Why are there two tides?'},{from:'me',text:'The Moon pulls both sides.'}] })"
+  },
+  {
+   "name": "follow",
+   "category": "cta",
+   "description": "Call-to-action pill (follow, subscribe, link) that pops in, gets clicked, and swaps to a confirmed state.",
+   "params": {
+    "text": {
+     "type": "string",
+     "default": "Follow for more"
+    },
+    "done": {
+     "type": "string",
+     "default": "Following"
+    },
+    "icon": {
+     "type": "string",
+     "default": "bell"
+    }
+   },
+   "example": "component('follow', { text: 'Subscribe', done: 'Subscribed', at: 3 })"
+  },
+  {
+   "name": "particles",
+   "category": "ambient",
+   "description": "Seeded ambient particle field (dust, stars, snow, embers, bokeh) on a canvas behind the content.",
+   "params": {
+    "kind": {
+     "type": "enum",
+     "default": "dust",
+     "options": [
+      "dust",
+      "stars",
+      "snow",
+      "embers",
+      "bokeh"
+     ]
+    },
+    "count": {
+     "type": "number",
+     "default": 90
+    },
+    "speed": {
+     "type": "number",
+     "default": 1
+    }
+   },
+   "example": "component('particles', { kind: 'stars', count: 160, at: 0 })"
+  },
+  {
+   "name": "light-sweep",
+   "category": "ambient",
+   "description": "Glossy light band sweeping across an element (logo, title, card) to add shine.",
+   "params": {
+    "target": {
+     "type": "string",
+     "default": ".scene h1"
+    },
+    "angle": {
+     "type": "number",
+     "default": 20
+    },
+    "width": {
+     "type": "number",
+     "default": 18,
+     "doc": "band width in %"
+    }
+   },
+   "example": "component('light-sweep', { target: '.logo', at: 1.2 })"
+  },
+  {
+   "name": "logo-sting",
+   "category": "brand",
+   "description": "Logo reveal: mark scales in with an overshoot, a ring pulse and a shine, then an optional wordmark slides out.",
+   "params": {
+    "src": {
+     "type": "string",
+     "default": "",
+     "doc": "logo asset id (svg or png)"
+    },
+    "word": {
+     "type": "string",
+     "default": ""
+    },
+    "size": {
+     "type": "number",
+     "default": 22,
+     "doc": "logo size in % of the short side"
+    }
+   },
+   "example": "component('logo-sting', { src: 'as_logo0001', word: 'AuteurFrame', at: 0.2 })"
+  },
+  {
+   "name": "split-compare",
+   "category": "explainer",
+   "description": "Two panels side by side (or stacked on vertical) with labels; a divider wipes in and the winning side can be emphasised.",
+   "params": {
+    "left": {
+     "type": "string",
+     "default": "Before"
+    },
+    "right": {
+     "type": "string",
+     "default": "After"
+    },
+    "leftSrc": {
+     "type": "string",
+     "default": ""
+    },
+    "rightSrc": {
+     "type": "string",
+     "default": ""
+    },
+    "emphasis": {
+     "type": "enum",
+     "default": "none",
+     "options": [
+      "none",
+      "left",
+      "right"
+     ]
+    }
+   },
+   "example": "component('split-compare', { left: 'Spring tide', right: 'Neap tide', emphasis: 'left' })"
+  },
+  {
+   "name": "character",
+   "category": "character",
+   "description": "Rigged 2D explainer character (vector, flat style) with procedural, frame-exact actions: idle breathing and blinking, walk/run to a position, wave, point, present, talk (mouth follows word timings), think, celebrate, shrug, nod, shake, look, sad. Actions can overlap and blend.",
+   "params": {
+    "x": {
+     "type": "number",
+     "default": 50,
+     "doc": "centre x of the feet in %"
+    },
+    "y": {
+     "type": "number",
+     "default": 88,
+     "doc": "feet line y in %"
+    },
+    "h": {
+     "type": "number",
+     "default": 46,
+     "doc": "height in % of frame height"
+    },
+    "facing": {
+     "type": "enum",
+     "default": "right",
+     "options": [
+      "right",
+      "left"
+     ]
+    },
+    "skin": {
+     "type": "string",
+     "default": "tan",
+     "doc": "light|tan|brown|dark|deep or a colour"
+    },
+    "hairStyle": {
+     "type": "enum",
+     "default": "short",
+     "options": [
+      "short",
+      "long",
+      "bun",
+      "curly",
+      "none"
+     ]
+    },
+    "hair": {
+     "type": "string",
+     "default": "--ink"
+    },
+    "shirt": {
+     "type": "string",
+     "default": "--accent"
+    },
+    "pants": {
+     "type": "string",
+     "default": "--ink-2"
+    },
+    "shoes": {
+     "type": "string",
+     "default": "--ink"
+    },
+    "accessory": {
+     "type": "enum",
+     "default": "none",
+     "options": [
+      "none",
+      "glasses",
+      "tie"
+     ]
+    },
+    "outline": {
+     "type": "boolean",
+     "default": false
+    },
+    "lipsync": {
+     "type": "string",
+     "default": "",
+     "doc": "'voice' (film narration) or an audio asset id from speak: the mouth follows the real audio while a talk action runs, or all the time if there is no talk action"
+    },
+    "lipsyncAt": {
+     "type": "number",
+     "default": 0,
+     "doc": "scene seconds when that audio line starts"
+    },
+    "actions": {
+     "type": "array",
+     "default": [
+      {
+       "do": "wave",
+       "at": 0.6,
+       "duration": 1.6
+      }
+     ],
+     "doc": "[{do:'walk'|'run'|'wave'|'point'|'present'|'talk'|'think'|'celebrate'|'shrug'|'nod'|'shake'|'look'|'sad', at, duration, to (walk/run target x %), dir (point/look: left|right|up)}]"
+    }
+   },
+   "example": "component('character', { x: 20, skin: 'brown', hairStyle: 'curly', actions: [{ do: 'walk', at: 0.2, duration: 1.8, to: 45 }, { do: 'wave', at: 2.1, duration: 1.4 }, { do: 'talk', at: 2.4, duration: 2.5 }] })"
+  },
+  {
+   "name": "mascot",
+   "category": "character",
+   "description": "Cute mascot (blob, drop, star or robot) with squash-and-stretch hops, blinks, talking mouth, look and spin. Good for kids, tips, brand explainers.",
+   "params": {
+    "x": {
+     "type": "number",
+     "default": 50
+    },
+    "y": {
+     "type": "number",
+     "default": 80,
+     "doc": "ground line y in %"
+    },
+    "size": {
+     "type": "number",
+     "default": 26,
+     "doc": "height in % of frame height"
+    },
+    "shape": {
+     "type": "enum",
+     "default": "blob",
+     "options": [
+      "blob",
+      "drop",
+      "star",
+      "robot"
+     ]
+    },
+    "color": {
+     "type": "string",
+     "default": "--accent"
+    },
+    "actions": {
+     "type": "array",
+     "default": [
+      {
+       "do": "hop",
+       "at": 0.4,
+       "duration": 1.5
+      }
+     ],
+     "doc": "[{do:'hop'|'talk'|'spin'|'look'|'celebrate'|'shake', at, duration, dir}]"
+    },
+    "lipsync": {
+     "type": "string",
+     "default": "",
+     "doc": "'voice' or an audio asset id: the mouth follows the real audio"
+    },
+    "lipsyncAt": {
+     "type": "number",
+     "default": 0
+    }
+   },
+   "example": "component('mascot', { shape: 'drop', x: 30, actions: [{do:'hop',at:0.3,duration:1.2},{do:'talk',at:1.5,duration:2}] })"
+  },
+  {
+   "name": "sprite",
+   "category": "character",
+   "description": "Frame-by-frame sprite from a sprite sheet asset (for example a sprite-gen atlas). Give the manifest (asset id of its JSON, or inline) and a state; frames play at the state fps, looping, frame-exact.",
+   "params": {
+    "src": {
+     "type": "string",
+     "default": "",
+     "doc": "sprite sheet image asset id"
+    },
+    "manifest": {
+     "type": "string",
+     "default": "",
+     "doc": "asset id of the JSON manifest, or a JSON object"
+    },
+    "state": {
+     "type": "string",
+     "default": "idle"
+    },
+    "grid": {
+     "type": "array",
+     "default": null,
+     "doc": "[cols, rows, frameCount] when there is no manifest"
+    },
+    "fps": {
+     "type": "number",
+     "default": 12
+    },
+    "h": {
+     "type": "number",
+     "default": 30
+    },
+    "moveTo": {
+     "type": "number",
+     "default": null,
+     "doc": "x % to travel to over the duration"
+    }
+   },
+   "example": "component('sprite', { src: 'as_atlas0001', manifest: 'as_manif0001', state: 'walk', x: 10, y: 60, h: 28, moveTo: 70 })"
+  },
+  {
+   "name": "model3d",
+   "category": "3d",
+   "description": "Real 3D model (GLB asset, for example imported from Polyfork) rendered with lights and soft shadow. Auto-fits and frames the model, plays its embedded animation clip frame-exactly, and can spin, orbit, float or enter with a rise or pop.",
+   "params": {
+    "src": {
+     "type": "string",
+     "default": "",
+     "doc": "GLB asset id (use import_model to get one)"
+    },
+    "h": {
+     "type": "number",
+     "default": 70,
+     "doc": "viewport height in % of frame"
+    },
+    "clip": {
+     "type": "string",
+     "default": "",
+     "doc": "animation clip name or index to play; empty plays the first clip if any"
+    },
+    "clipSpeed": {
+     "type": "number",
+     "default": 1
+    },
+    "yaw": {
+     "type": "number",
+     "default": -25,
+     "doc": "starting rotation around the vertical axis in degrees"
+    },
+    "pitch": {
+     "type": "number",
+     "default": 8,
+     "doc": "camera height angle in degrees"
+    },
+    "spin": {
+     "type": "number",
+     "default": 0,
+     "doc": "degrees per second turntable rotation"
+    },
+    "orbit": {
+     "type": "number",
+     "default": 18,
+     "doc": "camera orbit in degrees across the duration"
+    },
+    "zoom": {
+     "type": "number",
+     "default": 1,
+     "doc": "end zoom factor (1.15 pushes in)"
+    },
+    "float": {
+     "type": "number",
+     "default": 0,
+     "doc": "gentle bob amplitude (0 to 1)"
+    },
+    "enter": {
+     "type": "enum",
+     "default": "rise",
+     "options": [
+      "rise",
+      "pop",
+      "spin",
+      "none"
+     ]
+    },
+    "ground": {
+     "type": "boolean",
+     "default": true,
+     "doc": "soft contact shadow"
+    },
+    "lipsync": {
+     "type": "string",
+     "default": "",
+     "doc": "'voice' or an audio asset id: drives the model's mouth morph target (jawOpen, mouthOpen, viseme_aa) when it has one, otherwise a subtle talking bob"
+    },
+    "lipsyncAt": {
+     "type": "number",
+     "default": 0
+    }
+   },
+   "example": "component('model3d', { src: 'as_glb000001', clip: 'Walk', x: 10, y: 10, w: 80, h: 80, spin: 0, orbit: 30 })"
+  },
+  {
+   "name": "lottie",
+   "category": "media",
+   "description": "Lottie animation from a JSON asset, seeked frame-exactly with the scene (great for icons, stickers and UI micro-animations).",
+   "params": {
+    "src": {
+     "type": "string",
+     "default": "",
+     "doc": "Lottie JSON asset id"
+    },
+    "h": {
+     "type": "number",
+     "default": 40
+    },
+    "speed": {
+     "type": "number",
+     "default": 1
+    },
+    "loop": {
+     "type": "boolean",
+     "default": true
+    }
+   },
+   "example": "component('lottie', { src: 'as_lottie001', x: 35, y: 25, w: 30, h: 40 })"
+  },
+  {
+   "name": "map",
+   "category": "map",
+   "description": "Animated real-world map built by the make_map tool (OpenStreetMap or Esri street, topographic, atlas, relief, satellite or terrain tiles, or Natural Earth vector countries). Plays the camera flight baked into the map asset and draws its routes, pins, labels and highlighted regions frame-exactly.",
+   "params": {
+    "src": {
+     "type": "string",
+     "default": "",
+     "doc": "map asset id returned by make_map"
+    },
+    "h": {
+     "type": "number",
+     "default": null,
+     "doc": "height in % of frame (defaults to the box given to make_map)"
+    },
+    "tint": {
+     "type": "enum",
+     "default": "",
+     "options": [
+      "",
+      "none",
+      "paper",
+      "mono",
+      "night",
+      "warm",
+      "cool",
+      "muted"
+     ],
+     "doc": "colour treatment of the tiles; empty uses the one chosen in make_map"
+    },
+    "labels": {
+     "type": "boolean",
+     "default": true,
+     "doc": "show marker and region labels"
+    },
+    "credit": {
+     "type": "boolean",
+     "default": true,
+     "doc": "show the map attribution (required by the tile licence)"
+    },
+    "timeShift": {
+     "type": "number",
+     "default": 0,
+     "doc": "seconds to delay the whole map animation"
+    }
+   },
+   "example": "component('map', { src: 'as_map0001', tint: 'paper' })"
+  },
+  {
+   "name": "webpage",
+   "category": "media",
+   "description": "A website screenshot (from the screenshot tool) shown as a browser window, paper print or bare page, with documentary moves: highlighter sweeps, boxes, underlines or hand-drawn circles over phrases, a zoom into a passage, a scroll through a full-page capture, tilt and drop-in.",
+   "params": {
+    "src": {
+     "type": "string",
+     "default": "",
+     "doc": "screenshot asset id"
+    },
+    "h": {
+     "type": "number",
+     "default": 78,
+     "doc": "height in % of frame"
+    },
+    "frame": {
+     "type": "enum",
+     "default": "browser",
+     "options": [
+      "browser",
+      "paper",
+      "none"
+     ]
+    },
+    "url": {
+     "type": "string",
+     "default": "",
+     "doc": "address shown in the browser bar"
+    },
+    "highlights": {
+     "type": "array",
+     "default": [],
+     "doc": "list of {boxes: [[x,y,w,h] in % of the screenshot, one per text line] (or box), at, style: marker|box|underline|circle, color}"
+    },
+    "focus": {
+     "type": "object",
+     "default": null,
+     "doc": "{box: [x,y,w,h] %, at, duration, zoom} zooms the camera onto a passage"
+    },
+    "scroll": {
+     "type": "object",
+     "default": null,
+     "doc": "{to: % of page height for the top edge, at, duration} for full-page captures"
+    },
+    "dim": {
+     "type": "number",
+     "default": 0,
+     "doc": "0 to 0.6: darken the page when the highlights land so they pop"
+    },
+    "tilt": {
+     "type": "number",
+     "default": 0,
+     "doc": "degrees of 3D tilt backwards"
+    },
+    "enter": {
+     "type": "enum",
+     "default": "rise",
+     "options": [
+      "rise",
+      "drop",
+      "fade",
+      "none"
+     ]
+    }
+   },
+   "example": "component('webpage', { src: 'as_shot0001', url: 'en.wikipedia.org/wiki/Moon', highlights: [{ boxes: [[12.5, 41.2, 38.0, 3.1]], at: 1.2 }], focus: { box: [12.5, 41.2, 38.0, 3.1], at: 2.0 } })"
+  },
+  {
+   "name": "talking-head",
+   "category": "character",
+   "description": "Turns one portrait photo or illustration into a talking, blinking, breathing head. The face is rigged automatically from landmarks; the jaw and lips follow the narration or a dialogue line from the speak tool, eyes blink, the head sways and nods on words. Use for presenters, historical figures, interviews and character dialogue.",
+   "params": {
+    "src": {
+     "type": "string",
+     "default": "",
+     "doc": "image asset id of a front-facing portrait"
+    },
+    "lipsync": {
+     "type": "string",
+     "default": "voice",
+     "doc": "'voice' for the film narration or an audio asset id from speak"
+    },
+    "lipsyncAt": {
+     "type": "number",
+     "default": 0,
+     "doc": "scene seconds when that audio line starts"
+    },
+    "gain": {
+     "type": "number",
+     "default": 1,
+     "doc": "mouth opening strength (0.5 subtle to 1.6 expressive)"
+    },
+    "motion": {
+     "type": "number",
+     "default": 0.6,
+     "doc": "head sway and nod amount (0 still to 1 lively)"
+    },
+    "blink": {
+     "type": "boolean",
+     "default": true
+    },
+    "smile": {
+     "type": "number",
+     "default": 0,
+     "doc": "0 to 1 lifts the mouth corners"
+    },
+    "h": {
+     "type": "number",
+     "default": 80,
+     "doc": "height in % of frame"
+    },
+    "frame": {
+     "type": "enum",
+     "default": "none",
+     "options": [
+      "none",
+      "circle",
+      "card",
+      "polaroid"
+     ]
+    },
+    "enter": {
+     "type": "enum",
+     "default": "rise",
+     "options": [
+      "rise",
+      "fade",
+      "pop",
+      "none"
+     ]
+    }
+   },
+   "example": "component('talking-head', { src: 'as_portrait01', lipsync: 'as_line0001', lipsyncAt: 0.6, x: 30, y: 8, w: 40, h: 84, frame: 'card' })"
+  },
+  {
+   "name": "lens",
+   "category": "camera",
+   "description": "Lens and camera look for the whole scene: fisheye, wide, telephoto, anamorphic (letterbox, streak flares), tilt-shift miniature, macro, vintage film (gate weave, dust, grain), VHS, CRT, security camera, camcorder viewfinder, dreamy, night vision. Adds lens moves: push-in, crash zoom, dolly zoom (vertigo) and rack focus between two elements. Overlays: vignette, chromatic aberration, flares, light leaks, dust, grain, bokeh, scanlines, letterbox, REC frame.",
+   "params": {
+    "type": {
+     "type": "enum",
+     "default": "documentary",
+     "options": [
+      "none",
+      "fisheye",
+      "wide",
+      "telephoto",
+      "anamorphic",
+      "tilt-shift",
+      "macro",
+      "vintage",
+      "vhs",
+      "crt",
+      "security",
+      "viewfinder",
+      "dreamy",
+      "documentary",
+      "night-vision"
+     ]
+    },
+    "strength": {
+     "type": "number",
+     "default": 1,
+     "doc": "0 to 2 scales the whole look"
+    },
+    "overlays": {
+     "type": "array",
+     "default": null,
+     "doc": "extra overlays: vignette, chromatic, flare, leaks, dust, grain, bokeh, scanlines, letterbox, rec, glow, circle"
+    },
+    "move": {
+     "type": "enum",
+     "default": "none",
+     "options": [
+      "none",
+      "push",
+      "crash",
+      "dolly",
+      "pull",
+      "rack"
+     ],
+     "doc": "lens move over the scene"
+    },
+    "moveAt": {
+     "type": "number",
+     "default": 0.4
+    },
+    "moveDuration": {
+     "type": "number",
+     "default": null,
+     "doc": "seconds (crash defaults to 0.3)"
+    },
+    "zoom": {
+     "type": "number",
+     "default": 1.25,
+     "doc": "end zoom for push, crash and dolly"
+    },
+    "focus": {
+     "type": "array",
+     "default": [
+      50,
+      45
+     ],
+     "doc": "[x%, y%] the zoom centres on"
+    },
+    "focusA": {
+     "type": "string",
+     "default": "",
+     "doc": "rack focus: CSS selector sharp first"
+    },
+    "focusB": {
+     "type": "string",
+     "default": "",
+     "doc": "rack focus: CSS selector sharp after the rack"
+    },
+    "flare": {
+     "type": "array",
+     "default": [
+      78,
+      22
+     ],
+     "doc": "[x%, y%] light source for flares"
+    },
+    "tint": {
+     "type": "string",
+     "default": "",
+     "doc": "extra CSS filter for the colour look"
+    }
+   },
+   "example": "component('lens', { type: 'anamorphic', move: 'push', zoom: 1.12, focus: [40, 45] })"
+  },
+  {
+   "name": "toon",
+   "category": "character",
+   "description": "Story cartoon character in the bold outlined style of animated story channels: big white round head, expressive brows and eyes, coloured body, stick limbs. Build any cast from presets (kid, teen-girl, teen-boy, old-man, old-woman, police, soldier, doctor, scientist, businessman, chef, biker, beekeeper, thief, zombie, hero) or from parts (hats, hair, beards, extras, props, colours, custom SVG parts). Acts with walk, run, shamble, wave, point, talk with lip sync, shock, cheer, scared, cry, laugh, fall, hug and more, each with an expression.",
+   "params": {
+    "preset": {
+     "type": "enum",
+     "default": "",
+     "options": [
+      "",
+      "kid",
+      "teen-girl",
+      "teen-boy",
+      "old-man",
+      "old-woman",
+      "police",
+      "soldier",
+      "doctor",
+      "scientist",
+      "businessman",
+      "chef",
+      "biker",
+      "beekeeper",
+      "thief",
+      "zombie",
+      "hero"
+     ],
+     "doc": "starting look; any field below overrides it"
+    },
+    "y": {
+     "type": "number",
+     "default": 88,
+     "doc": "feet baseline in % of frame height"
+    },
+    "h": {
+     "type": "number",
+     "default": 42,
+     "doc": "character height in % of frame height"
+    },
+    "facing": {
+     "type": "enum",
+     "default": "right",
+     "options": [
+      "right",
+      "left"
+     ]
+    },
+    "skin": {
+     "type": "string",
+     "default": "",
+     "doc": "face and hands colour (default white like a cartoon; zombie green)"
+    },
+    "shirt": {
+     "type": "string",
+     "default": "",
+     "doc": "body colour or CSS variable"
+    },
+    "pants": {
+     "type": "string",
+     "default": ""
+    },
+    "hat": {
+     "type": "enum",
+     "default": "",
+     "options": [
+      "",
+      "none",
+      "beanie",
+      "cap",
+      "police",
+      "military",
+      "helmet",
+      "beekeeper",
+      "cowboy",
+      "chef",
+      "crown",
+      "hood",
+      "tophat",
+      "hardhat",
+      "headband",
+      "party"
+     ],
+     "doc": "empty keeps the preset; none removes it"
+    },
+    "hatColor": {
+     "type": "string",
+     "default": ""
+    },
+    "hair": {
+     "type": "enum",
+     "default": "",
+     "options": [
+      "",
+      "none",
+      "bald",
+      "messy",
+      "bowl",
+      "spiky",
+      "side",
+      "ponytail",
+      "long",
+      "bun",
+      "curly",
+      "wild",
+      "bald-sides",
+      "mohawk"
+     ]
+    },
+    "hairColor": {
+     "type": "string",
+     "default": ""
+    },
+    "beard": {
+     "type": "enum",
+     "default": "",
+     "options": [
+      "",
+      "none",
+      "full",
+      "stubble",
+      "mustache"
+     ]
+    },
+    "beardColor": {
+     "type": "string",
+     "default": ""
+    },
+    "extras": {
+     "type": "array",
+     "default": [],
+     "doc": "backpack, cape, tie, badge, scarf, apron, stethoscope, vest, glasses, sunglasses, eyepatch, bandage, freckles, scar, earrings"
+    },
+    "prop": {
+     "type": "enum",
+     "default": "",
+     "options": [
+      "",
+      "none",
+      "flashlight",
+      "phone",
+      "money",
+      "radio",
+      "sign",
+      "torch",
+      "book",
+      "bag",
+      "cup",
+      "umbrella",
+      "map",
+      "key"
+     ],
+     "doc": "item in the front hand"
+    },
+    "expression": {
+     "type": "enum",
+     "default": "",
+     "options": [
+      "",
+      "neutral",
+      "happy",
+      "sad",
+      "angry",
+      "worried",
+      "shocked",
+      "scared",
+      "smirk",
+      "laugh",
+      "determined",
+      "sleepy",
+      "zombie",
+      "love",
+      "thinking"
+     ]
+    },
+    "zombie": {
+     "type": "boolean",
+     "default": false,
+     "doc": "undead look and default shamble pose"
+    },
+    "torn": {
+     "type": "boolean",
+     "default": false
+    },
+    "depth": {
+     "type": "number",
+     "default": 0,
+     "doc": "0 foreground to 1 far background (blur and darken)"
+    },
+    "actions": {
+     "type": "array",
+     "default": [],
+     "doc": "[{do: walk|run|shamble (with to: x%), wave, point (dir), talk, look (dir), shock, jump, cheer, shrug, nod, shake, think, scared, cry, laugh, angry, crouch, fall, hold, raise, hug, turn, pull, at, duration, expression}]"
+    },
+    "lipsync": {
+     "type": "string",
+     "default": "",
+     "doc": "'voice' or an audio asset id from speak"
+    },
+    "lipsyncAt": {
+     "type": "number",
+     "default": 0
+    },
+    "parts": {
+     "type": "object",
+     "default": null,
+     "doc": "custom SVG markup in the 240x480 rig space: {head, body, prop, front}; head parts move with the head, prop with the hand"
+    },
+    "enter": {
+     "type": "enum",
+     "default": "pop",
+     "options": [
+      "pop",
+      "fade",
+      "rise",
+      "none"
+     ]
+    }
+   },
+   "example": "component('toon', { preset: 'teen-girl', x: 30, shirt: '#d94b3d', prop: 'flashlight', actions: [{ do: 'run', at: 0.3, duration: 2, to: 60, expression: 'scared' }, { do: 'look', dir: 'left', at: 2.4, duration: 1 }] })"
+  },
+  {
+   "name": "toon-crowd",
+   "category": "character",
+   "description": "A crowd of toon characters (people or zombies) in depth rows: each one is varied (colours, hair, hats, speed, sway), they shamble, walk or mill around. Use for zombie hordes, protests, audiences, city streets.",
+   "params": {
+    "count": {
+     "type": "number",
+     "default": 12
+    },
+    "zombie": {
+     "type": "boolean",
+     "default": true
+    },
+    "x0": {
+     "type": "number",
+     "default": 0,
+     "doc": "left edge %"
+    },
+    "x1": {
+     "type": "number",
+     "default": 100,
+     "doc": "right edge %"
+    },
+    "y": {
+     "type": "number",
+     "default": 92,
+     "doc": "front row baseline %"
+    },
+    "rows": {
+     "type": "number",
+     "default": 3
+    },
+    "h": {
+     "type": "number",
+     "default": 34
+    },
+    "move": {
+     "type": "enum",
+     "default": "shamble",
+     "options": [
+      "shamble",
+      "walk",
+      "run",
+      "idle",
+      "cheer"
+     ]
+    },
+    "dir": {
+     "type": "enum",
+     "default": "right",
+     "options": [
+      "right",
+      "left",
+      "toward"
+     ]
+    },
+    "speed": {
+     "type": "number",
+     "default": 1
+    },
+    "palette": {
+     "type": "array",
+     "default": [],
+     "doc": "shirt colours to pick from"
+    },
+    "reach": {
+     "type": "boolean",
+     "default": true,
+     "doc": "zombies reach upward/forward with arms"
+    }
+   },
+   "example": "component('toon-crowd', { count: 14, zombie: true, rows: 3, move: 'shamble', dir: 'right', at: 0.2 })"
+  },
+  {
+   "name": "toon-prop",
+   "category": "set",
+   "description": "A cartoon object or building in the toon style (thick ink outline, flat colours) that lives and moves: smoke from chimneys and fires, flickering lit windows, blinking antennas, spinning windmills and rotors, rolling wheels, swaying trees, siren lights, opening gates. Vehicles can drive to a position. Objects: house, apartment, tower, shop, pharmacy, hospital, school, church, factory, tent, cabin, bridge, gate, fence, barricade, wall, car, police-car, bus, truck, bicycle, boat, helicopter, plane, tree, pine, palm, bush, rock, lamp, traffic-light, billboard, sign, bench, table, chair, bed, sofa, tv, computer, desk, door, window, beehive, campfire, fire, radio, barrel, crate, radio-tower, water-tower, windmill, mountain, cloud, sun, moon, well, mailbox, hydrant, trash-can, satellite-dish.",
+   "params": {
+    "name": {
+     "type": "enum",
+     "default": "house",
+     "options": [
+      "house",
+      "apartment",
+      "tower",
+      "shop",
+      "pharmacy",
+      "hospital",
+      "school",
+      "church",
+      "factory",
+      "tent",
+      "cabin",
+      "bridge",
+      "gate",
+      "fence",
+      "barricade",
+      "wall",
+      "car",
+      "police-car",
+      "bus",
+      "truck",
+      "bicycle",
+      "boat",
+      "helicopter",
+      "plane",
+      "tree",
+      "pine",
+      "palm",
+      "bush",
+      "rock",
+      "lamp",
+      "traffic-light",
+      "billboard",
+      "sign",
+      "bench",
+      "table",
+      "chair",
+      "bed",
+      "sofa",
+      "tv",
+      "computer",
+      "desk",
+      "door",
+      "window",
+      "beehive",
+      "campfire",
+      "fire",
+      "radio",
+      "barrel",
+      "crate",
+      "radio-tower",
+      "water-tower",
+      "windmill",
+      "mountain",
+      "cloud",
+      "sun",
+      "moon",
+      "well",
+      "mailbox",
+      "hydrant",
+      "trash-can",
+      "satellite-dish"
+     ]
+    },
+    "y": {
+     "type": "number",
+     "default": 90,
+     "doc": "baseline (bottom) in % of frame height"
+    },
+    "h": {
+     "type": "number",
+     "default": 40,
+     "doc": "height in % of frame height"
+    },
+    "color": {
+     "type": "string",
+     "default": "",
+     "doc": "main colour"
+    },
+    "label": {
+     "type": "string",
+     "default": "",
+     "doc": "text for shop, billboard, sign"
+    },
+    "night": {
+     "type": "boolean",
+     "default": false,
+     "doc": "lit windows and lamps"
+    },
+    "flip": {
+     "type": "boolean",
+     "default": false
+    },
+    "depth": {
+     "type": "number",
+     "default": 0,
+     "doc": "0 front to 1 far (blur, haze)"
+    },
+    "drive": {
+     "type": "object",
+     "default": null,
+     "doc": "vehicles: {to: x%, at, duration}"
+    },
+    "open": {
+     "type": "number",
+     "default": null,
+     "doc": "gate: scene seconds when it opens"
+    },
+    "burning": {
+     "type": "boolean",
+     "default": false,
+     "doc": "adds flames and smoke on top"
+    },
+    "ruined": {
+     "type": "boolean",
+     "default": false,
+     "doc": "darkened, cracked, broken windows"
+    },
+    "parts": {
+     "type": "string",
+     "default": "",
+     "doc": "extra SVG markup in the object coordinate space"
+    },
+    "enter": {
+     "type": "enum",
+     "default": "none",
+     "options": [
+      "none",
+      "rise",
+      "pop",
+      "fade"
+     ]
+    }
+   },
+   "example": "component('toon-prop', { name: 'pharmacy', x: 70, y: 86, h: 38, night: true })"
+  },
+  {
+   "name": "toon-set",
+   "category": "set",
+   "description": "A complete animated environment behind toon characters: sky by time of day (stars and moon at night, sun by day), a far parallax layer (skyline with lit windows, mountains, hills, dunes, sea), living mid-ground objects and buildings, and a ground line. Presets: city-night, city-day, burning-city, street, suburb, rooftop, forest, desert, beach, mountains, farm, interior, office, bridge, checkpoint, campsite. Add weather (rain, snow, fog), burning, a slow camera pan, extra props.",
+   "params": {
+    "preset": {
+     "type": "enum",
+     "default": "city-night",
+     "options": [
+      "city-night",
+      "city-day",
+      "burning-city",
+      "street",
+      "suburb",
+      "rooftop",
+      "forest",
+      "desert",
+      "beach",
+      "mountains",
+      "farm",
+      "interior",
+      "office",
+      "bridge",
+      "checkpoint",
+      "campsite"
+     ]
+    },
+    "time": {
+     "type": "enum",
+     "default": "",
+     "options": [
+      "",
+      "dawn",
+      "day",
+      "sunset",
+      "dusk",
+      "night"
+     ]
+    },
+    "pan": {
+     "type": "number",
+     "default": 8,
+     "doc": "camera pan speed in px per second (parallax); negative pans left"
+    },
+    "ground": {
+     "type": "number",
+     "default": 78,
+     "doc": "ground line in % of frame height"
+    },
+    "weather": {
+     "type": "enum",
+     "default": "none",
+     "options": [
+      "none",
+      "rain",
+      "snow",
+      "fog",
+      "ash"
+     ]
+    },
+    "burning": {
+     "type": "boolean",
+     "default": false
+    },
+    "props": {
+     "type": "array",
+     "default": null,
+     "doc": "replace the preset objects: [[name, x%, h%, {options}]]"
+    },
+    "extra": {
+     "type": "array",
+     "default": [],
+     "doc": "add objects: [[name, x%, h%, {options}]]"
+    }
+   },
+   "example": "component('toon-set', { preset: 'burning-city', weather: 'ash', pan: 10 })"
+  }
+ ]
+}

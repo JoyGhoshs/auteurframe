@@ -1,0 +1,15 @@
+AuteurFrame changelog
+=====================
+
+Newest first. The release bot adds an entry for every change merged into main.
+
+Unreleased
+  No changes yet.
+
+1.0.0 (2026-11-13)
+  * First public release of AuteurFrame.
+  * Agent swarm: research, screenplay, art direction, parallel animators, vision critic, sound design and mastering.
+  * Timeline editor with scene, caption, layer and audio tracks plus agent actions on right-click.
+  * Template feed: new templates published to this repository appear in every studio under Templates.
+  2026-11-13  Template added: Launch Announcement (launch-announcement v1, by AuteurFrame)
+  2026-11-13  Template added: Version Release (version-release v1, by AuteurFrame)

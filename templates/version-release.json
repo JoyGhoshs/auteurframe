@@ -1,0 +1,103 @@
+{
+  "format": 1,
+  "id": "version-release",
+  "version": 1,
+  "name": "Version Release",
+  "category": "Announcement",
+  "author": "AuteurFrame",
+  "style": "neon-night",
+  "aspect": "16:9",
+  "mood": "cinematic",
+  "icon": "tag",
+  "description": "Release notes as a film: a glowing version badge, the headline, what is new as an icon grid, and where to get it.",
+  "slots": [
+    {
+      "key": "product",
+      "label": "Product",
+      "kind": "text",
+      "required": true,
+      "default": "AuteurFrame"
+    },
+    {
+      "key": "version",
+      "label": "Version",
+      "kind": "text",
+      "required": true,
+      "default": "v1.1"
+    },
+    {
+      "key": "headline",
+      "label": "Headline",
+      "kind": "text",
+      "default": "Faster renders, *smarter* agents"
+    },
+    {
+      "key": "highlights",
+      "label": "What is new (one per line)",
+      "kind": "list",
+      "default": "Parallel render farm\nVision critic\nTimeline editing\nTemplate feed"
+    },
+    {
+      "key": "where",
+      "label": "Where to get it",
+      "kind": "text",
+      "default": "Update *today*"
+    }
+  ],
+  "scenes": [
+    {
+      "title": "Version badge",
+      "duration": 3.4,
+      "transition": "fadewhite",
+      "code": "<div class=\"scene\"><div class=\"glow\" data-layer=\"glow\"></div><div class=\"ring\" data-layer=\"ring\"></div><div class=\"kick\" data-layer=\"kick\">{{product}}</div><div class=\"badge\" data-layer=\"badge\">{{version}}</div><div class=\"sub\" data-layer=\"sub\">Now available</div></div><style>.scene{position:absolute;inset:0;overflow:hidden}.glow{position:absolute;left:50%;top:50%;width:70%;height:90%;margin:-45% 0 0 -35%;background:radial-gradient(closest-side,var(--accent),transparent);opacity:.35}.ring{position:absolute;left:50%;top:47%;width:40vh;height:40vh;margin:-20vh 0 0 -20vh;border-radius:50%;border:var(--stroke) solid var(--accent-2)}.kick{position:absolute;left:0;right:0;top:16%;text-align:center;font:600 var(--fs-md)/1 var(--font-body);letter-spacing:.3em;text-transform:uppercase;color:var(--muted)}.badge{position:absolute;left:0;right:0;top:40%;text-align:center;font:700 calc(var(--fs-xl) * 1.6)/1 var(--font-display);color:var(--ink);letter-spacing:-.03em}.sub{position:absolute;left:0;right:0;top:74%;text-align:center;font:500 var(--fs-md)/1 var(--font-body);color:var(--accent)}</style><script>AU.scene(({ tl, D, onFrame, $ }) => { tl.fromTo('.glow', { scale: .6, opacity: 0 }, { scale: 1, opacity: .35, duration: 1.2, ease: 'au.glide' }, 0); tl.fromTo('.ring', { scale: .3, opacity: 0 }, { scale: 1, opacity: 1, duration: .9, ease: 'au.softLand' }, .05); tl.fromTo('.kick', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: .5, ease: 'au.softLand' }, .2); tl.fromTo('.badge', { scale: 1.4, opacity: 0 }, { scale: 1, opacity: 1, duration: .7, ease: 'au.pop' }, .35); tl.fromTo('.sub', { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: .5, ease: 'au.softLand' }, .9); const ring = $('.ring'); onFrame((t) => { ring.style.transform = 'rotate(' + (t * 24).toFixed(2) + 'deg) scale(' + (1 + Math.sin(t * 2) * .02).toFixed(4) + ')'; }); });</script>"
+    },
+    {
+      "title": "Headline",
+      "archetype": "kinetic-title",
+      "duration": 3.0,
+      "transition": "smoothleft",
+      "data": {
+        "kicker": "{{product}} {{version}}",
+        "title": "{{headline}}",
+        "icon": "sparkles"
+      }
+    },
+    {
+      "title": "What is new",
+      "archetype": "icon-grid",
+      "duration": 4.4,
+      "transition": "smoothup",
+      "data": {
+        "kicker": "What is new",
+        "title": "In this *release*",
+        "items": {
+          "$map": "highlights",
+          "to": {
+            "label": "{{item}}",
+            "icon": "auto"
+          },
+          "limit": 6,
+          "icons": [
+            "zap",
+            "eye",
+            "scissors",
+            "radio-tower",
+            "shield-check",
+            "wand-sparkles"
+          ]
+        }
+      }
+    },
+    {
+      "title": "Get it",
+      "archetype": "end-card",
+      "duration": 3.0,
+      "transition": "cut",
+      "data": {
+        "title": "{{where}}",
+        "subtitle": "{{product}} {{version}}",
+        "icon": "download"
+      }
+    }
+  ]
+}

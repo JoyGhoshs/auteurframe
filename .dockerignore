@@ -1,0 +1,13 @@
+node_modules
+data
+web/vendor
+web/_dev
+.venv
+**/__pycache__
+legacy
+brand
+docs
+engines/manim-venv
+engines/ffmpeg-skill/.git
+engines/ffmpeg-skill/demos
+engines/ffmpeg-skill/site

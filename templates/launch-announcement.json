@@ -1,0 +1,141 @@
+{
+  "format": 1,
+  "id": "launch-announcement",
+  "version": 1,
+  "name": "Launch Announcement",
+  "category": "Announcement",
+  "author": "AuteurFrame",
+  "style": "gradient-product",
+  "aspect": "16:9",
+  "mood": "upbeat",
+  "icon": "megaphone",
+  "description": "Announce a product or feature: bold headline, three pillars, how it works in steps, a customer quote and a call to action.",
+  "slots": [
+    {
+      "key": "brand",
+      "label": "Brand or product",
+      "kind": "text",
+      "required": true,
+      "default": "Northstar"
+    },
+    {
+      "key": "headline",
+      "label": "Headline",
+      "kind": "text",
+      "default": "Meet the *new* Northstar"
+    },
+    {
+      "key": "pillars",
+      "label": "Three pillars (one per line)",
+      "kind": "list",
+      "default": "Faster\nSmarter\nSimpler"
+    },
+    {
+      "key": "how_title",
+      "label": "How it works title",
+      "kind": "text",
+      "default": "From idea to *shipped*"
+    },
+    {
+      "key": "steps",
+      "label": "Steps (one per line)",
+      "kind": "list",
+      "default": "Connect your data\nDescribe the goal\nReview the result\nShip it"
+    },
+    {
+      "key": "quote",
+      "label": "Customer quote",
+      "kind": "textarea",
+      "default": "We shipped in a week what used to take a *quarter*."
+    },
+    {
+      "key": "quote_author",
+      "label": "Quote author",
+      "kind": "text",
+      "default": "Ada Lin, Head of Product"
+    },
+    {
+      "key": "cta",
+      "label": "Closing line",
+      "kind": "text",
+      "default": "Available *today*"
+    },
+    {
+      "key": "cta_button",
+      "label": "Button text",
+      "kind": "text",
+      "default": "Try it free"
+    }
+  ],
+  "scenes": [
+    {
+      "title": "Headline",
+      "archetype": "kinetic-title",
+      "duration": 3.2,
+      "transition": "smoothleft",
+      "data": {
+        "kicker": "{{brand}}",
+        "title": "{{headline}}",
+        "icon": "megaphone"
+      }
+    },
+    {
+      "title": "Pillars",
+      "archetype": "word-stack",
+      "duration": 2.8,
+      "transition": "zoomin",
+      "data": {
+        "words": {
+          "$map": "pillars",
+          "to": "{{item}}",
+          "limit": 4
+        }
+      }
+    },
+    {
+      "title": "How it works",
+      "archetype": "process-flow",
+      "duration": 4.4,
+      "transition": "slideup",
+      "data": {
+        "kicker": "How it works",
+        "title": "{{how_title}}",
+        "steps": {
+          "$map": "steps",
+          "to": {
+            "label": "{{item}}",
+            "icon": "auto"
+          },
+          "limit": 4,
+          "icons": [
+            "plug-zap",
+            "message-square-text",
+            "eye",
+            "rocket"
+          ]
+        }
+      }
+    },
+    {
+      "title": "Customer quote",
+      "archetype": "quote",
+      "duration": 4.2,
+      "transition": "fade",
+      "data": {
+        "quote": "{{quote}}",
+        "author": "{{quote_author}}"
+      }
+    },
+    {
+      "title": "Call to action",
+      "archetype": "end-card",
+      "duration": 3.2,
+      "transition": "cut",
+      "data": {
+        "title": "{{cta}}",
+        "cta": "{{cta_button}}",
+        "icon": "rocket"
+      }
+    }
+  ]
+}

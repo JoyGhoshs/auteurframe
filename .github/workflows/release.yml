@@ -1,0 +1,121 @@
+name: Release bot
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      before:
+        description: Commit to compare against (defaults to the previous commit)
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: release-bot
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Update release.json and changelog.txt
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install validator dependencies
+        run: pip install numpy pillow httpx
+
+      - name: Find the pull request behind this push
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+        run: |
+          info=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${SHA}/pulls" --jq '.[0] | [.number, .user.login, .title] | @tsv' 2>/dev/null || true)
+          if [ -n "$info" ]; then
+            echo "number=$(echo "$info" | cut -f1)" >> "$GITHUB_OUTPUT"
+            echo "author=$(echo "$info" | cut -f2)" >> "$GITHUB_OUTPUT"
+            echo "title=$(echo "$info" | cut -f3 | tr -d '\r')" >> "$GITHUB_OUTPUT"
+          else
+            echo "number=" >> "$GITHUB_OUTPUT"
+            echo "author=${GITHUB_ACTOR}" >> "$GITHUB_OUTPUT"
+            echo "title=$(git log -1 --format=%s "$SHA")" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update release.json and changelog.txt
+        id: bot
+        env:
+          AUTEUR_DATA: ${{ runner.temp }}/auteurframe-data
+          BEFORE: ${{ github.event.inputs.before || github.event.before }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          PR_AUTHOR: ${{ steps.pr.outputs.author }}
+          PR_TITLE: ${{ steps.pr.outputs.title }}
+        run: |
+          if [ -z "$BEFORE" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            if git rev-parse -q --verify HEAD~1 >/dev/null; then
+              BEFORE=$(git rev-parse HEAD~1)
+            else
+              echo "First commit of the repository: release.json and changelog.txt are already in place."
+              echo "version=$(python -c "import json; print(json.load(open('release.json'))['version'])")" >> "$GITHUB_OUTPUT"
+              echo "version_changed=false" >> "$GITHUB_OUTPUT"
+              echo "entries=0" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          python scripts/release_bot.py --before "$BEFORE" --after HEAD --pr "$PR_NUMBER" --author "$PR_AUTHOR" --title "$PR_TITLE" --notes-out "$RUNNER_TEMP/notes.md"
+
+      - name: Commit the updates
+        id: commit
+        env:
+          VERSION: ${{ steps.bot.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add release.json changelog.txt
+          if git diff --cached --quiet; then
+            echo "Nothing to update."
+          else
+            git commit -m "Update release.json and changelog.txt for $VERSION"
+            for attempt in 1 2 3; do
+              if git push origin HEAD:main; then break; fi
+              git pull --rebase origin main
+            done
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Tag and publish the release
+        if: steps.bot.outputs.version_changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.bot.outputs.version }}
+          TARGET: ${{ steps.commit.outputs.sha }}
+        run: |
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "Release v$VERSION already exists."
+          else
+            gh release create "v$VERSION" --target "$TARGET" --title "AuteurFrame $VERSION" --notes-file "$RUNNER_TEMP/notes.md"
+          fi
+
+      - name: Summary
+        env:
+          VERSION: ${{ steps.bot.outputs.version }}
+          ENTRIES: ${{ steps.bot.outputs.entries }}
+          RELEASED: ${{ steps.bot.outputs.version_changed }}
+        run: |
+          {
+            echo "## Release bot"
+            echo ""
+            echo "- Version: $VERSION"
+            echo "- Changelog entries added: $ENTRIES"
+            echo "- New release published: $RELEASED"
+          } >> "$GITHUB_STEP_SUMMARY"

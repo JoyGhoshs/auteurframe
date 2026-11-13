@@ -1,0 +1,19 @@
+services:
+  auteurframe:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: auteurframe:1
+    ports:
+      - "8800:8800"
+    volumes:
+      - auteurframe-data:/data
+    environment:
+      AUTEUR_SCENE_CONCURRENCY: "4"
+      AUTEUR_RENDER_CONCURRENCY: "3"
+      RENDER_CONCURRENCY: "6"
+    shm_size: "2gb"
+    restart: unless-stopped
+
+volumes:
+  auteurframe-data:

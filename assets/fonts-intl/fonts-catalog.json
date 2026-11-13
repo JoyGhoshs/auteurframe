@@ -1,0 +1,945 @@
+[
+ {
+  "family": "Poppins",
+  "category": "sans",
+  "scripts": [
+   "latin"
+  ],
+  "weights": [
+   300,
+   900
+  ],
+  "files": 21
+ },
+ {
+  "family": "Montserrat",
+  "category": "sans",
+  "scripts": [
+   "latin",
+   "cyrillic",
+   "vietnamese"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 5
+ },
+ {
+  "family": "Roboto",
+  "category": "sans",
+  "scripts": [
+   "latin",
+   "cyrillic",
+   "greek",
+   "vietnamese"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 9
+ },
+ {
+  "family": "Open Sans",
+  "category": "sans",
+  "scripts": [
+   "latin",
+   "cyrillic",
+   "greek",
+   "hebrew",
+   "vietnamese"
+  ],
+  "weights": [
+   300,
+   800
+  ],
+  "files": 10
+ },
+ {
+  "family": "Noto Sans",
+  "category": "sans",
+  "scripts": [
+   "latin",
+   "cyrillic",
+   "greek",
+   "vietnamese"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 8
+ },
+ {
+  "family": "Noto Serif",
+  "category": "serif",
+  "scripts": [
+   "latin",
+   "cyrillic",
+   "greek",
+   "vietnamese"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 8
+ },
+ {
+  "family": "Raleway",
+  "category": "sans",
+  "scripts": [
+   "latin",
+   "cyrillic",
+   "vietnamese"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 5
+ },
+ {
+  "family": "Nunito",
+  "category": "sans",
+  "scripts": [
+   "latin",
+   "cyrillic",
+   "vietnamese"
+  ],
+  "weights": [
+   200,
+   1000
+  ],
+  "files": 5
+ },
+ {
+  "family": "Outfit",
+  "category": "sans",
+  "scripts": [
+   "latin"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 2
+ },
+ {
+  "family": "Sora",
+  "category": "sans",
+  "scripts": [
+   "latin"
+  ],
+  "weights": [
+   100,
+   800
+  ],
+  "files": 2
+ },
+ {
+  "family": "Lexend",
+  "category": "sans",
+  "scripts": [
+   "latin",
+   "vietnamese"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 3
+ },
+ {
+  "family": "Plus Jakarta Sans",
+  "category": "sans",
+  "scripts": [
+   "latin",
+   "cyrillic",
+   "vietnamese"
+  ],
+  "weights": [
+   200,
+   800
+  ],
+  "files": 4
+ },
+ {
+  "family": "Oswald",
+  "category": "display",
+  "scripts": [
+   "latin",
+   "cyrillic",
+   "vietnamese"
+  ],
+  "weights": [
+   200,
+   700
+  ],
+  "files": 5
+ },
+ {
+  "family": "Barlow Condensed",
+  "category": "display",
+  "scripts": [
+   "latin",
+   "vietnamese"
+  ],
+  "weights": [
+   400,
+   900
+  ],
+  "files": 15
+ },
+ {
+  "family": "Abril Fatface",
+  "category": "display",
+  "scripts": [
+   "latin"
+  ],
+  "weights": [
+   400,
+   400
+  ],
+  "files": 2
+ },
+ {
+  "family": "Righteous",
+  "category": "display",
+  "scripts": [
+   "latin"
+  ],
+  "weights": [
+   400,
+   400
+  ],
+  "files": 2
+ },
+ {
+  "family": "Bungee",
+  "category": "display",
+  "scripts": [
+   "latin",
+   "vietnamese"
+  ],
+  "weights": [
+   400,
+   400
+  ],
+  "files": 3
+ },
+ {
+  "family": "Lobster",
+  "category": "hand",
+  "scripts": [
+   "latin",
+   "cyrillic",
+   "vietnamese"
+  ],
+  "weights": [
+   400,
+   400
+  ],
+  "files": 5
+ },
+ {
+  "family": "Pacifico",
+  "category": "hand",
+  "scripts": [
+   "latin",
+   "cyrillic",
+   "vietnamese"
+  ],
+  "weights": [
+   400,
+   400
+  ],
+  "files": 5
+ },
+ {
+  "family": "Merriweather",
+  "category": "serif",
+  "scripts": [
+   "latin",
+   "cyrillic",
+   "vietnamese"
+  ],
+  "weights": [
+   300,
+   900
+  ],
+  "files": 5
+ },
+ {
+  "family": "Lora",
+  "category": "serif",
+  "scripts": [
+   "latin",
+   "cyrillic",
+   "vietnamese"
+  ],
+  "weights": [
+   400,
+   700
+  ],
+  "files": 7
+ },
+ {
+  "family": "Cormorant Garamond",
+  "category": "serif",
+  "scripts": [
+   "latin",
+   "cyrillic",
+   "vietnamese"
+  ],
+  "weights": [
+   300,
+   700
+  ],
+  "files": 5
+ },
+ {
+  "family": "Hind Siliguri",
+  "category": "sans",
+  "scripts": [
+   "bengali",
+   "latin"
+  ],
+  "weights": [
+   300,
+   700
+  ],
+  "files": 15
+ },
+ {
+  "family": "Noto Sans Bengali",
+  "category": "sans",
+  "scripts": [
+   "bengali"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 3
+ },
+ {
+  "family": "Noto Serif Bengali",
+  "category": "serif",
+  "scripts": [
+   "bengali"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 3
+ },
+ {
+  "family": "Anek Bangla",
+  "category": "sans",
+  "scripts": [
+   "bengali",
+   "latin"
+  ],
+  "weights": [
+   100,
+   800
+  ],
+  "files": 3
+ },
+ {
+  "family": "Baloo Da 2",
+  "category": "display",
+  "scripts": [
+   "bengali",
+   "latin",
+   "vietnamese"
+  ],
+  "weights": [
+   400,
+   800
+  ],
+  "files": 4
+ },
+ {
+  "family": "Tiro Bangla",
+  "category": "serif",
+  "scripts": [
+   "bengali",
+   "latin"
+  ],
+  "weights": [
+   400,
+   400
+  ],
+  "files": 3
+ },
+ {
+  "family": "Galada",
+  "category": "hand",
+  "scripts": [
+   "bengali",
+   "latin"
+  ],
+  "weights": [
+   400,
+   400
+  ],
+  "files": 2
+ },
+ {
+  "family": "Atma",
+  "category": "hand",
+  "scripts": [
+   "bengali",
+   "latin"
+  ],
+  "weights": [
+   300,
+   700
+  ],
+  "files": 15
+ },
+ {
+  "family": "Mina",
+  "category": "sans",
+  "scripts": [
+   "bengali",
+   "latin"
+  ],
+  "weights": [
+   400,
+   700
+  ],
+  "files": 6
+ },
+ {
+  "family": "Noto Sans Devanagari",
+  "category": "sans",
+  "scripts": [
+   "devanagari"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 3
+ },
+ {
+  "family": "Hind",
+  "category": "sans",
+  "scripts": [
+   "devanagari",
+   "latin"
+  ],
+  "weights": [
+   300,
+   700
+  ],
+  "files": 15
+ },
+ {
+  "family": "Mukta",
+  "category": "sans",
+  "scripts": [
+   "devanagari",
+   "latin"
+  ],
+  "weights": [
+   200,
+   800
+  ],
+  "files": 21
+ },
+ {
+  "family": "Baloo 2",
+  "category": "display",
+  "scripts": [
+   "devanagari",
+   "latin",
+   "vietnamese"
+  ],
+  "weights": [
+   400,
+   800
+  ],
+  "files": 4
+ },
+ {
+  "family": "Tiro Devanagari Hindi",
+  "category": "serif",
+  "scripts": [
+   "devanagari",
+   "latin"
+  ],
+  "weights": [
+   400,
+   400
+  ],
+  "files": 3
+ },
+ {
+  "family": "Rozha One",
+  "category": "display",
+  "scripts": [
+   "devanagari",
+   "latin"
+  ],
+  "weights": [
+   400,
+   400
+  ],
+  "files": 3
+ },
+ {
+  "family": "Noto Sans Arabic",
+  "category": "sans",
+  "scripts": [
+   "arabic"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 5
+ },
+ {
+  "family": "Cairo",
+  "category": "sans",
+  "scripts": [
+   "arabic",
+   "latin"
+  ],
+  "weights": [
+   200,
+   1000
+  ],
+  "files": 3
+ },
+ {
+  "family": "Tajawal",
+  "category": "sans",
+  "scripts": [
+   "arabic",
+   "latin"
+  ],
+  "weights": [
+   200,
+   900
+  ],
+  "files": 14
+ },
+ {
+  "family": "Noto Naskh Arabic",
+  "category": "serif",
+  "scripts": [
+   "arabic"
+  ],
+  "weights": [
+   400,
+   700
+  ],
+  "files": 5
+ },
+ {
+  "family": "Amiri",
+  "category": "serif",
+  "scripts": [
+   "arabic",
+   "latin"
+  ],
+  "weights": [
+   400,
+   700
+  ],
+  "files": 6
+ },
+ {
+  "family": "Reem Kufi",
+  "category": "display",
+  "scripts": [
+   "arabic",
+   "latin"
+  ],
+  "weights": [
+   400,
+   700
+  ],
+  "files": 4
+ },
+ {
+  "family": "Lalezar",
+  "category": "display",
+  "scripts": [
+   "arabic",
+   "latin",
+   "vietnamese"
+  ],
+  "weights": [
+   400,
+   400
+  ],
+  "files": 4
+ },
+ {
+  "family": "Noto Nastaliq Urdu",
+  "category": "serif",
+  "scripts": [
+   "arabic"
+  ],
+  "weights": [
+   400,
+   700
+  ],
+  "files": 3
+ },
+ {
+  "family": "Heebo",
+  "category": "sans",
+  "scripts": [
+   "hebrew",
+   "latin"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 5
+ },
+ {
+  "family": "Rubik",
+  "category": "sans",
+  "scripts": [
+   "hebrew",
+   "arabic",
+   "cyrillic",
+   "latin"
+  ],
+  "weights": [
+   300,
+   900
+  ],
+  "files": 6
+ },
+ {
+  "family": "Frank Ruhl Libre",
+  "category": "serif",
+  "scripts": [
+   "hebrew",
+   "latin"
+  ],
+  "weights": [
+   300,
+   900
+  ],
+  "files": 3
+ },
+ {
+  "family": "Noto Sans Thai",
+  "category": "sans",
+  "scripts": [
+   "thai"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 3
+ },
+ {
+  "family": "Prompt",
+  "category": "sans",
+  "scripts": [
+   "thai",
+   "latin",
+   "vietnamese"
+  ],
+  "weights": [
+   300,
+   900
+  ],
+  "files": 28
+ },
+ {
+  "family": "Kanit",
+  "category": "display",
+  "scripts": [
+   "thai",
+   "latin",
+   "vietnamese"
+  ],
+  "weights": [
+   300,
+   900
+  ],
+  "files": 28
+ },
+ {
+  "family": "Sarabun",
+  "category": "sans",
+  "scripts": [
+   "thai",
+   "latin",
+   "vietnamese"
+  ],
+  "weights": [
+   300,
+   700
+  ],
+  "files": 20
+ },
+ {
+  "family": "Noto Sans SC",
+  "category": "sans",
+  "scripts": [
+   "chinese-simplified"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 101
+ },
+ {
+  "family": "Noto Sans TC",
+  "category": "sans",
+  "scripts": [
+   "chinese-traditional"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 108
+ },
+ {
+  "family": "Noto Sans JP",
+  "category": "sans",
+  "scripts": [
+   "japanese"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 124
+ },
+ {
+  "family": "Noto Sans KR",
+  "category": "sans",
+  "scripts": [
+   "korean"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 124
+ },
+ {
+  "family": "ZCOOL KuaiLe",
+  "category": "display",
+  "scripts": [
+   "chinese-simplified"
+  ],
+  "weights": [
+   400,
+   400
+  ],
+  "files": 93
+ },
+ {
+  "family": "M PLUS Rounded 1c",
+  "category": "display",
+  "scripts": [
+   "japanese"
+  ],
+  "weights": [
+   400,
+   800
+  ],
+  "files": 378
+ },
+ {
+  "family": "Black Han Sans",
+  "category": "display",
+  "scripts": [
+   "korean"
+  ],
+  "weights": [
+   400,
+   400
+  ],
+  "files": 88
+ },
+ {
+  "family": "Noto Sans Tamil",
+  "category": "sans",
+  "scripts": [
+   "tamil"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 3
+ },
+ {
+  "family": "Noto Sans Telugu",
+  "category": "sans",
+  "scripts": [
+   "telugu"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 3
+ },
+ {
+  "family": "Noto Sans Kannada",
+  "category": "sans",
+  "scripts": [
+   "kannada"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 3
+ },
+ {
+  "family": "Noto Sans Malayalam",
+  "category": "sans",
+  "scripts": [
+   "malayalam"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 3
+ },
+ {
+  "family": "Noto Sans Gurmukhi",
+  "category": "sans",
+  "scripts": [
+   "gurmukhi"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 3
+ },
+ {
+  "family": "Noto Sans Gujarati",
+  "category": "sans",
+  "scripts": [
+   "gujarati"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 5
+ },
+ {
+  "family": "Noto Sans Oriya",
+  "category": "sans",
+  "scripts": [
+   "oriya"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 3
+ },
+ {
+  "family": "Noto Sans Sinhala",
+  "category": "sans",
+  "scripts": [
+   "sinhala"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 3
+ },
+ {
+  "family": "Noto Sans Khmer",
+  "category": "sans",
+  "scripts": [
+   "khmer"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 3
+ },
+ {
+  "family": "Noto Sans Lao",
+  "category": "sans",
+  "scripts": [
+   "lao"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 3
+ },
+ {
+  "family": "Noto Sans Myanmar",
+  "category": "sans",
+  "scripts": [
+   "myanmar"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 3
+ },
+ {
+  "family": "Noto Sans Ethiopic",
+  "category": "sans",
+  "scripts": [
+   "ethiopic"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 3
+ },
+ {
+  "family": "Noto Sans Armenian",
+  "category": "sans",
+  "scripts": [
+   "armenian"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 3
+ },
+ {
+  "family": "Noto Sans Georgian",
+  "category": "sans",
+  "scripts": [
+   "georgian"
+  ],
+  "weights": [
+   100,
+   900
+  ],
+  "files": 7
+ }
+]

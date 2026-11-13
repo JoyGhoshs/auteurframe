@@ -1,0 +1,38 @@
+{
+  "name": "AuteurFrame",
+  "version": "1.0.0",
+  "released": "2026-11-13",
+  "channel": "stable",
+  "license": "AGPL-3.0-only",
+  "copyright": "Copyright (c) 2026 Joy Ghosh",
+  "commercial": "https://github.com/joyghoshs/auteurframe/blob/main/COMMERCIAL.md",
+  "repository": "https://github.com/joyghoshs/auteurframe",
+  "download": "https://github.com/joyghoshs/auteurframe/releases/latest",
+  "feed": "https://raw.githubusercontent.com/joyghoshs/auteurframe/main/release.json",
+  "notes": [
+    "First public release of AuteurFrame.",
+    "Agent swarm: research, screenplay, art direction, parallel animators, vision critic, sound design and mastering.",
+    "Timeline editor with scene, caption, layer and audio tracks plus agent actions on right-click.",
+    "Template feed: new templates published to this repository appear in every studio under Templates."
+  ],
+  "templates": [
+    {
+      "id": "launch-announcement",
+      "name": "Launch Announcement",
+      "version": 1,
+      "description": "Announce a product or feature: bold headline, three pillars, how it works in steps, a customer quote and a call to action.",
+      "file": "templates/launch-announcement.json",
+      "sha256": "cc6c3ec7cc16c9e21526b04b638f1e6e50e68adf7a308b5cf36a3096402faa9f",
+      "added": "2026-11-13"
+    },
+    {
+      "id": "version-release",
+      "name": "Version Release",
+      "version": 1,
+      "description": "Release notes as a film: a glowing version badge, the headline, what is new as an icon grid, and where to get it.",
+      "file": "templates/version-release.json",
+      "sha256": "b30096028dfecae08fdef1941c9c0ff58f6660692e3ff868b326134638333742",
+      "added": "2026-11-13"
+    }
+  ]
+}

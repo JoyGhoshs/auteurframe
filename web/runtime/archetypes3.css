@@ -1,0 +1,7 @@
+.arch-line-art { padding: 0 !important; display: grid; place-items: center; }
+.la-card { position: relative; border-radius: 22px; background: var(--bg); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.12), 0 0 0 1.5px var(--line); overflow: hidden; }
+.la-card.is-night { background: #1F2547; }
+.la-svg { display: block; }
+.la-head { position: absolute; left: calc(var(--W) * 0.07 + 48px); top: calc(var(--H) * 0.11 + 30px); max-width: 46%; z-index: 2; }
+.ar-portrait .la-head { left: calc(var(--W) * 0.1); top: calc(var(--H) * 0.22); max-width: 80%; }
+.la-card.is-night ~ .la-head .ar-title, .la-card.is-night ~ .la-head .ar-sub { color: #E9E4D8; }

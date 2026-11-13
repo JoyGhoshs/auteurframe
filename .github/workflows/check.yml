@@ -1,0 +1,76 @@
+name: Check
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate templates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install validator dependencies
+        run: pip install numpy pillow httpx
+
+      - name: Summarise what this pull request changes
+        id: scope
+        env:
+          BASE_REF: ${{ github.base_ref || 'main' }}
+        run: |
+          git diff --name-only "origin/$BASE_REF...HEAD" > "$RUNNER_TEMP/changed.txt" || git ls-files > "$RUNNER_TEMP/changed.txt"
+          templates=$(grep -c '^templates/' "$RUNNER_TEMP/changed.txt" || true)
+          app=$(grep -vcE '^(templates/|docs/|README.md|CONTRIBUTING.md|changelog.txt)' "$RUNNER_TEMP/changed.txt" || true)
+          version="no"
+          if git diff "origin/$BASE_REF...HEAD" -- release.json | grep -q '"version"'; then version="yes"; fi
+          {
+            echo "## What changed"
+            echo ""
+            echo "| Area | Files |"
+            echo "|---|---|"
+            echo "| Templates | $templates |"
+            echo "| App and tooling | $app |"
+            echo "| Version bump | $version |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if grep -q '^changelog.txt$' "$RUNNER_TEMP/changed.txt"; then
+            echo "::warning file=changelog.txt::changelog.txt is maintained by the release bot after merge; please leave it out of pull requests."
+          fi
+
+      - name: Validate templates and release.json
+        env:
+          AUTEUR_DATA: ${{ runner.temp }}/auteurframe-data
+          BASE_REF: ${{ github.base_ref || 'main' }}
+        run: python scripts/publish_templates.py --check --skip-manifest --base "origin/$BASE_REF"
+
+      - name: Compile Python sources
+        run: python -m compileall -q server scripts run.py
+
+      - name: Parse JavaScript sources
+        run: |
+          status=0
+          for f in web/app/*.js web/runtime/*.js renderer/src/*.mjs; do
+            cp "$f" "$RUNNER_TEMP/check.mjs"
+            if ! node --check "$RUNNER_TEMP/check.mjs" 2> "$RUNNER_TEMP/err.txt"; then
+              echo "::error file=$f::$(head -n 3 "$RUNNER_TEMP/err.txt" | tr '\n' ' ')"
+              status=1
+            fi
+          done
+          exit $status
