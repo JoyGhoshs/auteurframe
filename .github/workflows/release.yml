@@ -42,7 +42,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ github.sha }}
         run: |
-          info=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${SHA}/pulls" --jq '.[0] | [.number, .user.login, .title] | @tsv' 2>/dev/null || true)
+          info=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${SHA}/pulls" --jq '.[0] // empty | [.number, .user.login, .title] | @tsv' 2>/dev/null || true)
           if [ -n "$info" ]; then
             echo "number=$(echo "$info" | cut -f1)" >> "$GITHUB_OUTPUT"
             echo "author=$(echo "$info" | cut -f2)" >> "$GITHUB_OUTPUT"

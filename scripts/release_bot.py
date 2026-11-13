@@ -16,7 +16,8 @@ VERSION_LINE = re.compile(r"^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)? \(\d{4}-\d{2}-
 GROUPS = [("skills/", "Skills"), ("server/", "Server"), ("web/", "Studio"), ("renderer/", "Renderer"), ("docker/", "Docker"),
           (".github/", "Automation"), ("scripts/", "Scripts"), ("docs/", "Docs"), ("README.md", "Docs"), ("CONTRIBUTING.md", "Docs"),
           ("requirements.txt", "Dependencies"), ("package.json", "Dependencies"), ("package-lock.json", "Dependencies"), ("assets/", "Assets"),
-          ("brand/", "Brand")]
+          ("brand/", "Brand"), ("LICENSE", "Legal"), ("NOTICE.txt", "Legal"), ("COMMERCIAL.md", "Legal"), ("TRADEMARKS.md", "Legal"),
+          ("THIRD_PARTY_NOTICES.md", "Legal"), ("templates/", "Templates")]
 SELF_MANAGED = {"release.json", "changelog.txt"}
 
 
