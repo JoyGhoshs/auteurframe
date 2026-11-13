@@ -70,7 +70,7 @@ export function Dashboard({ health }) {
       <div class="cc-status">
         <div><i class=${health && health.renderer ? 'ok' : ''}></i>${health && health.renderer ? `${health.renderer.max} render nodes online` : 'Render farm starting'}</div>
         <div><i class=${health && health.llm ? 'ok' : 'warn'}></i>${health && health.llm ? 'Agent swarm connected' : 'House director only'}</div>
-        <div style=${{ marginTop: '6px', cursor: 'pointer', opacity: 0.75 }} onClick=${() => navigate('/settings')} title="Copyright, license and source code">AuteurFrame by Joy Ghosh · AGPL-3.0</div>
+        <div style=${{ marginTop: '6px', cursor: 'pointer', opacity: 0.75 }} onClick=${() => navigate('/settings')} title="Copyright, license and source code">AuteurFrame by Abdur Rahman Maheer · AGPL-3.0</div>
         ${health && !health.llm ? html`<button onClick=${() => navigate('/settings')}>Connect a model</button>` : null}
       </div>
     </aside>

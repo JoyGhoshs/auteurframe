@@ -1,7 +1,7 @@
 # Additional permissions and terms
 
 AuteurFrame is licensed under the GNU Affero General Public License, version 3 only ([LICENSE](LICENSE)). As permitted
-by section 7 of that license, the copyright holder, Joy Ghosh, adds the following permission and term. They apply to
+by section 7 of that license, the copyright holder, Abdur Rahman Maheer, adds the following permission and term. They apply to
 AuteurFrame and to every work based on it.
 
 ## 1. Additional permission: GSAP
@@ -20,7 +20,7 @@ This permission does not license GSAP itself. Your use of GSAP remains subject t
 ## 2. Additional term under section 7(b): author attribution
 
 AuteurFrame displays Appropriate Legal Notices in its studio interface, including the attribution
-"AuteurFrame by Joy Ghosh", the copyright notice, the license name, the absence of warranty and a link to the source
+"AuteurFrame by Abdur Rahman Maheer", the copyright notice, the license name, the absence of warranty and a link to the source
 code. Every modified version that has an interactive user interface must preserve that attribution and those notices
 in a reasonably visible place in its interface, such as an About, Settings or Legal section.
 

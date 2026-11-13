@@ -68,13 +68,13 @@ function FirstLaunchNotice({ legal, onDone }) {
     foot=${html`<span class="muted grow" style=${{ fontSize: '12px' }}>Shown once. You can read this again under Models, About AuteurFrame.</span>
       <button class="btn brand" disabled=${busy} onClick=${done}>I understand, continue</button>`}>
     <div style=${{ fontSize: '13px', lineHeight: 1.65 }}>
-      <p style=${{ marginTop: 0 }}><b>AuteurFrame by Joy Ghosh</b> · version ${legal.version}<br />${legal.copyright || 'Copyright (c) 2026 Joy Ghosh'}.</p>
+      <p style=${{ marginTop: 0 }}><b>AuteurFrame by Abdur Rahman Maheer</b> · version ${legal.version}<br />${legal.copyright || 'Copyright (c) 2026 Abdur Rahman Maheer'}.</p>
       <p>AuteurFrame is free software under the GNU Affero General Public License v3 with ${link('additional terms', '/blob/main/LICENSE-EXCEPTIONS.md')}.
         You may use it for any purpose, including paid work. If you share a modified version or run one as an online service, you must offer its full source code under the same license.
         ${' '}${link('Commercial licenses', '/blob/main/COMMERCIAL.md')} are available if you cannot meet those conditions.</p>
       <p><b>No warranty.</b> AuteurFrame comes as is, without any warranty, to the extent permitted by law. You are responsible for the films you make,
         for checking the licenses of media you collect, and for the terms of the AI and voice services you connect.</p>
-      <p style=${{ marginBottom: 0 }}>Modified versions must keep the "AuteurFrame by Joy Ghosh" notice.
+      <p style=${{ marginBottom: 0 }}>Modified versions must keep the "AuteurFrame by Abdur Rahman Maheer" notice.
         ${' '}${link('Full license', '/blob/main/LICENSE')} · ${link('Source code', '')} · ${link('Third-party notices', '/blob/main/THIRD_PARTY_NOTICES.md')}</p>
     </div>
   </${Modal}>`;

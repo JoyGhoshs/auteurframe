@@ -529,7 +529,7 @@ Set up branch protection by importing [.github/rulesets/main.json](.github/rules
 ## License
 
 AuteurFrame is **open source** under the [GNU Affero General Public License v3](LICENSE), with the GSAP permission
-and the attribution term in [LICENSE-EXCEPTIONS.md](LICENSE-EXCEPTIONS.md). Copyright (c) 2026 Joy Ghosh.
+and the attribution term in [LICENSE-EXCEPTIONS.md](LICENSE-EXCEPTIONS.md). Copyright (c) 2026 Abdur Rahman Maheer.
 A **commercial license** is available for anyone who cannot meet the AGPL's conditions.
 
 | Free under the AGPL | Needs a commercial license |
@@ -537,7 +537,7 @@ A **commercial license** is available for anyone who cannot meet the AGPL's cond
 | Use it for anything, including paid client work and monetised films; your rendered films are yours | Host it as a SaaS, API or service without publishing your source code |
 | Change it and share your changes, with the full source, under the AGPL | Embed it in a closed-source or proprietary product |
 | Run a modified version as a service, as long as its users can get the full source | Distribute a modified version without releasing your changes |
-| Contribute templates, skills and fixes | Remove the "AuteurFrame by Joy Ghosh" notice |
+| Contribute templates, skills and fixes | Remove the "AuteurFrame by Abdur Rahman Maheer" notice |
 
 Ask for a commercial license by opening an issue titled **Commercial license request**; see [COMMERCIAL.md](COMMERCIAL.md).
 Third-party components keep

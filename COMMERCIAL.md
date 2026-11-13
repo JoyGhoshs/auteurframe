@@ -2,7 +2,7 @@
 
 AuteurFrame is **open source** under the [GNU Affero General Public License v3](LICENSE) with the additional permission
 and terms in [LICENSE-EXCEPTIONS.md](LICENSE-EXCEPTIONS.md). It is also available under a **commercial license** from
-the author, Joy Ghosh ([@joyghoshs](https://github.com/joyghoshs)). You choose the one that fits.
+the author, Abdur Rahman Maheer ([@joyghoshs](https://github.com/joyghoshs)). You choose the one that fits.
 
 This page explains the choice in plain language. If it ever disagrees with the license texts, the license texts win.
 
@@ -20,7 +20,7 @@ AGPL. In practice:
   [NOTICE.txt](NOTICE.txt).
 - **Running it as a service.** If you let people use a modified AuteurFrame over a network, such as a hosted studio,
   SaaS or API, you must offer those users the complete source code of your modified version under the AGPL.
-- **Keeping the credit.** Modified versions keep the "AuteurFrame by Joy Ghosh" notice in their interface.
+- **Keeping the credit.** Modified versions keep the "AuteurFrame by Abdur Rahman Maheer" notice in their interface.
 
 ## When you need a commercial license
 
@@ -29,7 +29,7 @@ Buy a commercial license if you want to do any of these without the AGPL's condi
 - offer AuteurFrame, or a product built on it, as a hosted service, SaaS or API **without** publishing your source code;
 - embed AuteurFrame, its runtime, templates or skills in a closed-source or proprietary product;
 - distribute a modified version without releasing your changes;
-- remove the in-app "AuteurFrame by Joy Ghosh" attribution;
+- remove the in-app "AuteurFrame by Abdur Rahman Maheer" attribution;
 - get warranties, indemnity, support or terms your company's legal team requires.
 
 If you are unsure which applies to you, ask. It costs nothing to ask.

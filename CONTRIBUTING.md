@@ -18,7 +18,7 @@ opening a pull request you agree that:
 1. your contribution is your own original work, or you have the right to submit it under these terms;
 2. your contribution is licensed to everyone under the same GNU AGPL v3 and additional terms as the rest of the
    project;
-3. you also grant Joy Ghosh a perpetual, worldwide, irrevocable, royalty-free license to use, change, sublicense and
+3. you also grant Abdur Rahman Maheer a perpetual, worldwide, irrevocable, royalty-free license to use, change, sublicense and
    relicense your contribution, including under commercial licenses, so the project can stay under one set of terms;
 4. you keep the copyright in your contribution, and your name stays in the git history and, for templates, in the
    `author` field and the changelog.

@@ -1,5 +1,5 @@
-AuteurFrame by Joy Ghosh
-Copyright (c) 2026 Joy Ghosh (https://github.com/joyghoshs)
+AuteurFrame by Abdur Rahman Maheer
+Copyright (c) 2026 Abdur Rahman Maheer (https://github.com/joyghoshs)
 
 AuteurFrame is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General
 Public License as published by the Free Software Foundation, version 3, together with the additional permission and
