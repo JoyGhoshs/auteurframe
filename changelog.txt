@@ -4,6 +4,19 @@ AuteurFrame changelog
 Newest first. The release bot adds an entry for every change merged into main.
 
 Unreleased
+  No changes yet.
+
+1.1.0 (2026-11-14)
+  * Film continuity: a locked model sheet and medium per film; scenes that switch between 2D and 3D or redesign a character are rebuilt before they pass.
+  * Text and layout system: one type scale per film, a speech bubble that follows its speaker, and QA that rejects text over faces, oversized or off-scale text and tiny characters.
+  * 3D worlds in code: world3d and figure3d build low-poly, felt, clay, toy and paper 3D cartoons with characters, sets, effects and a directed camera, no model files needed.
+  * Stick figures: the stickman component with IK legs, planted walks, squash-and-stretch jumps, moods, impact bursts and stage shake.
+  * Cartoon animals: toon-animal adds dogs, cats, rabbits, foxes, pigs and birds that act alongside toon characters and live on the model sheet.
+  * Look tab: film and scene colour grades applied by ffmpeg, scene camera keyframes and presets, and an audio master with loudness, ducking and voice clarity.
+  * Agent cursors: while the swarm works, each agent's pointer animates over the timeline clip it is building; the art director now picks a colour grade for every film.
+  * Six new agent skills: procedural-3d-world, stickman-direction, stop-motion-craft-looks, color-grading, camera-and-audio-master and film-continuity.
+  * The studio now revalidates its code after an update, so browsers never run an old copy.
+  2026-11-14  AuteurFrame 1.1.0: 3D worlds, film continuity, animals, text system, Look tab: Docs: README.md; Legal: THIRD_PARTY_NOTICES.md; Scripts: scripts/components_manifest.mjs; Server: server/agents.py, server/app.py, server/audio.py, server/cast3d.py and 7 more; Skills: skills/camera-and-audio-master/SKILL.md, skills/color-grading/SKILL.md, skills/composition-contract/SKILL.md, skills/film-continuity/SKILL.md and 4 more; Studio: web/app/agentcursors.js, web/app/editor.css, web/app/looktab.js, web/app/stage.js and 7 more (@JoyGhoshs)
   2026-11-13  Release bot: Legal group for license files and correct titles for direct pushes: Automation: .github/workflows/release.yml; Scripts: scripts/release_bot.py (@JoyGhoshs)
   2026-11-13  Other: COMMERCIAL.md, LICENSE-EXCEPTIONS.md, NOTICE.txt
   2026-11-13  Docs: CONTRIBUTING.md, README.md
