@@ -4,7 +4,7 @@ AuteurFrame changelog
 Newest first. The release bot adds an entry for every change merged into main.
 
 Unreleased
-  No changes yet.
+  2026-11-14  Desktop: keep the studio open after the splash, instant notice, faster close: Desktop: desktop/windows/launcher/Backend.cs, desktop/windows/launcher/Program.cs; Server: server/app.py; Studio: web/app/main.js (@JoyGhoshs)
 
 1.2.0 (2026-11-14)
   * Anime films: a new anime medium with cel-painted close-ups, full-body acting in held drawings on twos, painted anime sets with weather, speed lines, slashes and impacts, a closed colour script per film and shot sheets with one sakuga action shot per sequence.
