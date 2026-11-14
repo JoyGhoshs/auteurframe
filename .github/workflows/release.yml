@@ -12,6 +12,7 @@ on:
 permissions:
   contents: write
   pull-requests: read
+  actions: write
 
 concurrency:
   group: release-bot
@@ -106,6 +107,13 @@ jobs:
           else
             gh release create "v$VERSION" --target "$TARGET" --title "AuteurFrame $VERSION" --notes-file "$RUNNER_TEMP/notes.md"
           fi
+
+      - name: Build the Windows installer for this release
+        if: steps.bot.outputs.version_changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.bot.outputs.version }}
+        run: gh workflow run desktop.yml --repo "$GITHUB_REPOSITORY" --ref main -f version="$VERSION"
 
       - name: Summary
         env:

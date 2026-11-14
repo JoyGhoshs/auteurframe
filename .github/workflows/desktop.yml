@@ -60,10 +60,14 @@ jobs:
           if-no-files-found: error
 
       - name: Attach to the release
-        if: github.event_name == 'release'
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.event.release.tag_name }}
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
-          gh release upload "$env:TAG" (Get-ChildItem desktop/windows/dist -Filter 'AuteurFrame-Setup-*').FullName --clobber --repo "$env:GITHUB_REPOSITORY"
+          $tag = if ($env:TAG) { $env:TAG } else { "v$env:INPUT_VERSION" }
+          $assets = gh release view $tag --repo "$env:GITHUB_REPOSITORY" --json assets --jq '.assets[].name' 2>$null
+          if ($LASTEXITCODE -ne 0) { Write-Host "No release $tag yet; the installer stays a workflow artifact."; exit 0 }
+          if ($assets -match '^AuteurFrame-Setup-.*\.exe$') { Write-Host "Release $tag already has an installer; leaving it as it is."; exit 0 }
+          gh release upload $tag (Get-ChildItem desktop/windows/dist -Filter 'AuteurFrame-Setup-*').FullName --repo "$env:GITHUB_REPOSITORY"
