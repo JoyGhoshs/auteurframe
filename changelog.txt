@@ -6,6 +6,22 @@ Newest first. The release bot adds an entry for every change merged into main.
 Unreleased
   No changes yet.
 
+1.2.0 (2026-11-14)
+  * Anime films: a new anime medium with cel-painted close-ups, full-body acting in held drawings on twos, painted anime sets with weather, speed lines, slashes and impacts, a closed colour script per film and shot sheets with one sakuga action shot per sequence.
+  * Every film runs as a scene relay: one lead animator per scene in story order, each continuing from the accepted scene before it, while the Finisher polishes accepted scenes and renders run in parallel.
+  * Original scores for every film: 12 genres chosen from the brief, mood, style and medium, with sections, risers and a peak that follow the scene cuts, so motion graphics films no longer share one sound.
+  * Desktop app: a new animated splash screen, Every Story, One Frame, that lights up the studio as it starts and hands over to an already loaded studio window with no blank screen.
+  * Agents no longer get stuck: the workshop tracks notes that keep coming back, escalates its advice and restores the best earlier version when the preview budget runs out.
+  * Scene memory: a fast local retrieval store learns from every accepted scene and shows animators the closest examples. It seeds itself from your existing projects.
+  * Studio tools for people: add any character, animal, set, prop or 3D model from the Components panel, edit it with a settings form, and animate any layer with keyframes, easing, 14 motion presets or Record mode.
+  * New cast: 20 toon characters (teacher, nurse, firefighter, astronaut, pirate, wizard, king, queen, princess, ninja and more), 11 hats, 13 props and 7 animals (bear, mouse, lion, sheep, cow, horse, panda).
+  * 3D models from code: ModelSpec builds real 3D animals, vehicles, buildings and furniture from named parts, with a ready library and validation that rejects blobs and missing limbs.
+  * Sharper critic: it describes frames as a stranger would and writes notes as concrete changes with numbers.
+  * Faster, safer rendering: direct seeks, overlapped encoding, tuned encoder threads, throttled previews, memory-aware page count, and render caches that refresh when any runtime file changes.
+  * Fixes: QA drafts now show in the QA tab, 3D requests stay 3D, text is measured against its own box, user layers starting at 0 s are visible, and the scene check no longer breaks on a stray package.json.
+  * Desktop app: films with hard cuts between scenes now join frame-exactly with the bundled FFmpeg 9, and crossfades keep a safe margin.
+  2026-11-14  Release bot builds and attaches the Windows installer: Automation: .github/workflows/desktop.yml, .github/workflows/release.yml; Other: .gitignore; Docs: README.md; Legal: SECURITY.md, THIRD_PARTY_NOTICES.md; Desktop: desktop/windows/.gitignore, desktop/windows/README.md, desktop/windows/assets/AuteurFrame-512.png, desktop/windows/assets/AuteurFrame.ico and 36 more; Docker: docker/docker-compose.yml; Renderer: renderer/src/capture.mjs, renderer/src/server.mjs; Scripts: scripts/components_manifest.mjs, scripts/release_bot.py; Server: server/agents.py, server/app.py, server/audio.py, server/cast3d.py and 12 more; Skills: skills/anime-direction/SKILL.md, skills/model-spec-3d/SKILL.md, skills/procedural-3d-world/SKILL.md, skills/svg-character-design/SKILL.md; Studio: web/app/editor.css, web/app/editorpanels.js, web/app/inspector.js, web/app/motiontools.js and 11 more (@JoyGhoshs)
+
 1.1.0 (2026-11-14)
   * Film continuity: a locked model sheet and medium per film; scenes that switch between 2D and 3D or redesign a character are rebuilt before they pass.
   * Text and layout system: one type scale per film, a speech bubble that follows its speaker, and QA that rejects text over faces, oversized or off-scale text and tiny characters.
