@@ -54,6 +54,12 @@ you see in the editor is exactly what renders.
 | **Free media** | Photos, footage, maps, data, voices and sound effects from open libraries with no API keys. Optional keys unlock more stock. |
 | **Any model** | Anthropic, OpenAI, Gemini, OpenRouter, Groq, DeepSeek, Mistral, xAI, Together, Ollama, LM Studio or any OpenAI-compatible endpoint, routed per agent role. With no model, the house director still produces complete films. |
 | **Templates** | 21 directed templates that need no AI at all, plus a template feed that delivers community templates straight into the studio. |
+| **3D in code** | `world3d` builds whole 3D cartoon worlds without model files or Blender: sets (lab, battlefield, suburb, living room, forest, city, space), characters made from primitives with painted, expressive faces, actions, lightning, fireballs, tornadoes and explosions, and a directed camera. Looks: low-poly, felt, clay, toy and paper, with stop-motion timing for the craft looks. |
+| **Animals** | `toon-animal` pets and animal characters (dog, cat, rabbit, fox, pig, bird) in the toon style, with walk, run, sit, jump, wag, bark, eat, sniff, beg and sleep. |
+| **Stick figures** | `stickman` actors with IK legs that keep feet planted, distance-driven walks, squash-and-stretch jumps, mood faces, impact bursts and stage shake. |
+| **Continuity** | Before anyone animates, the art director locks a continuity bible: one medium (3D, 2D cartoon or stick figure), a model sheet for every character and one world. The director plans inside it, every animator copies it exactly, and the critic sends back any scene that switches medium or redesigns a character. |
+| **Text and layout** | Every film uses one type scale with fixed roles (title, headline, card, speech, label). The `speech` bubble follows its speaker, and the critic measures every frame for text over faces, oversized or off-scale text, text outside the frame and characters drawn too small. |
+| **Editor controls** | Film and scene colour grades (16 presets plus 14 controls, applied exactly by ffmpeg), scene camera keyframes and presets (Ken Burns, pans, punch-in, drift, shake) and an audio master (loudness target, ducking, voice clarity). Agents set them too. |
 
 ## Screenshots
 
@@ -248,7 +254,8 @@ master appears under **Master** when the editor finishes, and the export menu do
 | **Stage** | Pause on any frame, click an element to select it, drag to move, use the corner handles to scale and the top knob to rotate. Drop media straight onto the stage. |
 | **Timeline** | Drag a scene's right edge to retime it, drag captions and layers, split at the playhead with `S`, jump with `J` and `L`, play with `Space`. |
 | **Right-click** | On a scene: split, duplicate, reorder, change the transition, lock, render this scene, **Improve with the agent**, **Extend the story from here** or **Replicate with agent**. On audio: split, trim, mute or remove. |
-| **Inspector** | **Swarm** (agents and render farm), **Scene** (title, narration, timing, archetype data), **Layer**, **Code** (edit the composition and apply with `Ctrl+S`), **Direct** (chat with the scene's animator) and **QA** (the critic's notes). |
+| **Inspector** | **Swarm** (agents and render farm), **Scene** (title, narration, timing, archetype data), **Layer**, **Look** (film and scene colour grade, scene camera keyframes, audio master), **Code** (edit the composition and apply with `Ctrl+S`), **Direct** (chat with the scene's animator) and **QA** (the critic's notes). |
+| **Agent cursors** | While the swarm works, each agent's pointer animates over the timeline clip it is building, with its name and current task. |
 | **Media** | Search photos, vectors, footage, sound effects and music from open libraries with no keys, then drag results onto the stage or timeline. |
 | **Revisions** | Every change is versioned. Roll back any scene or the whole project. |
 
@@ -553,3 +560,6 @@ AuteurFrame builds on excellent open-source work: GSAP, three.js, d3, PixiJS, p5
 MapLibre GL, Preact and htm, Lucide icons, Fontsource fonts, Puppeteer, FastAPI, edge-tts, MediaPipe and ffmpeg-skill.
 Open media comes from Openverse, Wikimedia Commons, NASA, the Internet Archive, Freesound and OpenStreetMap; attribution
 is stored with every asset you collect.
+
+The stickman rig adapts techniques from [stickman-video-director](https://github.com/kaomei/stickman-video-director) (MIT), and the
+editor data model draws on ideas from [WeftCut](https://github.com/WeftCut/WeftCut) (MIT). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

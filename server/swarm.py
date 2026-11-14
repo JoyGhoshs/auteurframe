@@ -87,9 +87,12 @@ class Run:
         self.agent_state[agent_id] = {"state": state, "detail": detail, "scene": scene, "t": time.time()}
         self.emit("agent.status", {"agent": agent_id, "state": state, "detail": detail, "scene": scene})
 
-    def cursor(self, agent_id: str, scene: int | None, x: float | None = None, y: float | None = None, label: str = "") -> None:
+    def cursor(self, agent_id: str, scene: int | None, x: float | None = None, y: float | None = None, label: str = "", panel: str | None = None) -> None:
         rnd = random.random
-        self.emit("agent.cursor", {"agent": agent_id, "scene": scene, "x": x if x is not None else 0.2 + rnd() * 0.6, "y": y if y is not None else 0.2 + rnd() * 0.55, "label": label})
+        data = {"agent": agent_id, "scene": scene, "x": x if x is not None else 0.2 + rnd() * 0.6, "y": y if y is not None else 0.2 + rnd() * 0.55, "label": label}
+        if panel:
+            data["panel"] = panel
+        self.emit("agent.cursor", data)
 
     def set_phase(self, phase: str) -> None:
         self.phase = phase
@@ -147,7 +150,7 @@ async def stage_understand(run: Run) -> None:
     run.set_phase("understand")
     project = store.get(run.pid)
     run.agent("producer", "working", "reading brief and uploads")
-    run.cursor("producer", None, 0.5, 0.3, "brief")
+    run.cursor("producer", None, 0.08, 0.5, "reading the brief", panel="timeline")
     shorts = project["height"] > project["width"]
     kw = house.keywords(project.get("brief", "") or project.get("title", ""), 6)
     refs = reference_palette(project)
@@ -217,7 +220,7 @@ async def stage_understand(run: Run) -> None:
 
     async def do_art() -> None:
         run.agent("art", "working", "locking the style bible")
-        run.cursor("art", None, 0.8, 0.2, "palette")
+        run.cursor("art", None, 0.3, 0.5, "style bible", panel="timeline")
         overrides = dict(project.get("bible_overrides") or {})
         if project["options"].get("auto_style") and llmmod.LLM("art").available and run.mode != "house":
             try:
@@ -276,6 +279,40 @@ async def stage_understand(run: Run) -> None:
         store.mutate(run.pid, apply)
         run.brain.write("bible", {"style": bible["name"], "palette": bible["palette"], "fonts": bible["font_keys"], "motif": bible.get("motif", ""), "ground": bible["ground"]}, "art", "bible locked")
         run.emit("project.bible", {"bible": bible})
+        current = store.get(run.pid)
+        if not isinstance(current.get("grade"), dict) or not current["grade"]:
+            from . import grade as gradelib
+            pick, why = gradelib.choose_for(current)
+            run.cursor("art", None, 0.6, 0.5, f"grade {pick['preset']}", panel="timeline")
+            store.mutate(run.pid, lambda p, g=pick: p.__setitem__("grade", g))
+            run.brain.decide("art", f"Colour grade: {gradelib.PRESETS[pick['preset']]['label']}", why)
+            run.emit("project.update", {"keys": ["grade"]})
+        from . import cast3d
+        current = store.get(run.pid)
+        if cast3d.wants_3d(current) and not current.get("cast3d"):
+            run.agent("art", "working", "casting the 3D characters")
+            try:
+                spec = await agents.design_cast3d(current, run.emit) if run.mode != "house" else cast3d.fallback(current)
+            except Exception as error:
+                spec = cast3d.fallback(current)
+                spec["why"] = f"fallback: {str(error)[:80]}"
+            store.mutate(run.pid, lambda p, c=spec: p.__setitem__("cast3d", c))
+            project["cast3d"] = spec
+            run.brain.write("cast3d", spec, "art", "3D cast locked")
+            run.brain.decide("art", f"3D film: {spec['look']} look, {spec['set']} set, cast {', '.join(c.get('name', c['id']) for c in spec['cast'])}", spec.get("why", ""))
+        elif not current.get("cast3d") and not current.get("cast2d"):
+            from . import continuity
+            run.agent("art", "working", "writing the model sheet")
+            try:
+                sheet = await continuity.design(dict(current, bible=bible), run.emit, llmmod.LLM) if run.mode != "house" else continuity.fallback2d(current)
+            except Exception as error:
+                sheet = continuity.fallback2d(current)
+                sheet["why"] = f"fallback: {str(error)[:80]}"
+            store.mutate(run.pid, lambda p, c=sheet: p.__setitem__("cast2d", c))
+            project["cast2d"] = sheet
+            run.brain.write("cast", sheet, "art", "model sheet locked")
+            if sheet["medium"] != "none":
+                run.brain.decide("art", f"Model sheet: {sheet['medium']} cast {', '.join(c.get('name', c['id']) for c in sheet['cast'])}", sheet.get("why", ""))
         run.agent("art", "done", f"{bible['name']} · accent {bible['palette']['accent']}")
 
     await asyncio.gather(do_research(), do_art())
@@ -285,7 +322,7 @@ async def stage_write(run: Run) -> None:
     run.set_phase("write")
     project = store.get(run.pid)
     run.agent("director", "working", "writing the screenplay")
-    run.cursor("director", None, 0.3, 0.7, "timeline")
+    run.cursor("director", None, 0.3, 0.5, "laying out scenes", panel="timeline")
     model = llmmod.LLM("director")
     plan_scenes = None
     title = project.get("title")
@@ -451,7 +488,7 @@ async def stage_stock(run: Run) -> None:
     for s, key in needy[:6]:
         words = house.keywords((s.get("narration") or s.get("title") or ""), 3)
         query = " ".join(words[:2] + ([topic] if topic and topic.lower() not in " ".join(words).lower() else []))[:80] or topic
-        run.cursor("producer", s["index"], label=f"stock: {query}")
+        run.cursor("producer", s["index"], label=f"stock: {query}", panel="timeline")
         try:
             found = await stock.cached_search(query, "image", "auto", 1)
             pick = next((r for r in found["results"] if r["url"] not in used and (r.get("width") or 1200) >= 800), None)
@@ -501,7 +538,7 @@ async def write_scene(run: Run, scene_id: str, animators: Pool, instruction: str
     critic_rounds = 0
     try:
         run.agent(who, "working", f"writing scene {idx + 1}", idx)
-        run.cursor(who, idx, label="writing")
+        run.cursor(who, idx, label="animating", panel="timeline")
         patch_scene(run, scene_id, {"status": "writing"})
         code = await agents.animate(project, scene, run.emit, instruction=instruction, previous_code=(scene.get("code") or "") if instruction else "")
         run.stats["llm_calls"] += 1
@@ -522,6 +559,12 @@ async def write_scene(run: Run, scene_id: str, animators: Pool, instruction: str
             except Exception as error:
                 result = {"score": 0, "pass": False, "issues": [{"kind": "probe", "severity": "P0", "message": str(error)[:200], "fix": "Make the scene load without errors."}], "energy": []}
                 probe = {}
+            from . import continuity
+            drift = continuity.check(project, scene, code)
+            if drift:
+                result["issues"] = drift + result["issues"]
+                result["pass"] = False
+                run.brain.decide("critic", f"Scene {idx + 1}: continuity", "; ".join(d["message"] for d in drift)[:300])
             notes = []
             if probe.get("shots") and critic_rounds < config.MAX_REPAIR_ROUNDS + 2:
                 sheet = qa.contact_sheet(probe["shots"][:: max(1, len(probe["shots"]) // 6)][:6])
@@ -580,6 +623,11 @@ async def write_scene(run: Run, scene_id: str, animators: Pool, instruction: str
                 scene = next(s for s in project["scenes"] if s["id"] == scene_id)
                 probe2 = await render.probe_scene(project, scene)
                 result2 = qa.evaluate(probe2, float(scene["duration"]), qa.lint(code2))
+                from . import continuity
+                drift2 = continuity.check(project, scene, code2)
+                if drift2:
+                    result2["issues"] = drift2 + result2["issues"]
+                    result2["pass"] = False
                 if probe2.get("shots"):
                     sheet2 = qa.contact_sheet(probe2["shots"][:: max(1, len(probe2["shots"]) // 6)][:6])
                     try:
@@ -766,7 +814,7 @@ async def stage_scenes(run: Run, do_render: bool, only: list[str] | None = None,
 async def stage_assemble(run: Run, segments: list[Path]) -> None:
     run.set_phase("master")
     run.agent("editor", "working", "conforming transitions")
-    run.cursor("editor", None, 0.5, 0.9, "timeline")
+    run.cursor("editor", None, 0.5, 0.5, "timeline", panel="timeline")
     project = store.get(run.pid)
     captions = None
     try:
@@ -814,7 +862,7 @@ async def stage_sync(run: Run, verify: bool = True) -> dict[str, Any] | None:
     if not project.get("scenes"):
         return None
     run.agent("sync", "working", "locking subtitles to the master clock")
-    run.cursor("sync", None, 0.2, 0.85, "timeline")
+    run.cursor("sync", None, 0.2, 0.7, "captions", panel="timeline")
     result = sync.align(project)
 
     def apply(p: dict[str, Any]) -> None:
@@ -869,7 +917,7 @@ async def stage_edit(run: Run) -> None:
     path = folder / "assets" / source["file"]
     loop = asyncio.get_running_loop()
     run.agent("cutter", "working", "listening for silences")
-    run.cursor("cutter", None, 0.5, 0.92, "waveform")
+    run.cursor("cutter", None, 0.5, 0.85, "waveform", panel="timeline")
     meta = await loop.run_in_executor(None, lambda: media.probe(path))
     quiet = await loop.run_in_executor(None, lambda: media.silences(path)) if meta.get("has_audio") else []
     source_cues = info.get("source_cues")
@@ -934,7 +982,7 @@ async def stage_edit(run: Run) -> None:
     for op in ops:
         run.check()
         run.emit("edit.op", op)
-        run.emit("agent.cursor", {"agent": op["agent"], "scene": None, "target": "timeline", "t": op["t"], "x": min(0.95, op["t"] / dur), "y": 0.5, "label": op["label"]})
+        run.emit("agent.cursor", {"agent": op["agent"], "scene": None, "target": "timeline", "panel": "timeline", "t": op["t"], "x": min(0.95, op["t"] / dur), "y": 0.6, "label": op["label"]})
         await asyncio.sleep(pace)
     compiled = editmod.compile_edit(project, edl, source, analysis)
     for agent_id in ("captions", "zoom", "gfx", "sfx", "grade"):

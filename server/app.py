@@ -50,6 +50,17 @@ async def _warm() -> None:
 
 
 app = FastAPI(title="AuteurFrame", version=updates.version(), lifespan=lifespan)
+
+
+@app.middleware("http")
+async def _revalidate_code(request: Request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    if path == "/" or path.startswith(("/app/", "/runtime/")) or path.endswith(".html"):
+        response.headers.setdefault("Cache-Control", "no-cache")
+    return response
+
+
 app.mount("/vendor", StaticFiles(directory=config.WEB / "vendor"), name="vendor")
 app.mount("/runtime", StaticFiles(directory=config.WEB / "runtime"), name="runtime")
 app.mount("/app", StaticFiles(directory=config.WEB / "app"), name="app")
@@ -97,6 +108,18 @@ async def favicon() -> Response:
 async def health() -> dict[str, Any]:
     state = await render.health()
     return {"ok": True, "renderer": state, "llm": llm.has_llm(), "skills": len(library.all()), "version": updates.version(), "projects": len(store.list())}
+
+
+@app.get("/api/grades")
+async def list_grades() -> dict[str, Any]:
+    from . import grade as gradelib
+    return {"presets": gradelib.describe(), "fields": list(gradelib.FIELDS), "style_defaults": gradelib.STYLE_DEFAULTS}
+
+
+@app.post("/api/grades/preview")
+async def grade_preview(body: dict[str, Any]) -> dict[str, Any]:
+    from . import grade as gradelib
+    return {"css": gradelib.css_filter(body.get("grade")), "ffmpeg": gradelib.ffmpeg_chain(body.get("grade"))}
 
 
 @app.get("/api/styles")
@@ -193,7 +216,7 @@ async def get_project(pid: str) -> dict[str, Any]:
     return project
 
 
-ALLOWED_PATCH = {"title", "brief", "style", "aspect", "duration_target", "captions", "audio", "options", "bible_overrides", "fps", "lens"}
+ALLOWED_PATCH = {"title", "brief", "style", "aspect", "duration_target", "captions", "audio", "options", "bible_overrides", "fps", "lens", "grade", "cast3d", "cast2d"}
 
 
 @app.patch("/api/projects/{pid}")
@@ -541,7 +564,7 @@ async def audio_to_clip(pid: str, body: dict[str, Any]) -> dict[str, Any]:
     return {"clip": clip}
 
 
-SCENE_FIELDS = {"title", "narration", "onscreen", "visual", "archetype", "data", "code", "layers", "overrides", "transition", "duration", "locked", "ground", "texture", "variant", "reseed", "lens"}
+SCENE_FIELDS = {"title", "narration", "onscreen", "visual", "archetype", "data", "code", "layers", "overrides", "transition", "duration", "locked", "ground", "texture", "variant", "reseed", "lens", "camera", "grade"}
 
 
 @app.patch("/api/projects/{pid}/scenes/{sid}")

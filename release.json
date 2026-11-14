@@ -1,7 +1,7 @@
 {
   "name": "AuteurFrame",
-  "version": "1.0.0",
-  "released": "2026-11-13",
+  "version": "1.1.0",
+  "released": "2026-11-14",
   "channel": "stable",
   "license": "AGPL-3.0-only",
   "copyright": "Copyright (c) 2026 Abdur Rahman Maheer",
@@ -10,10 +10,15 @@
   "download": "https://github.com/joyghoshs/auteurframe/releases/latest",
   "feed": "https://raw.githubusercontent.com/joyghoshs/auteurframe/main/release.json",
   "notes": [
-    "First public release of AuteurFrame.",
-    "Agent swarm: research, screenplay, art direction, parallel animators, vision critic, sound design and mastering.",
-    "Timeline editor with scene, caption, layer and audio tracks plus agent actions on right-click.",
-    "Template feed: new templates published to this repository appear in every studio under Templates."
+    "Film continuity: a locked model sheet and medium per film; scenes that switch between 2D and 3D or redesign a character are rebuilt before they pass.",
+    "Text and layout system: one type scale per film, a speech bubble that follows its speaker, and QA that rejects text over faces, oversized or off-scale text and tiny characters.",
+    "3D worlds in code: world3d and figure3d build low-poly, felt, clay, toy and paper 3D cartoons with characters, sets, effects and a directed camera, no model files needed.",
+    "Stick figures: the stickman component with IK legs, planted walks, squash-and-stretch jumps, moods, impact bursts and stage shake.",
+    "Cartoon animals: toon-animal adds dogs, cats, rabbits, foxes, pigs and birds that act alongside toon characters and live on the model sheet.",
+    "Look tab: film and scene colour grades applied by ffmpeg, scene camera keyframes and presets, and an audio master with loudness, ducking and voice clarity.",
+    "Agent cursors: while the swarm works, each agent's pointer animates over the timeline clip it is building; the art director now picks a colour grade for every film.",
+    "Six new agent skills: procedural-3d-world, stickman-direction, stop-motion-craft-looks, color-grading, camera-and-audio-master and film-continuity.",
+    "The studio now revalidates its code after an update, so browsers never run an old copy."
   ],
   "templates": [
     {

@@ -130,6 +130,7 @@ def scene_config(project: dict[str, Any], scene: dict[str, Any], mode: str = "re
         "captionsOn": bool(overlay_cues(project)) and (project.get("captions") or {}).get("position", "bottom") == "bottom",
         **actor_data(project, scene, handle),
         "lens": scene.get("lens") or project.get("lens") or None,
+        "camera": scene.get("camera") or None,
     }
 
 
@@ -199,7 +200,7 @@ def build_document(project: dict[str, Any], scene: dict[str, Any], mode: str = "
     fragment = scene.get("code") or house_fragment(scene.get("archetype") or "kinetic-title")
     fragment = sanitize_fragment(fragment)
     house = "AU_ARCH" in fragment
-    uses_three = "three(" in fragment or "THREE" in fragment or "model3d" in fragment or (house and (scene.get("archetype") == "three-hero"))
+    uses_three = "three(" in fragment or "THREE" in fragment or "model3d" in fragment or "world3d" in fragment or "figure3d" in fragment or (house and (scene.get("archetype") == "three-hero"))
     uses_gl = any(i in fragment for i in gl_map_ids(project))
     return _document(project, cfg, fragment, house=house, uses_three=uses_three, mode=mode, libs=scene_libs(fragment), uses_gl=uses_gl)
 
@@ -258,7 +259,7 @@ def _document(project: dict[str, Any], cfg: dict[str, Any], fragment: str, house
         '<link rel="stylesheet" href="/vendor/maplibre/maplibre-gl.css"><script src="/vendor/maplibre/maplibre-gl.js"></script>' if uses_gl else "",
         "".join(f'<script src="/vendor/lib/{name}.js"></script>' for name in (libs or [])),
         f"<script>window.AU_CONFIG={cfg_json};</script>",
-        '<script src="/runtime/auteur.js"></script><script src="/runtime/components.js"></script><script src="/runtime/characters.js"></script><script src="/runtime/models.js"></script><script src="/runtime/documentary.js"></script><script src="/runtime/actors.js"></script><script src="/runtime/lens.js"></script><script src="/runtime/toons.js"></script><script src="/runtime/sets.js"></script>',
+        '<script src="/runtime/auteur.js"></script><script src="/runtime/components.js"></script><script src="/runtime/characters.js"></script><script src="/runtime/models.js"></script><script src="/runtime/documentary.js"></script><script src="/runtime/actors.js"></script><script src="/runtime/lens.js"></script><script src="/runtime/toons.js"></script><script src="/runtime/sets.js"></script><script src="/runtime/world3d.js"></script><script src="/runtime/stickman.js"></script><script src="/runtime/animals.js"></script>',
         '<script src="/runtime/archetypes.js"></script><script src="/runtime/archetypes2.js"></script><script src="/runtime/archetypes3.js"></script>' if house else "",
         "</head><body class=\"au-body\">",
         '<div id="au-stage" class="au-stage">',

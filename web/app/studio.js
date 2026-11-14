@@ -3,6 +3,8 @@ import { BrandMark } from './main.js';
 import { Stage, sceneAt } from './stage.js';
 import { Timeline } from './timeline.js';
 import { SceneTab, LayerTab, CodeTab, ChatTab, QATab } from './inspector.js';
+import { LookTab } from './looktab.js';
+import { AgentCursors } from './agentcursors.js';
 import { SwarmPanel } from './swarmpanel.js';
 import { MediaPanel, DesignPanel, CaptionsPanel, AudioPanel, ResearchPanel, HistoryPanel, ExportPanel } from './leftpanels.js';
 import { TextPanel, StockPanel, SoundPanel } from './editorpanels.js';
@@ -13,7 +15,7 @@ const LEFT = [
   ['media', 'image-plus', 'Media and elements'], ['text', 'type', 'Text styles'], ['stock', 'images', 'Stock and icons'], ['design', 'palette', 'Design'], ['captions', 'captions', 'Captions and timing'], ['audio', 'audio-lines', 'Sound'],
   ['research', 'globe', 'Research'], ['history', 'history', 'Revisions'], ['export', 'download', 'Export']
 ];
-const VISUAL_KEYS = ['code', 'data', 'archetype', 'overrides', 'layers', 'variant', 'reseed', 'duration', 'has_code', 'transition', 'source', 'ground', 'texture'];
+const VISUAL_KEYS = ['code', 'data', 'archetype', 'overrides', 'layers', 'variant', 'reseed', 'duration', 'has_code', 'transition', 'source', 'ground', 'texture', 'camera', 'lens'];
 
 export function Studio({ id, health }) {
   const [project, setProject] = useState(null);
@@ -596,7 +598,7 @@ export function Studio({ id, health }) {
   const restore = async (rev) => { await snap(true); await api.post(`/api/projects/${id}/revisions/${rev}`); toast('Revision restored', 'ok'); load(); bumpAll(); };
   const saveTitle = async (v) => { setEditTitle(false); if (v && v !== project.title) patchProject({ title: v }); };
   const rendered = project.scenes.filter((s) => s.status === 'rendered').length;
-  const tabs = [['swarm', 'bot', 'Swarm'], ['scene', 'clapperboard', 'Scene'], ['layer', 'move', 'Layer'], ['code', 'code-xml', 'Code'], ['chat', 'message-circle', 'Direct'], ['qa', 'scan-eye', 'QA']];
+  const tabs = [['swarm', 'bot', 'Swarm'], ['scene', 'clapperboard', 'Scene'], ['layer', 'move', 'Layer'], ['look', 'palette', 'Look'], ['code', 'code-xml', 'Code'], ['chat', 'message-circle', 'Direct'], ['qa', 'scan-eye', 'QA']];
   const leftDef = LEFT.find((l) => l[0] === left) || LEFT[0];
   const workingCount = Object.values(agents).filter((a) => a.state === 'working').length;
   return html`<div style=${{ display: 'grid', gridTemplateRows: '52px 1fr', height: '100%' }}>
@@ -624,7 +626,7 @@ export function Studio({ id, health }) {
       <nav class="rail">${LEFT.map(([k, icon, tip]) => html`<button class=${left === k ? 'on' : ''} data-tip=${tip} onClick=${() => setLeft(k)}><${Icon} name=${icon} /></button>`)}
         <div class="spacer"></div><button data-tip="Skills library" onClick=${() => navigate('/skills')}><${Icon} name="book-open-text" /></button>
         <button data-tip="Model settings" onClick=${() => navigate('/settings')}><${Icon} name="settings" /></button></nav>
-      <aside class="leftpanel">
+      <aside class="leftpanel" data-agent-target="left">
         <div class="panel-head"><${Icon} name=${leftDef[1]} />${leftDef[2]}</div>
         <div class="panel-body">
           ${left === 'media' ? html`<${MediaPanel} project=${project} scene=${current} onUpload=${upload} onDeleteAsset=${async (aid) => { await api.del(`/api/projects/${id}/assets/${aid}`); load(); }} onAddLayer=${(l) => addLayer(l)} />` : null}
@@ -670,18 +672,19 @@ export function Studio({ id, health }) {
           ${project.cues && project.cues.length ? html`<span class=${'chip ' + (project.cues_synthetic ? '' : 'ok')}><${Icon} name="captions" size=${11} />${project.cues_synthetic ? 'narration timed' : 'subtitle clock'} · ${project.cues.length}</span>` : null}
         </div>
       </main>
-      <aside class="rightpanel">
-        <div class="tabs">${tabs.map(([k, icon, label]) => html`<button class=${tab === k ? 'on' : ''} onClick=${() => setTab(k)}><${Icon} name=${icon} /><span class="tab-label">${label}</span>${k === 'swarm' && workingCount ? html`<span class="badge">${workingCount}</span>` : null}</button>`)}</div>
-        <div class="scroll" style=${{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <aside class="rightpanel" data-agent-target="inspector">
+        <div class="tabs">${tabs.map(([k, icon, label]) => html`<button class=${tab === k ? 'on' : ''} data-agent-target=${'tab-' + k} onClick=${() => setTab(k)}><${Icon} name=${icon} /><span class="tab-label">${label}</span>${k === 'swarm' && workingCount ? html`<span class="badge">${workingCount}</span>` : null}</button>`)}</div>
+        <div class="scroll" data-agent-target=${tab === 'swarm' ? 'swarm' : 'panel'} style=${{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           ${tab === 'swarm' ? html`<${SwarmPanel} roster=${roster} agents=${agents} tokens=${tokens} feed=${feed} project=${project} progress=${progress} previews=${previews} brain=${project.memory || {}} run=${run} />` : null}
           ${tab === 'scene' && current ? html`<${SceneTab} project=${project} scene=${current} patch=${(b) => patchScene(current.id, b)} busy=${running}
               onRun=${() => sendChat(current.id, 'Re-animate this scene with a fresh, more cinematic idea.')} onAdd=${addScene} onDelete=${delScene} onThumb=${thumb}
               onRenderScene=${renderSceneNow} />` : null}
           ${tab === 'layer' ? html`<${LayerTab} project=${project} scene=${current} selected=${selected} onOverride=${onOverride} onLayerPatch=${onLayerPatch} onLayerDelete=${deleteLayer} onLayerDuplicate=${duplicateLayer} onClear=${clearOverride} />` : null}
+          ${tab === 'look' ? html`<${LookTab} project=${project} scene=${current} time=${time} patch=${(b) => current && patchScene(current.id, b)} patchProject=${patchProject} />` : null}
           ${tab === 'code' && current ? html`<${CodeTab} project=${project} scene=${current} patch=${(b) => patchScene(current.id, b)} />` : null}
           ${tab === 'chat' && current ? html`<${ChatTab} project=${project} scene=${current} messages=${chat} onSend=${sendChat} llm=${health && health.llm} busy=${running && run.mode === 'scene'} />` : null}
           ${tab === 'qa' && current ? html`<${QATab} scene=${current} />` : null}
-          ${!current && tab !== 'swarm' && tab !== 'layer' ? html`<div class="empty"><${Icon} name="clapperboard" />No scene selected.</div>` : null}
+          ${!current && tab !== 'swarm' && tab !== 'layer' && tab !== 'look' ? html`<div class="empty"><${Icon} name="clapperboard" />No scene selected.</div>` : null}
         </div>
       </aside>
       <${Timeline} project=${project} time=${time} setTime=${(t) => { setTime(t); }} selectedScene=${current ? current.id : null} onSelectScene=${(sid) => { setSelScene(sid); if (tab === 'swarm') setTab('scene'); }}
@@ -690,6 +693,7 @@ export function Studio({ id, health }) {
         cursors=${cursors} onClipPatch=${onClipPatch} selectedClip=${selClip} onSelectClip=${(cid) => { setSelClip(cid); setSelected(null); setLeft('audio'); }}
         onCuePatch=${onCuePatch} selectedCue=${selCue} onSelectCue=${(c) => { setSelCue(c.id); setSelClip(null); }} onDropTimeline=${onDropTimeline}
         onContext=${(m) => { setPlaying(false); setTlMenu(m); }} />
+      <${AgentCursors} cursors=${cursors} agents=${agents} agentNames=${agentNames} project=${project} />
       ${tlMenu ? html`<${ContextMenu} x=${tlMenu.x} y=${tlMenu.y} items=${tlItems(tlMenu)} onClose=${() => setTlMenu(null)} />` : null}
       ${textPrompt ? html`<${TextPromptDialog} ...${textPrompt} onClose=${() => setTextPrompt(null)} />` : null}
     </div>

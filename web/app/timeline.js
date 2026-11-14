@@ -208,7 +208,7 @@ export function Timeline({ project, time, setTime, selectedScene, onSelectScene,
   const musicAsset = assets.find((a) => a.id === audioMusic);
   const sync = project.sync;
   const badCues = new Set(((sync && sync.cues) || []).filter((c) => !c.ok).map((c) => c.id));
-  return html`<div class=${'timeline ' + (collapsed ? 'collapsed' : '')}>
+  return html`<div class=${'timeline ' + (collapsed ? 'collapsed' : '')} data-agent-target="timeline">
     <div class="tl-heads">
       <div class="tl-ruler-head"><button class="btn ghost icon sm" onClick=${onCollapse} title="Collapse timeline"><${Icon} name=${collapsed ? 'chevron-up' : 'chevron-down'} size=${14} /></button>
         <button class="btn ghost icon sm" title="Zoom out (Ctrl + wheel)" onClick=${() => setPps(Math.max(12, pps / 1.3))}><${Icon} name="zoom-out" size=${13} /></button>
@@ -232,7 +232,7 @@ export function Timeline({ project, time, setTime, selectedScene, onSelectScene,
     const st = STATUS[s.status] || ['dot', ''];
     const busy = ['writing', 'qa', 'rendering'].includes(s.status);
     const prev = previews[s.id];
-    return html`<div class=${'clip ' + (selectedScene === s.id ? 'on ' : '') + (busy ? 'busy' : '')} key=${s.id} style=${{ left: sceneX[i] * pps + 1 + 'px', width: Math.max(8, d * pps - 2) + 'px' }}
+    return html`<div class=${'clip ' + (selectedScene === s.id ? 'on ' : '') + (busy ? 'busy' : '')} key=${s.id} data-agent-target=${'scene-' + s.index} style=${{ left: sceneX[i] * pps + 1 + 'px', width: Math.max(8, d * pps - 2) + 'px' }}
               onMouseDown=${(e) => { if (e.button === 2) { onSelectScene(s.id); return; } e.stopPropagation(); onSelectScene(s.id); setTime(s.start + 0.0001); }}
               onContextMenu=${(e) => ctxMenu(e, { kind: 'scene', scene: s })}>
               ${prev ? html`<img src=${'data:image/jpeg;base64,' + prev} />` : s.thumb ? html`<img src=${s.thumb} />` : null}

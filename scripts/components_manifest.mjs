@@ -7,7 +7,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const runtime = path.join(root, 'web', 'runtime');
 const sandbox = { window: {}, document: {}, console };
 vm.createContext(sandbox);
-for (const file of ['components.js', 'characters.js', 'models.js', 'documentary.js', 'actors.js', 'lens.js', 'toons.js', 'sets.js']) {
+for (const file of ['components.js', 'characters.js', 'models.js', 'documentary.js', 'actors.js', 'lens.js', 'toons.js', 'sets.js', 'world3d.js', 'stickman.js', 'animals.js']) {
   const p = path.join(runtime, file);
   if (fs.existsSync(p)) vm.runInContext(fs.readFileSync(p, 'utf8'), sandbox, { filename: file });
 }

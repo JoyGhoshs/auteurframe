@@ -441,6 +441,59 @@
     return o.to + y;
   }
 
+  function cameraKeys(cam) {
+    const k = Math.max(0, Math.min(2, cam.intensity == null ? 1 : +cam.intensity));
+    const z = 1 + 0.12 * k;
+    const P = {
+      'ken-burns-in': [{ t: 0, zoom: 1, x: 50, y: 50 }, { t: D, zoom: z, x: 52, y: 47, ease: 'sine.inOut' }],
+      'ken-burns-out': [{ t: 0, zoom: z, x: 48, y: 53 }, { t: D, zoom: 1, x: 50, y: 50, ease: 'sine.inOut' }],
+      'pan-left': [{ t: 0, zoom: z, x: 58, y: 50 }, { t: D, zoom: z, x: 42, y: 50, ease: 'sine.inOut' }],
+      'pan-right': [{ t: 0, zoom: z, x: 42, y: 50 }, { t: D, zoom: z, x: 58, y: 50, ease: 'sine.inOut' }],
+      'pan-up': [{ t: 0, zoom: z, x: 50, y: 58 }, { t: D, zoom: z, x: 50, y: 42, ease: 'sine.inOut' }],
+      'pan-down': [{ t: 0, zoom: z, x: 50, y: 42 }, { t: D, zoom: z, x: 50, y: 58, ease: 'sine.inOut' }],
+      'punch-in': [{ t: 0, zoom: 1, x: 50, y: 50 }, { t: Math.min(D * 0.4, 1.2), zoom: 1, x: 50, y: 50 }, { t: Math.min(D * 0.4, 1.2) + 0.22, zoom: 1 + 0.2 * k, x: cam.x != null ? cam.x : 50, y: cam.y != null ? cam.y : 46, ease: 'expo.out' }],
+      'push-out': [{ t: 0, zoom: 1 + 0.2 * k, x: 50, y: 50 }, { t: 0.5, zoom: 1, x: 50, y: 50, ease: 'expo.out' }],
+      drift: [0, 0.33, 0.66, 1].map((f, i) => ({ t: f * D, zoom: 1.06 * (1 + 0.02 * k), x: 50 + Math.sin(i * 2.1) * 2.5 * k, y: 50 + Math.cos(i * 1.7) * 2 * k, ease: 'sine.inOut' }))
+    };
+    const keys = (Array.isArray(cam.keys) && cam.keys.length ? cam.keys : (P[cam.preset] || [])).map((x) => ({
+      t: clamp(+x.t || 0, 0, D), zoom: Math.max(1, +x.zoom || 1), x: x.x == null ? 50 : +x.x, y: x.y == null ? 50 : +x.y, rotate: +x.rotate || 0, ease: x.ease || 'power2.inOut'
+    }));
+    return keys.sort((a, b) => a.t - b.t);
+  }
+
+  function sceneCamera(cam) {
+    if (!cam || (!cam.preset && !(cam.keys && cam.keys.length) && !cam.shake)) return;
+    const host = document.getElementById('au-scene');
+    if (!host) return;
+    const keys = cameraKeys(cam);
+    const easeFn = (name) => { try { return gsap.parseEase(name) || ((x) => x); } catch (e) { return (x) => x; } };
+    const eases = keys.map((k) => easeFn(k.ease));
+    const shake = Math.max(0, +cam.shake || 0);
+    host.style.willChange = 'transform';
+    onFrame((t) => {
+      let st = { zoom: 1, x: 50, y: 50, rotate: 0 };
+      if (keys.length === 1 || (keys.length && t <= keys[0].t)) st = keys[0];
+      else if (keys.length && t >= keys[keys.length - 1].t) st = keys[keys.length - 1];
+      else for (let i = 1; i < keys.length; i++) {
+        if (t <= keys[i].t) {
+          const a = keys[i - 1], b = keys[i];
+          const f = eases[i]((t - a.t) / Math.max(1e-6, b.t - a.t));
+          st = { zoom: lerp(a.zoom, b.zoom, f), x: lerp(a.x, b.x, f), y: lerp(a.y, b.y, f), rotate: lerp(a.rotate, b.rotate, f) };
+          break;
+        }
+      }
+      const z = Math.max(1, st.zoom);
+      const fx = st.x / 100 * W, fy = st.y / 100 * H;
+      let dx = W / 2 - fx, dy = H / 2 - fy;
+      const minDx = W - fx - (W - fx) * z, maxDx = fx * z - fx;
+      const minDy = H - fy - (H - fy) * z, maxDy = fy * z - fy;
+      dx = clamp(dx, minDx, maxDx); dy = clamp(dy, minDy, maxDy);
+      if (shake) { const s = shake * 6; dx += Math.sin(t * 37) * s + Math.sin(t * 91) * s * 0.4; dy += Math.cos(t * 41) * s * 0.7; }
+      host.style.transformOrigin = fx + 'px ' + fy + 'px';
+      host.style.transform = 'translate(' + dx.toFixed(2) + 'px,' + dy.toFixed(2) + 'px) rotate(' + st.rotate.toFixed(3) + 'deg) scale(' + z.toFixed(4) + ')';
+    });
+  }
+
   let currentCtx = null;
   function component(name, params) {
     const reg = window.AU_COMPONENTS;
@@ -1090,6 +1143,7 @@
     currentCtx = ctx;
     try { if (sceneFn) sceneFn(ctx); } catch (e) { errors.push('scene: ' + (e && e.message || e)); console.error(e); }
     try { if (CFG.lens && CFG.lens.type && CFG.lens.type !== 'none' && !window.__AU_LENS_USED) component('lens', CFG.lens); } catch (e) { errors.push('lens: ' + e.message); }
+    try { sceneCamera(CFG.camera); } catch (e) { errors.push('camera: ' + e.message); }
     for (let guard = 0; pending.length && guard < 4; guard++) {
       const batch = pending.splice(0, pending.length);
       await Promise.race([Promise.all(batch), new Promise((r) => setTimeout(r, 20000))]);
@@ -1227,6 +1281,44 @@
   }
   function hexToRgb(h) { const v = h.replace('#', ''); return `rgb(${parseInt(v.slice(0, 2), 16)},${parseInt(v.slice(2, 4), 16)},${parseInt(v.slice(4, 6), 16)})`; }
 
+  function actorFaces() {
+    const out = [];
+    $$('#au-scene .auc-toon').forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.width < 2 || getComputedStyle(el).visibility === 'hidden') return;
+      out.push({ id: el.getAttribute('data-layer') || 'toon', face: [r.left + r.width * 0.22, r.top + r.height * 0.06, r.width * 0.56, r.height * 0.28], top: r.top, x: r.left + r.width / 2 });
+    });
+    $$('#au-scene .auc-stickman').forEach((el) => {
+      const c = el.querySelector('.sm-root circle');
+      if (!c || getComputedStyle(el).visibility === 'hidden') return;
+      const r = c.getBoundingClientRect();
+      out.push({ id: el.getAttribute('data-layer') || 'stickman', face: [r.left, r.top, r.width, r.height], top: r.top, x: r.left + r.width / 2 });
+    });
+    $$('#au-scene .auc-animal').forEach((el) => {
+      const g = el.querySelector('.an-root');
+      if (!g || getComputedStyle(el).visibility === 'hidden') return;
+      const r = g.getBoundingClientRect();
+      const left = el.getAttribute('data-facing') === 'left';
+      out.push({ id: el.getAttribute('data-layer') || 'animal', face: left ? [r.left, r.top, r.width * 0.55, r.height * 0.6] : [r.left + r.width * 0.45, r.top, r.width * 0.55, r.height * 0.6],
+        top: r.top, x: left ? r.left + r.width * 0.3 : r.left + r.width * 0.7 });
+    });
+    $$('#au-scene .auc-world3d').forEach((el) => {
+      if (getComputedStyle(el).visibility === 'hidden' || el.style.opacity === '0') return;
+      Object.entries(el.__auActors || {}).forEach(([id, a]) => out.push(Object.assign({ id }, a)));
+    });
+    return out;
+  }
+
+  function actorRect(id) {
+    const faces = actorFaces();
+    return faces.find((f) => f.id === id) || null;
+  }
+
+  function typeScale() {
+    const cs = getComputedStyle(document.documentElement);
+    return ['--fs-hero', '--fs-xl', '--fs-lg', '--fs-md', '--fs-sm', '--fs-min'].map((k) => parseFloat(cs.getPropertyValue(k))).filter((v) => v > 0);
+  }
+
   async function probe(times) {
     const st = stage();
     const out = { errors: errors.slice(), frames: [], duration: D, layers: 0, textNodes: 0, minFont: null };
@@ -1278,6 +1370,25 @@
           if (area > 0 && ix * iy / area > 0.25) { seen.add('overlap|' + a.text + '|' + b.text); issues.push({ kind: 'text-overlap', a: a.text, b: b.text, layer: a.owner.getAttribute('data-layer') || '' }); }
         }
       }
+      const faces = actorFaces();
+      const scale = typeScale();
+      const bodies = $$('#au-scene .auc-toon').filter((el) => getComputedStyle(el).visibility !== 'hidden').map((el) => el.getBoundingClientRect().height);
+      if (bodies.length && t > 0.4 && Math.max(...bodies) < H * 0.26) issues.push({ kind: 'tiny-actor', layer: '', text: 'characters', size: Math.round(Math.max(...bodies) / H * 100) });
+      const hero = scale.length ? Math.max(...scale) : H * 0.2;
+      texts.forEach((x) => {
+        if (x.el.closest('.auc-speech') || x.el.closest('.auc-toon') || x.el.closest('.auc-stickman') || x.el.closest('.auc-animal')) return;
+        faces.forEach((f) => {
+          const [fx, fy, fw, fh] = f.face;
+          const ix = Math.max(0, Math.min(x.r.right, fx + fw) - Math.max(x.r.left, fx));
+          const iy = Math.max(0, Math.min(x.r.bottom, fy + fh) - Math.max(x.r.top, fy));
+          if (fw * fh > 0 && ix * iy / (fw * fh) > 0.18) report('text-over-face', x.owner, { actor: f.id });
+        });
+        if (x.fs > hero * 1.18 && x.text.length > 1) report('oversized-text', x.owner, { size: Math.round(x.fs) });
+        else if (scale.length && x.fs >= Math.min(...scale) && x.text.length > 2) {
+          const near = scale.reduce((m, v) => Math.min(m, Math.abs(Math.log(x.fs / v))), 9);
+          if (near > Math.log(1.16)) report('off-scale-text', x.owner, { size: Math.round(x.fs) });
+        }
+      });
       out.textNodes = Math.max(out.textNodes, texts.length);
       texts.forEach((x) => { out.minFont = out.minFont == null ? x.fs : Math.min(out.minFont, x.fs); });
       out.frames.push({ t, issues: issues.slice(0, 12), texts: texts.length });
@@ -1288,6 +1399,7 @@
     return out;
   }
 
+  window.AU_ACTOR = actorRect;
   window.AU = {
     config: CFG, W, H, D, safe, portrait, ready, errors,
     scene(fn) { sceneFn = fn; },

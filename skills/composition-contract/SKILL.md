@@ -56,6 +56,30 @@ contract, the reasons behind each clause, and a complete worked scene.
     no fade-to-black, no empty first frame (thumbnail).
 15. Code style for AuteurFrame sources: no comments and no emoji in the scene code.
 
+## Text system (one per film; QA measures it)
+
+Every word on screen uses the film's type scale and one of these roles, so sizes match from scene to scene:
+
+| role | size | where |
+|---|---|---|
+| title card | var(--fs-xl), at most var(--fs-hero) for one word | centred in the safe area, or top third when characters are on screen |
+| headline | var(--fs-lg) | top third, left aligned to the safe area |
+| card or caption line | var(--fs-md) | top third or the band above the captions, never across a face |
+| speech | AU.component('speech', { target, text }) | above the speaker's head, it follows them and stays in the safe area |
+| label | var(--fs-sm) | next to the thing it names, with a short leader line if needed |
+
+- Never hard-code pixel font sizes; never scale text past the safe area (QA flags off-canvas, oversized and off-scale text).
+- Never put text over a character's face; the probe measures faces of toon, toon-animal, stickman and world3d characters.
+- One text idea at a time; a card leaves before the next arrives. Keep the same card style for the whole film.
+- Give every character component a layer name equal to its cast id (layer: 'mia') so speech can find it.
+
+## Staging characters
+
+- The hero of a story shot fills 35 to 60 percent of the frame height in medium shots (toon h 40 to 55); wide shots
+  establish the place, then cut closer. Never leave a small figure alone in a big empty frame.
+- Ground every character on a visible floor line with a contact shadow; keep the set filling the frame edge to edge.
+- Leave headroom for speech bubbles above the speaker, and place the listener facing the speaker.
+
 ## Reply format (enforced by the validator before anything is rendered)
 1. Up to three short plan lines (CONCEPT, SIGNATURE MOVE, HAND-OFF), then exactly ONE fenced ```html block. Nothing after it.
 2. The block starts with `<div class="scene">`, then one `<style>`, then one `<script>` that calls `AU.scene(({ tl, ... }) => { ... })`.

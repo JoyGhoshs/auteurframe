@@ -1,3 +1,4 @@
+import { gradePreview, useGrades } from './looktab.js';
 import { html, useState, useEffect, useRef, useCallback, Icon, agentColor } from './lib.js';
 
 export function sceneAt(project, t) {
@@ -266,9 +267,11 @@ export function Stage({ project, time, setTime, playing, setPlaying, versions, v
       ${['nw', 'ne', 'sw', 'se'].map((h) => html`<span class=${'h ' + h} onMouseDown=${(e) => beginDrag(e, 'resize', l)}></span>`)}
       <span class="h rot" onMouseDown=${(e) => beginDrag(e, 'rotate', l)}></span>` : null}</div>`;
   const idx = scene ? scene.index : -1;
+  const look = gradePreview(project, scene, true);
+  useGrades();
   const liveCursors = Object.entries(cursors || {}).filter(([id, c]) => {
     const st = agents[id];
-    return st && st.state === 'working' && (c.scene == null || c.scene === idx) && Date.now() - c.at < 20000 && c.target !== 'browser';
+    return st && st.state === 'working' && (!c.panel || c.panel === 'stage') && (c.scene == null || c.scene === idx) && Date.now() - c.at < 20000 && c.target !== 'browser';
   });
   const browsing = browse && Date.now() - browse.at < 25000 && agents.research && agents.research.state === 'working';
   const rendering = scene && scene.status === 'rendering';
@@ -277,9 +280,9 @@ export function Stage({ project, time, setTime, playing, setPlaying, versions, v
   const sceneScale = { transform: `scale(${fit.k})`, width: W + 'px', height: H + 'px' };
   const capEnabled = (project.captions || {}).enabled !== false && (project.cues || []).length && (!project.cues_synthetic || (project.captions || {}).from_narration);
   const capKey = view === 'scene' && capEnabled ? String(JSON.stringify([project.cues, project.captions, (project.bible || {}).fonts, (project.options || {}).language]).split('').reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0)) : '';
-  return html`<div class="stage-wrap" ref=${wrap}>
+  return html`<div class="stage-wrap" ref=${wrap} data-agent-target="stage">
     ${!scene ? html`<div class="empty"><${Icon} name="clapperboard" /><b style=${{ color: 'var(--ink)' }}>No scenes yet</b>Launch the swarm to plan the film.</div>` : html`
-    <div class="stage-frame" style=${{ width: fit.w + 'px', height: fit.h + 'px' }}>
+    <div class="stage-frame" style=${{ width: fit.w + 'px', height: fit.h + 'px', filter: view === 'master' ? '' : look.filter }}>
       ${view === 'master' ? (master ? html`<video ref=${video} src=${master + '?v=' + Math.round(project.outputs.updated || 0)} playsinline
           onTimeUpdate=${(e) => playing && setTime(e.target.currentTime)} onEnded=${() => setPlaying(false)}></video>` : html`<div class="empty" style=${{ position: 'absolute', inset: 0, background: '#fff' }}><${Icon} name="film" />No master yet. Generate or render the film.</div>`) :
       slots.map((slot, i) => slot.sid && sceneIds.has(slot.sid) ? html`<iframe key=${slot.sid + ':' + slot.ver + ':' + slot.mode} ref=${frames[i]} class=${i === active ? '' : 'back'} style=${sceneScale}
@@ -289,6 +292,8 @@ export function Stage({ project, time, setTime, playing, setPlaying, versions, v
         ${editable && hover && (!sel || hover.id !== sel.id) ? box(hover, 'hover', false) : null}
         ${editable && sel ? box(sel, '', true) : null}
       </div>` : null}
+      ${view !== 'master' && look.tint ? html`<div class="grade-tint" style=${{ background: look.tint }}></div>` : null}
+      ${view !== 'master' && look.vignette ? html`<div class="grade-vig" style=${{ opacity: Math.min(1, look.vignette / 70) }}></div>` : null}
       ${liveCursors.map(([id, c]) => html`<div class="cursor" key=${id} style=${{ left: c.x * fit.w + 'px', top: c.y * fit.h + 'px', color: agentColor(id) }}>
         <span class="ring" style=${{ background: agentColor(id) }}></span>
         <${Icon} name="mouse-pointer-2" size=${22} style=${{ color: agentColor(id), fill: agentColor(id) }} />

@@ -1809,6 +1809,390 @@
     }
    },
    "example": "component('toon-set', { preset: 'burning-city', weather: 'ash', pan: 10 })"
+  },
+  {
+   "name": "world3d",
+   "category": "3d",
+   "description": "Procedural 3D world built entirely in code (no model files): a set (studio, lab with a Tesla coil, battlefield with castle and catapult, suburb street, living room, forest, city at night, space), a cast of stylised 3D characters made from primitives (presets scientist, soldier, knight, kid, teen-girl, teen-boy, businessman, chef, old-man, hero, astronaut, zombie, farmer, robot; any hair, hat, outfit, props, expressive painted faces) that act on a timeline with the same actions as toon, effects (lightning, fireball, explosion, tornado, debris, sparks, confetti, rain, snow, dust, embers) and a directed camera (shots, moves, automatic shake). Looks: lowpoly (faceted 3D cartoon), felt (stop-motion fabric with stitches and button joints), clay (claymation), toy (glossy plastic), paper (cardstock on threes). Works in 16:9, 9:16 and 1:1.",
+   "params": {
+    "at": {
+     "type": "number",
+     "default": 0,
+     "doc": "start time in scene seconds (the world is visible from the first frame by default)"
+    },
+    "set": {
+     "type": "enum",
+     "default": "studio",
+     "options": [
+      "none",
+      "studio",
+      "lab",
+      "battlefield",
+      "suburb",
+      "living-room",
+      "forest",
+      "city-night",
+      "space"
+     ],
+     "doc": "environment; none gives a transparent background"
+    },
+    "look": {
+     "type": "enum",
+     "default": "lowpoly",
+     "options": [
+      "lowpoly",
+      "felt",
+      "clay",
+      "toy",
+      "paper"
+     ],
+     "doc": "material and motion style for the whole world"
+    },
+    "time": {
+     "type": "enum",
+     "default": "",
+     "options": [
+      "",
+      "day",
+      "sunset",
+      "night",
+      "studio",
+      "lab",
+      "interior",
+      "space"
+     ],
+     "doc": "lighting and sky; empty uses the set default"
+    },
+    "cast": {
+     "type": "array",
+     "default": [],
+     "doc": "characters: [{id, preset, x, z, facing (degrees, 0 faces camera), scale, skin, hair (short|side|spiky|messy|ponytail|bun|long|curly|bald), hairColor, hat (helmet|cap|hardhat|chef|beanie|crown|tophat|straw|space|none), hatColor, shirt, pants, shoes, outfit (casual|labcoat|armor|hoodie|suit|overalls|suit-space|robot), extras [goggles, glasses, backpack, cape, beard, mustache], prop (sword|shield|wrench|phone|book|cup|torch|flashlight|sign|umbrella|briefcase|flask), propL, expression, actions: [{do, at, duration, to: x or [x,z], dir, expression, height}]}]. Actions: walk, run, march, sneak, wave, point, talk, look, shock, jump, cheer, shrug, nod, shake, think, scared, cry, laugh, angry, yell, crouch, brace, block, attack, punch, throw, fall, fly, tumble, blown-away, hold, raise, hug, sit, dance, turn, type, zap. Expressions: neutral, happy, sad, angry, worried, shocked, scared, smirk, laugh, determined, sleepy, zombie, love, thinking, yell, excited"
+    },
+    "fx": {
+     "type": "array",
+     "default": [],
+     "doc": "effects: [{type: lightning|fireball|explosion|tornado|debris|sparks|confetti|rain|snow|dust|embers, at, duration, from, to (cast id, anchor name like coil/castle, or [x,y,z]), pos, count, arc, size}]"
+    },
+    "camera": {
+     "type": "object",
+     "default": null,
+     "doc": "{shot: extreme|wide|full|medium|close|extremeclose|low|high|ots, target: cast id or [x,y,z], yaw: degrees around the target, orbit: degrees across the scene, push: end zoom like 1.15, moves: [{at, duration, shot, target, yaw}], shake: 0 to 2}"
+    },
+    "steps": {
+     "type": "number",
+     "default": 0,
+     "doc": "animate on 1s, 2s or 3s (stop-motion); 0 uses the look default"
+    },
+    "boil": {
+     "type": "number",
+     "default": -1,
+     "doc": "stop-motion jitter amount 0 to 2; -1 uses the look default"
+    },
+    "exposure": {
+     "type": "number",
+     "default": 1.05
+    },
+    "seed": {
+     "type": "number",
+     "default": 7
+    },
+    "set_options": {
+     "type": "object",
+     "default": null,
+     "doc": "set details: {color (studio backdrop), sofa, wall, coil: [x,z], castle: [x,z], catapult: [x,z]}"
+    }
+   },
+   "example": "component('world3d', { set: 'lab', look: 'lowpoly', cast: [{ id: 'doc', preset: 'scientist', x: -0.6, z: 0.6, facing: 20, actions: [{ do: 'shock', at: 1.2, duration: 1.4 }] }], fx: [{ type: 'lightning', at: 0.8, duration: 3, to: 'doc' }], camera: { shot: 'medium', target: 'doc', yaw: -18, push: 1.15 } })"
+  },
+  {
+   "name": "figure3d",
+   "category": "3d",
+   "description": "One procedural 3D character (no model file) on a transparent background with a soft shadow, to drop over any 2D scene: same presets, outfits, props, faces, actions and looks (lowpoly, felt, clay, toy, paper) as world3d.",
+   "params": {
+    "at": {
+     "type": "number",
+     "default": 0
+    },
+    "preset": {
+     "type": "string",
+     "default": "kid"
+    },
+    "look": {
+     "type": "enum",
+     "default": "lowpoly",
+     "options": [
+      "lowpoly",
+      "felt",
+      "clay",
+      "toy",
+      "paper"
+     ]
+    },
+    "h": {
+     "type": "number",
+     "default": 80,
+     "doc": "viewport height in % of frame"
+    },
+    "actions": {
+     "type": "array",
+     "default": []
+    },
+    "expression": {
+     "type": "string",
+     "default": ""
+    },
+    "facing": {
+     "type": "number",
+     "default": 15
+    },
+    "shot": {
+     "type": "enum",
+     "default": "full",
+     "options": [
+      "extreme",
+      "wide",
+      "full",
+      "medium",
+      "close",
+      "extremeclose",
+      "low",
+      "high",
+      "ots"
+     ]
+    },
+    "outfit": {
+     "type": "string",
+     "default": ""
+    },
+    "shirt": {
+     "type": "string",
+     "default": ""
+    },
+    "pants": {
+     "type": "string",
+     "default": ""
+    },
+    "hair": {
+     "type": "string",
+     "default": ""
+    },
+    "hat": {
+     "type": "string",
+     "default": ""
+    },
+    "prop": {
+     "type": "string",
+     "default": ""
+    }
+   },
+   "example": "component('figure3d', { preset: 'kid', look: 'felt', x: 30, y: 10, w: 40, h: 85, actions: [{ do: 'shock', at: 0.5, duration: 1.2 }] })"
+  },
+  {
+   "name": "stickman",
+   "category": "character",
+   "description": "Stick figure actor drawn as one clean ink line (classic, filled head, chalk, neon or marker style) with a real rig: arms posed by angle, legs solved with IK so feet stay planted, walk and run cycles driven by distance travelled (no foot sliding), squash-and-stretch jumps with anticipation and landing, moods (flat, happy, sad, shock, curious, grit) with natural blinks, optional beanie and shirt colour, plus impact bursts and a short stage shake. Same action list style as toon.",
+   "params": {
+    "at": {
+     "type": "number",
+     "default": 0,
+     "doc": "start time in scene seconds"
+    },
+    "y": {
+     "type": "number",
+     "default": 86,
+     "doc": "ground line in % of frame height"
+    },
+    "h": {
+     "type": "number",
+     "default": 46,
+     "doc": "figure height in % of frame height"
+    },
+    "style": {
+     "type": "enum",
+     "default": "classic",
+     "options": [
+      "classic",
+      "filled",
+      "chalk",
+      "neon",
+      "marker"
+     ]
+    },
+    "ink": {
+     "type": "string",
+     "default": "",
+     "doc": "line colour"
+    },
+    "accent": {
+     "type": "string",
+     "default": ""
+    },
+    "facing": {
+     "type": "enum",
+     "default": "right",
+     "options": [
+      "right",
+      "left"
+     ]
+    },
+    "expression": {
+     "type": "string",
+     "default": "neutral"
+    },
+    "hat": {
+     "type": "enum",
+     "default": "none",
+     "options": [
+      "none",
+      "beanie",
+      "cap",
+      "hair"
+     ]
+    },
+    "shirt": {
+     "type": "string",
+     "default": "",
+     "doc": "shirt colour drawn behind the torso line"
+    },
+    "actions": {
+     "type": "array",
+     "default": [],
+     "doc": "[{do: walk|run (to: x%), wave, point (dir up), talk, cheer, shock, double-take, think, shrug, punch, kick, fall, nod, shake, crouch, jump (height), at, duration, expression}]"
+    },
+    "impacts": {
+     "type": "array",
+     "default": [],
+     "doc": "[{at, x, y}] burst of speed strokes plus a 0.16 s stage shake at each contact"
+    },
+    "shadow": {
+     "type": "boolean",
+     "default": true
+    }
+   },
+   "example": "component('stickman', { x: 30, actions: [{ do: 'walk', at: 0.2, duration: 1.6, to: 55 }, { do: 'shock', at: 2, duration: 1 }], impacts: [{ at: 2.0 }] })"
+  },
+  {
+   "name": "speech",
+   "category": "character",
+   "description": "Speech, thought or shout bubble that follows a character: it finds the speaker every frame (toon, toon-animal or stickman by its layer name, or a world3d cast id), sits above the head with its tail pointing down, never covers a face and stays inside the safe area. Text uses the film type scale.",
+   "params": {
+    "target": {
+     "type": "string",
+     "default": "",
+     "doc": "layer name of the toon, toon-animal or stickman, or a world3d cast id"
+    },
+    "text": {
+     "type": "string",
+     "default": ""
+    },
+    "kind": {
+     "type": "enum",
+     "default": "speech",
+     "options": [
+      "speech",
+      "thought",
+      "shout"
+     ]
+    },
+    "size": {
+     "type": "enum",
+     "default": "md",
+     "options": [
+      "lg",
+      "md",
+      "sm"
+     ]
+    },
+    "maxw": {
+     "type": "number",
+     "default": 34,
+     "doc": "max width in % of frame width"
+    },
+    "at": {
+     "type": "number",
+     "default": 0.2
+    },
+    "duration": {
+     "type": "number",
+     "default": 1.8
+    }
+   },
+   "example": "component('speech', { target: 'mia', text: 'Biscuit? Where are you?', at: 0.6, duration: 1.8 })"
+  },
+  {
+   "name": "toon-animal",
+   "category": "character",
+   "description": "Cartoon animal in the same bold outlined style as toon: dog, cat, rabbit, fox, pig or bird with expressive face, collar and spots. Acts with walk, run, sniff (with to: x%), sit, lie, sleep, jump, wag, happy, bark, eat, look, sad, beg and shock. Use for pets and animal characters in toon stories.",
+   "params": {
+    "at": {
+     "type": "number",
+     "default": 0
+    },
+    "species": {
+     "type": "enum",
+     "default": "dog",
+     "options": [
+      "dog",
+      "cat",
+      "rabbit",
+      "fox",
+      "pig",
+      "bird"
+     ]
+    },
+    "y": {
+     "type": "number",
+     "default": 88,
+     "doc": "ground line in % of frame height"
+    },
+    "h": {
+     "type": "number",
+     "default": 22,
+     "doc": "animal height in % of frame height"
+    },
+    "facing": {
+     "type": "enum",
+     "default": "right",
+     "options": [
+      "right",
+      "left"
+     ]
+    },
+    "color": {
+     "type": "string",
+     "default": ""
+    },
+    "color2": {
+     "type": "string",
+     "default": "",
+     "doc": "belly, ear or spot colour"
+    },
+    "collar": {
+     "type": "string",
+     "default": "",
+     "doc": "collar colour, empty for none"
+    },
+    "spots": {
+     "type": "boolean",
+     "default": false
+    },
+    "expression": {
+     "type": "enum",
+     "default": "happy",
+     "options": [
+      "happy",
+      "neutral",
+      "sad",
+      "surprised"
+     ]
+    },
+    "actions": {
+     "type": "array",
+     "default": [],
+     "doc": "[{do: walk|run|sniff (to: x%), sit, lie, sleep, jump, wag, happy, bark, eat, look (dir), sad, beg, shock, at, duration, expression}]"
+    }
+   },
+   "example": "component('toon-animal', { species: 'dog', x: 70, color: '#C98B4E', collar: '#D32F2F', actions: [{ do: 'run', at: 0.4, duration: 1.6, to: 40 }, { do: 'wag', at: 2.2, duration: 1.5 }] })"
   }
  ]
 }

@@ -2,7 +2,7 @@
 name: svg-character-design
 description: Create the story's own characters instead of reusing one stock rig - cast them with the toon component (presets, hats, hair, beards, outfits, props, expressions, zombies, crowds) or code a brand new rigged SVG character (pivoted limb groups, expressive face, mouth shapes for talking) and animate it like a cartoon (anticipation, overlap, arcs, holds). Use for any story, sketch, dialogue or explainer with people, creatures or mascots.
 stage: animate
-tags: [character, svg, cartoon, toon, rig, story, zombie, crowd, expression, acting, design, stick figure]
+tags: [character, svg, cartoon, toon, rig, story, zombie, crowd, expression, acting, design, stick figure, animal, pet, dog, cat]
 version: 1
 ---
 
@@ -36,6 +36,16 @@ AU.component('toon', { preset: 'teen-girl', x: 30, y: 88, h: 44, shirt: '#d94b3d
 
 Give every main character a signature: one colour, one hat or hairstyle, one prop. Keep it identical in every scene (write the
 same parameters each time) so the audience recognises them.
+
+## Animals and pets (toon-animal)
+
+```
+AU.component('toon-animal', { species: 'dog', x: 70, color: '#C98B4E', collar: '#D32F2F',
+  actions: [{ do: 'run', at: 0.4, duration: 1.6, to: 40 }, { do: 'wag', at: 2.2, duration: 1.5 }] });
+```
+- species: dog, cat, rabbit, fox, pig, bird; colour, color2 (belly or spots), collar, spots.
+- actions: walk, run, sniff (with `to`), sit, lie, sleep, jump, wag, happy, bark, eat, look, sad, beg, shock.
+- Never draw a pet with a human toon preset. Keep the same species, colours and collar in every scene.
 
 ## Custom parts
 

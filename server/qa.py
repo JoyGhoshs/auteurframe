@@ -148,7 +148,8 @@ def evaluate(probe: dict[str, Any], duration: float, lint_issues: list[dict[str,
                 continue
             seen.add(key)
             kind = item["kind"]
-            sev = {"off-canvas": "P0", "overflow": "P0", "text-overlap": "P1", "tiny-text": "P1", "low-contrast": "P1", "outside-safe": "P2"}.get(kind, "P2")
+            sev = {"off-canvas": "P0", "overflow": "P0", "text-overlap": "P1", "tiny-text": "P1", "low-contrast": "P1", "outside-safe": "P2",
+                   "text-over-face": "P1", "oversized-text": "P1", "off-scale-text": "P2", "tiny-actor": "P2"}.get(kind, "P2")
             fix = {
                 "off-canvas": "Keep text inside the stage: position within var(--safe-x)/var(--safe-y) and reduce font size or width.",
                 "overflow": "Allow wrapping or reduce font-size so the text fits its box.",
@@ -156,6 +157,10 @@ def evaluate(probe: dict[str, Any], duration: float, lint_issues: list[dict[str,
                 "tiny-text": "Raise font-size to at least var(--fs-min).",
                 "low-contrast": "Use var(--ink) on var(--bg), or put the text on a solid panel; aim for 4.5:1.",
                 "outside-safe": "Move the element inside the safe area.",
+                "text-over-face": "Never cover a character's face: put cards in the top third or the lower band away from heads, or use AU.component('speech', { target, text }) which sits above the speaker.",
+                "oversized-text": "Cap headlines at var(--fs-hero); use var(--fs-xl) for most titles so text never dominates or crops.",
+                "tiny-actor": "The characters are too small for a story shot: make the hero 35 to 60 percent of the frame height (toon h 40 to 55) and fill the set to the edges.",
+                "off-scale-text": "Use the film's type scale for every text: var(--fs-xl) titles, var(--fs-lg) headlines, var(--fs-md) cards and speech, var(--fs-sm) labels.",
             }.get(kind, "Fix layout.")
             desc = item.get("text") or f"{item.get('a', '')} / {item.get('b', '')}"
             extra = f" ratio {item['ratio']}" if "ratio" in item else (f" size {item['size']}px" if "size" in item else "")

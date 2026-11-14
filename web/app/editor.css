@@ -79,3 +79,38 @@
 .cue-times .input { width: 78px; flex: none; }
 .chip.bad { background: #fee4e2; color: #b42318; }
 .file-drag { cursor: grab; }
+
+.grade-sliders{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.grade-row{display:grid;grid-template-columns:118px 1fr 44px;align-items:center;gap:8px;font-size:11.5px;color:var(--muted)}
+.grade-row input[type=range]{width:100%}
+.grade-row b{font-weight:600;color:var(--ink);text-align:right;font-variant-numeric:tabular-nums}
+.check-row{display:flex;gap:8px;align-items:flex-start;font-size:12px;margin-top:6px;color:var(--ink)}
+.cam-key{display:flex;gap:4px;align-items:center;margin-top:6px;flex-wrap:wrap}
+.cam-key label{display:flex;align-items:center;gap:2px;font-size:11px;color:var(--muted)}
+.cam-key input{width:52px;padding:3px 4px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font-size:11px}
+.cam-key select{max-width:120px}
+.grade-tint{position:absolute;inset:0;mix-blend-mode:color;pointer-events:none;z-index:8}
+.grade-vig{position:absolute;inset:0;pointer-events:none;z-index:8;background:radial-gradient(ellipse 72% 68% at 50% 50%,transparent 55%,rgba(0,0,0,.55) 100%)}
+
+.agent-cursors{position:fixed;inset:0;pointer-events:none;z-index:400}
+.ac-x{position:absolute;left:0;top:0;will-change:transform}
+.ac-y{position:absolute;left:0;top:0;will-change:transform;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35))}
+.ac-y svg{display:block;transform:translate(-3px,-2px)}
+.ac-who{position:absolute;left:16px;top:16px;white-space:nowrap;color:#fff;font:600 11px/1.2 var(--font,system-ui);padding:4px 8px;border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.ac-who i{font-style:normal;font-weight:500;opacity:.85;margin-left:6px}
+.ac-ripple{position:absolute;left:-14px;top:-14px;width:28px;height:28px;border-radius:50%;border:2px solid;opacity:0;animation:acRipple .5s ease-out 1 forwards}
+@keyframes acRipple{0%{opacity:.9;transform:scale(.3)}100%{opacity:0;transform:scale(1.6)}}
+@media (prefers-reduced-motion: reduce){.ac-ripple{animation:none}}
+.ac-who.flip{left:auto;right:10px}
+.ac-who{max-width:260px;overflow:hidden;text-overflow:ellipsis}
+
+.ac-work{position:relative}
+.ac-work.on{animation:acWork 2.6s ease-in-out infinite}
+@keyframes acWork{0%{transform:translate(0,0)}18%{transform:translate(14px,1px)}30%{transform:translate(14px,1px) scale(.88)}36%{transform:translate(14px,1px) scale(1)}62%{transform:translate(-10px,-2px)}74%{transform:translate(-10px,-2px) scale(.88)}80%{transform:translate(-10px,-2px) scale(1)}100%{transform:translate(0,0)}}
+.ac-pulse{position:absolute;left:-14px;top:-14px;width:28px;height:28px;border-radius:50%;border:2px solid;opacity:0;animation:acRipple .5s ease-out infinite;animation-duration:2.6s}
+.ac-dots{display:inline-flex;gap:2px;margin-left:6px;vertical-align:middle}
+.ac-dots span{width:3px;height:3px;border-radius:50%;background:#fff;opacity:.4;animation:acDot 1s infinite}
+.ac-dots span:nth-child(2){animation-delay:.15s}
+.ac-dots span:nth-child(3){animation-delay:.3s}
+@keyframes acDot{0%,100%{opacity:.3}50%{opacity:1}}
+@media (prefers-reduced-motion: reduce){.ac-work.on,.ac-pulse,.ac-dots span{animation:none}}

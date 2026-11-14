@@ -10,7 +10,7 @@ from typing import Any, Callable
 
 import httpx
 
-from . import audio, compose, config, subtitles
+from . import audio, compose, config, grade, subtitles
 from .store import project_dir
 
 _renderer_proc: subprocess.Popen | None = None
@@ -241,7 +241,15 @@ def assemble(project: dict[str, Any], segments: list[Path], on_step: Callable[[s
     for seg in segments:
         inputs += ["-i", str(seg)]
     filters = []
-    last = "[0:v]"
+    src = []
+    for i, sc in enumerate(scenes[:len(segments)]):
+        chain = grade.ffmpeg_chain(grade.scene_grade(project, sc), project["width"], project["height"])
+        if chain:
+            filters.append(f"[{i}:v]{chain}[g{i}]")
+            src.append(f"[g{i}]")
+        else:
+            src.append(f"[{i}:v]")
+    last = src[0] if src else "[0:v]"
     offset = 0.0
     used = []
     for i in range(1, len(segments)):
@@ -256,8 +264,12 @@ def assemble(project: dict[str, Any], segments: list[Path], on_step: Callable[[s
         label = f"[v{i}]"
         at = round(offset * fps) / fps
         span = max(1, round(dur * fps)) / fps - 0.0001
-        filters.append(f"{last}[{i}:v]xfade=transition={kind}:duration={span:.6f}:offset={at:.6f}{label}")
+        filters.append(f"{last}{src[i]}xfade=transition={kind}:duration={span:.6f}:offset={at:.6f}{label}")
         last = label
+    film = grade.ffmpeg_chain(grade.film_grade(project), project["width"], project["height"])
+    if film:
+        filters.append(f"{last}{film}[vgraded]")
+        last = "[vgraded]"
     if captions:
         inputs += ["-i", captions["path"]]
         box = captions["box"]
@@ -315,7 +327,7 @@ def assemble(project: dict[str, Any], segments: list[Path], on_step: Callable[[s
         sfx = audio.sfx_track(total, cuts, payoff, fps, outdir / "sfx.wav", int(project.get("seed", 1)), clips=clips, resolve=by_id.get, auto=auto_sfx)
         extra += ["-i", str(sfx)]
     gain = float((project.get("audio") or {}).get("music_gain", -18.0)) + (0 if not has_voice else -2)
-    amix, alabel = audio.mix_filter(has_voice, has_music, has_sfx, gain + 12, len(segments) + (1 if captions else 0))
+    amix, alabel = audio.mix_filter(has_voice, has_music, has_sfx, gain + 12, len(segments) + (1 if captions else 0), audio.master_settings(project))
     graph = ";".join(filters + ([amix] if amix else []))
     master = outdir / "master.mp4"
     tmp = outdir / "master.tmp.mp4"

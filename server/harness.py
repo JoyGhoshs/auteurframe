@@ -45,6 +45,9 @@ Choose the right instrument for each part of the shot, and combine them freely:
   look at the candidates, collect the best one, and place it (image, webpage, map components or your own code). Screenshot real web pages for
   documentary moves (highlight a sentence, zoom into a quote) and build maps with make_map. Read the documentary-assets and maps-and-geography skills.
 - engines when another tool is simply better (Manim for equations and mathematical constructions), rendered to a clip and composited.
+- 3D characters and worlds built in code with world3d (sets, cast with painted faces, actions, lightning, fireball, tornado, explosions,
+  directed camera) in lowpoly, felt, clay, toy or paper looks, or figure3d for one 3D character over a 2D scene (procedural-3d-world and
+  stop-motion-craft-looks skills). Stick figure comedy with stickman (IK feet, jumps, impacts; stickman-direction skill).
 - characters designed for the story: toon (presets, hats, hair, outfits, props, expressions, zombies, toon-crowd) or your own coded SVG rig
   (svg-character-design skill); never reuse one stock figure for different people. Places and objects from toon-set (animated environments)
   and toon-prop (about 50 living buildings, vehicles and objects), or your own SVG architecture (svg-architecture-and-props skill).
@@ -144,6 +147,11 @@ replacement text
 - collect_audio <number> [start] [seconds]  download a result as an audio asset (music gets bpm and beat times)
 - place_audio <asset> <sfx|music> [scene seconds]  put a sound effect on the film timeline at a time inside this scene, or set the film's music;
                                JSON body {"gain": 0.8, "in": 0, "dur": null, "fade_in": 0, "fade_out": 0}
+- camera <preset|JSON>         scene camera without code: ken-burns-in, ken-burns-out, pan-left, pan-right, pan-up, pan-down, punch-in, push-out,
+                               drift, none; or JSON {"keys": [{"t", "zoom", "x", "y", "rotate", "ease"}], "shake": 0.3, "intensity": 1}
+- grade <preset|JSON>          this scene's colour grade (clean, vivid, warm-film, teal-orange, golden-hour, cool-night, cyberpunk, bleach-bypass,
+                               vintage, matte, documentary, pastel, noir, kodak-day, stop-motion, none) or JSON {"preset", "amount", "contrast", ...}
+- film_grade <preset|JSON>     the whole film's colour grade (same values); read the color-grading skill first
 - sfx <name> <scene seconds> [gain] [length]  place a synthesised sound effect (whoosh, impact, riser, footsteps, glass, siren, zombie-groan,
                                wind, rain, fire, thunder, heartbeat ...); sfx list shows all 39
 - wikidata <entity>            structured facts about a person, place, organisation or thing (dates, numbers, relations, official images)
@@ -215,7 +223,8 @@ def _sandbox_ok() -> bool:
 
 WEB_TOOLS = {"web_search", "read_page", "search_images", "search_icons", "scrape_images", "look", "collect_image", "collect_icon", "screenshot", "geocode", "make_map"}
 MEDIA_TOOLS = {"edit_image", "image_ops", "analyze_image", "generate_image", "search_footage", "footage_info", "collect_footage", "search_audio", "collect_audio",
-               "place_audio", "wikidata", "sparql", "owid", "worldbank", "data_search", "voices", "speak", "rig_face", "lens_help", "sfx"}
+               "place_audio", "wikidata", "sparql", "owid", "worldbank", "data_search", "voices", "speak", "rig_face", "lens_help", "sfx",
+               "camera", "grade", "film_grade"}
 
 
 async def stock_icons(query: str, prefix: str = "") -> dict[str, Any]:
@@ -498,6 +507,59 @@ class Workshop:
             return imaging.OPS_HELP
         if name == "lens_help":
             return toolkit.component_info("lens")
+        if name in ("camera", "grade", "film_grade"):
+            from . import grade as gradelib
+            from .store import store as st
+            text = (raw or arg).strip()
+            if name == "camera":
+                presets = ("ken-burns-in", "ken-burns-out", "pan-left", "pan-right", "pan-up", "pan-down", "punch-in", "push-out", "drift")
+                if text in ("", "none", "off"):
+                    spec = None
+                elif text.startswith("{"):
+                    spec = toolkit.parse_params(text)
+                    keys = spec.get("keys") or []
+                    if not isinstance(keys, list) or not all(isinstance(k, dict) for k in keys):
+                        raise ValueError("keys must be a list of {t, zoom, x, y, rotate, ease}")
+                    if spec.get("preset") and spec["preset"] not in presets:
+                        raise ValueError(f"unknown camera preset; use one of {', '.join(presets)}")
+                elif text.split()[0] in presets:
+                    bits = text.split()
+                    spec = {"preset": bits[0], "intensity": float(bits[1]) if len(bits) > 1 else 1.0}
+                else:
+                    raise ValueError(f"unknown camera preset; use one of {', '.join(presets)} or a JSON body")
+                sid = self.scene["id"]
+                def apply_cam(doc, c=spec):
+                    for sc in doc["scenes"]:
+                        if sc["id"] == sid:
+                            sc["camera"] = c
+                st.mutate(pid, apply_cam)
+                self.refresh()
+                return "camera cleared" if spec is None else f"scene camera set: {spec}. It renders in previews and the final film."
+            if text in ("", "none", "off"):
+                spec = None
+            elif text.startswith("{"):
+                spec = toolkit.parse_params(text)
+            else:
+                bits = text.split()
+                if bits[0] not in gradelib.PRESETS:
+                    raise ValueError(f"unknown grade; use one of {', '.join(gradelib.PRESETS)} or a JSON body")
+                spec = {"preset": bits[0], "amount": float(bits[1]) if len(bits) > 1 else 100}
+            norm = gradelib.normalize(spec) if spec else None
+            if spec and not norm:
+                raise ValueError("grade must be a preset name or a JSON object")
+            if name == "film_grade":
+                st.mutate(pid, lambda doc, g=spec: doc.__setitem__("grade", g))
+                where = "film"
+            else:
+                sid = self.scene["id"]
+                def apply_grade(doc, g=spec):
+                    for sc in doc["scenes"]:
+                        if sc["id"] == sid:
+                            sc["grade"] = g
+                st.mutate(pid, apply_grade)
+                where = "scene"
+            self.refresh()
+            return f"{where} grade cleared" if not spec else f"{where} grade set ({norm['preset']}, {len(norm['values'])} adjustments); ffmpeg applies it to the master: {gradelib.ffmpeg_chain(norm) or 'neutral'}"
         if name == "sfx":
             from . import audio as au
             bits = arg.split()

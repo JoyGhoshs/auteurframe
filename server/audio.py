@@ -453,7 +453,26 @@ def _write(buf: np.ndarray, out: Path) -> Path:
     return out
 
 
-def mix_filter(has_voice: bool, has_music: bool, has_sfx: bool, music_gain_db: float, inputs_start: int) -> tuple[str, str]:
+MASTER_DEFAULTS = {"lufs": -16.0, "true_peak": -1.5, "duck": 60.0, "voice_clarity": True, "sfx_db": -6.0, "music_eq": True}
+
+
+def master_settings(project: dict) -> dict:
+    m = dict(MASTER_DEFAULTS)
+    src = ((project or {}).get("audio") or {}).get("master") or {}
+    for k, v in src.items():
+        if k in m and v is not None:
+            m[k] = v
+    m["lufs"] = max(-30.0, min(-8.0, float(m["lufs"])))
+    m["true_peak"] = max(-6.0, min(0.0, float(m["true_peak"])))
+    m["duck"] = max(0.0, min(100.0, float(m["duck"])))
+    m["sfx_db"] = max(-30.0, min(6.0, float(m["sfx_db"])))
+    m["voice_clarity"] = bool(m["voice_clarity"])
+    m["music_eq"] = bool(m["music_eq"])
+    return m
+
+
+def mix_filter(has_voice: bool, has_music: bool, has_sfx: bool, music_gain_db: float, inputs_start: int, master: dict | None = None) -> tuple[str, str]:
+    m = master or dict(MASTER_DEFAULTS)
     chains = []
     labels = []
     idx = inputs_start
@@ -468,23 +487,32 @@ def mix_filter(has_voice: bool, has_music: bool, has_sfx: bool, music_gain_db: f
         sfx = idx
         idx += 1
     if music is not None:
-        chains.append(f"[{music}:a]aformat=sample_rates=48000:channel_layouts=stereo,volume={music_gain_db}dB[mus]")
+        meq = ",equalizer=f=2500:t=q:w=1.2:g=-3" if (m.get("music_eq") and has_voice) else ""
+        chains.append(f"[{music}:a]aformat=sample_rates=48000:channel_layouts=stereo,volume={music_gain_db}dB{meq}[mus]")
     if voice is not None:
-        chains.append(f"[{voice}:a]aformat=sample_rates=48000:channel_layouts=stereo,asplit=2[vo][vokey]")
+        veq = ",highpass=f=80,equalizer=f=250:t=q:w=1:g=-2,equalizer=f=3200:t=q:w=1:g=2.5,acompressor=threshold=0.12:ratio=2.5:attack=8:release=120:makeup=1.4" if m.get("voice_clarity") else ""
+        chains.append(f"[{voice}:a]aformat=sample_rates=48000:channel_layouts=stereo{veq},asplit=2[vo][vokey]")
         if music is not None:
-            chains.append("[mus][vokey]sidechaincompress=threshold=0.03:ratio=8:attack=20:release=400[musd]")
-            labels += ["[vo]", "[musd]"]
+            duck = float(m.get("duck", 60))
+            if duck <= 0:
+                chains.append("[vokey]anullsink")
+                labels += ["[vo]", "[mus]"]
+            else:
+                ratio = 1.5 + duck / 100 * 10
+                chains.append(f"[mus][vokey]sidechaincompress=threshold=0.03:ratio={ratio:.2f}:attack=20:release=400[musd]")
+                labels += ["[vo]", "[musd]"]
         else:
             chains.append("[vokey]anullsink")
             labels.append("[vo]")
     elif music is not None:
         labels.append("[mus]")
     if sfx is not None:
-        chains.append(f"[{sfx}:a]aformat=sample_rates=48000:channel_layouts=stereo,volume=-6dB[sfx]")
+        chains.append(f"[{sfx}:a]aformat=sample_rates=48000:channel_layouts=stereo,volume={float(m.get('sfx_db', -6)):.1f}dB[sfx]")
         labels.append("[sfx]")
     if not labels:
         return "", ""
-    chains.append(f"{''.join(labels)}amix=inputs={len(labels)}:normalize=0:dropout_transition=0,loudnorm=I=-16:TP=-1.5:LRA=11[aout]")
+    lim = 10 ** (float(m.get("true_peak", -1.5)) / 20)
+    chains.append(f"{''.join(labels)}amix=inputs={len(labels)}:normalize=0:dropout_transition=0,loudnorm=I={float(m.get('lufs', -16)):.1f}:TP={float(m.get('true_peak', -1.5)):.1f}:LRA=11,alimiter=limit={lim:.4f}:level=0[aout]")
     return ";".join(chains), "[aout]"
 
 

@@ -115,9 +115,14 @@ def find_plan(value: Any) -> dict[str, Any] | None:
     return None
 
 
+def continuity_line(project: dict[str, Any]) -> str:
+    from . import continuity
+    return continuity.text_for_director(project)
+
+
 async def direct(project: dict[str, Any], brain: Brain, emit: Emit) -> dict[str, Any]:
     model = llmmod.LLM("director")
-    skills_text, used = library.inject(project.get("brief", "") + " storyboard explainer shorts", "director", budget=7000, must=["storyboard-director", "explainer-grammar"] + (["multilingual-type"] if language_line(project).find("(en)") < 0 else []))
+    skills_text, used = library.inject(project.get("brief", "") + " storyboard explainer shorts", "director", budget=7000, must=["storyboard-director", "explainer-grammar"] + (["film-continuity"] if continuity_line(project) else []) + (["multilingual-type"] if language_line(project).find("(en)") < 0 else []))
     emit("agent.skills", {"agent": "director", "skills": used})
     bible = project["bible"]
     shorts = project["height"] > project["width"]
@@ -144,6 +149,7 @@ Format: {grid_text(project)}
 Visual style: {bible['name']} — {bible['brief']}
 Audience: {project['options'].get('audience') or 'general'}; tone: {project['options'].get('tone') or 'confident, curious'}.
 {language_line(project)}
+{continuity_line(project)}
 Shared memory:
 {brain.snapshot(['research', 'references', 'producer', 'documents'], 9000)}
 If user images are listed under references, place them by id in data.image (image-focus, vox-board photo, lower-third), data.photos (photo-stack) or data.images (three-hero gallery) where they fit the story.
@@ -267,6 +273,21 @@ Return JSON only: {{"motif": "one recurring visual device (shape, line, texture,
     return patch if isinstance(patch, dict) else {}
 
 
+async def design_cast3d(project: dict[str, Any], emit: Emit) -> dict[str, Any]:
+    from . import cast3d
+    model = llmmod.LLM("art")
+    if not model.available:
+        return cast3d.fallback(project)
+    user = cast3d.PROMPT.format(brief=project.get("brief", "")[:3000], looks=list(cast3d.LOOKS), sets=list(cast3d.SETS), presets=list(cast3d.PRESETS),
+                                hair=list(cast3d.HAIR), hats=list(cast3d.HATS), outfits=list(cast3d.OUTFITS), extras=list(cast3d.EXTRAS), props=list(cast3d.PROPS))
+    on_token, flush = _tokens(emit, "art")
+    try:
+        raw = await model.json("You are the Art Director casting a 3D cartoon film.", user, on_token=on_token, max_tokens=1200)
+    finally:
+        flush()
+    return cast3d.validate(raw, project)
+
+
 def _neighbours(project: dict[str, Any], scene: dict[str, Any]) -> str:
     scenes = project["scenes"]
     i = scene["index"]
@@ -310,6 +331,21 @@ def animator_system(project: dict[str, Any], scene: dict[str, Any]) -> tuple[str
                       ("web", "documentary-assets"), ("map", "maps-and-geography"), ("sound", "audio-assets"), ("data", "real-data-sources"), ("dialogue", "character-dialogue-lipsync"), ("lens", "lens-and-camera-optics")):
         if key in inst and name not in must:
             must.append(name)
+    from . import continuity
+    sheet = continuity.bible(project)
+    if sheet:
+        if sheet["medium"] == "3d":
+            must = [m for m in must if m not in ("svg-character-design", "3d-models", "character-animation", "three-d-motion")]
+            extra = ["procedural-3d-world"] + (["stop-motion-craft-looks"] if sheet.get("look") in ("felt", "clay", "paper") else [])
+        elif sheet["medium"] == "stickman":
+            must = [m for m in must if m not in ("svg-character-design", "3d-models")]
+            extra = ["stickman-direction"]
+        else:
+            must = [m for m in must if m != "3d-models"]
+            extra = ["svg-character-design"]
+        for name in ["film-continuity"] + extra:
+            if name not in must and library.get(name):
+                must.insert(2, name)
     blob2 = f"{scene.get('visual', '')} {scene.get('onscreen', '')} {scene.get('narration', '')}".lower()
     if any(w in blob2 for w in (" map", "route", "journey", "border", "country", "countries", "city", "flight", "travel", "located")) and "maps-and-geography" not in must and llmmod.read_settings().get("animator_mode", "harness") == "harness":
         must.append("maps-and-geography")
@@ -323,6 +359,11 @@ def animator_system(project: dict[str, Any], scene: dict[str, Any]) -> tuple[str
     system = ("You are a senior motion designer who writes HTML/CSS/GSAP compositions for a frame-accurate video renderer. Your scenes look like work from a top studio: "
               "layered depth, typographic craft, choreographed staggers, purposeful camera, nothing generic, nothing slide-like.\n\n" + RULESET + "\n\n" + language_line(project) + "\n\n" + skills_text)
     return system, used
+
+
+def cast3d_line(project: dict[str, Any]) -> str:
+    from . import continuity
+    return continuity.text_for_animator(project)
 
 
 def direction_text(scene: dict[str, Any]) -> str:
@@ -375,6 +416,7 @@ Project assets you may use with AU.asset(id) as img/video src: {', '.join(assets
 Facts you may cite (never invent numbers): {'; '.join(f.get('claim', '')[:120] + (' [source: ' + f['url'] + ']' if harness and f.get('url') else '') for f in (project.get('memory', {}).get('facts') or [])[:8]) or 'none'}
 {scout_text(scene) if harness else ""}
 {direction_text(scene)}
+{cast3d_line(project)}
 {extra}
 {"Build this scene as scene.html in your workspace with the tools: plan, read the skills you need, write it (in parts if long), preview, fix, then finish." if harness else "Output ONE html fragment in a ```html code block: markup inside <div class=" + chr(34) + "scene" + chr(34) + ">...</div>, one <style>, one <script> calling AU.scene."}
 The ctx passed to AU.scene has: tl, $, $$, W, H, D, fps, seed, rand, clamp, lerp, data, assets, safe, portrait, split, counter, draw, rough, camera, chart, math, icon, ambient, particles, onFrame, three, typewrite, scramble, fit, asset, cssColor.
@@ -434,6 +476,7 @@ async def critique(project: dict[str, Any], scene: dict[str, Any], result: dict[
     issues = qa.repair_brief(result) or "none"
     user = f"""Scene {scene['index'] + 1}: intended visual: {scene.get('visual', '')}; on-screen words: {scene.get('onscreen', '')}; style {project['bible']['name']}.
 Automated probe issues:\n{issues}
+{continuity_line(project) + ' If a character in the frames does not match this model sheet (different medium, face, hair, clothes or colours), report a P0 continuity note.' if continuity_line(project) else ''}
 {'The attached contact sheet shows frames across the scene; first describe each frame in one short sentence.' if sheet_b64 else 'No frames attached.'}
 Return JSON only: {{"frames": [str], "reads_clearly": 1-5, "on_bible": 1-5, "verdict": "pass" or "repair",
 "notes": [{{"severity": "P0|P1|P2", "layer": "data-layer or element", "time": seconds, "problem": str, "fix": str}}]}}"""
