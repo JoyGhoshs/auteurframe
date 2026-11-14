@@ -5,7 +5,7 @@ services:
       dockerfile: docker/Dockerfile
     image: auteurframe:1
     ports:
-      - "8800:8800"
+      - "127.0.0.1:8800:8800"
     volumes:
       - auteurframe-data:/data
     environment:

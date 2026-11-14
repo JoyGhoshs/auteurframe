@@ -355,6 +355,35 @@
     return { p, root, body, spine, neck, head, legs, arms, D, face, faceCanvas, faceTex, st, uprights, height: (D.legLen + D.torsoH + D.headH + 0.1) * s };
   }
 
+  function modelSpecOf(m) {
+    const lib = (window.AU_MODEL && window.AU_MODEL.LIBRARY) || {};
+    const spec = typeof m === 'string' ? lib[m] : m;
+    if (!spec) throw new Error(`world3d: unknown model "${m}"; use one of ${Object.keys(lib).join(', ')} or a ModelSpec object`);
+    return spec;
+  }
+
+  function buildModel(T, kit, m, look, colors) {
+    let spec = modelSpecOf(m);
+    if (colors) {
+      spec = JSON.parse(JSON.stringify(spec));
+      spec.palette = spec.palette || {};
+      Object.entries(colors).forEach(([k, v]) => { spec.palette[k] = Object.assign({}, spec.palette[k] || {}, { color: v }); });
+    }
+    const built = window.AU_MODEL.build(T, spec, { look, kit });
+    built.report.errors.forEach((e) => { throw new Error('model spec: ' + e); });
+    built.report.warnings.forEach((w) => console.warn('model spec: ' + w));
+    return built;
+  }
+
+  function buildModelFigure(T, kit, c, idx, look) {
+    const m = buildModel(T, kit, c.model, look, c.colors);
+    const root = new T.Group();
+    root.add(m.root);
+    const s = c.scale || 1;
+    root.scale.setScalar(s);
+    return { p: c, root, model: m, isModel: true, height: m.size.y * s, idx, lastY: 0, uprights: [], st: {} };
+  }
+
   function posePerson(t, f, cast, worldT) {
     const p = f.p;
     const acts = p.actions || [];
@@ -754,6 +783,8 @@
     };
   }
 
+  window.AU_W3D = { makeKit, roundBox, LOOKS, shade, mul, hash };
+
   const SHOTS = { extreme: [16, 1.2, 6], wide: [9, 1.0, 3.2], full: [5.5, 1.0, 1.8], medium: [3.6, 1.25, 1.4], close: [1.9, 1.55, 1.6], extremeclose: [1.1, 1.6, 1.6], low: [3.6, 1.0, 0.35], high: [6, 1.0, 7], ots: [2.6, 1.4, 1.7] };
 
   reg.define('world3d', {
@@ -763,7 +794,8 @@
       set: { type: 'enum', default: 'studio', options: Object.keys(SETS), doc: 'environment; none gives a transparent background' },
       look: { type: 'enum', default: 'lowpoly', options: Object.keys(LOOKS), doc: 'material and motion style for the whole world' },
       time: { type: 'enum', default: '', options: ['', 'day', 'sunset', 'night', 'studio', 'lab', 'interior', 'space'], doc: 'lighting and sky; empty uses the set default' },
-      cast: { type: 'array', default: [], doc: "characters: [{id, preset, x, z, facing (degrees, 0 faces camera), scale, skin, hair (short|side|spiky|messy|ponytail|bun|long|curly|bald), hairColor, hat (helmet|cap|hardhat|chef|beanie|crown|tophat|straw|space|none), hatColor, shirt, pants, shoes, outfit (casual|labcoat|armor|hoodie|suit|overalls|suit-space|robot), extras [goggles, glasses, backpack, cape, beard, mustache], prop (sword|shield|wrench|phone|book|cup|torch|flashlight|sign|umbrella|briefcase|flask), propL, expression, actions: [{do, at, duration, to: x or [x,z], dir, expression, height}]}]. Actions: walk, run, march, sneak, wave, point, talk, look, shock, jump, cheer, shrug, nod, shake, think, scared, cry, laugh, angry, yell, crouch, brace, block, attack, punch, throw, fall, fly, tumble, blown-away, hold, raise, hug, sit, dance, turn, type, zap. Expressions: " + Object.keys(EXPR).join(', ') },
+      props: { type: 'array', default: [], doc: "ModelSpec set dressing: [{model: library name (dog, cat, bird, car, tree, house, chair, table, desk-lamp, sofa) or a ModelSpec object, x, z, yaw, scale, colors}]" },
+      cast: { type: 'array', default: [], doc: "a cast member may be a ModelSpec creature or object instead of a person: {id, model: 'dog' or a spec, x, z, facing, scale, colors, actions: walk/run (to), wag, nod, spin, joint}. People: characters: [{id, preset, x, z, facing (degrees, 0 faces camera), scale, skin, hair (short|side|spiky|messy|ponytail|bun|long|curly|bald), hairColor, hat (helmet|cap|hardhat|chef|beanie|crown|tophat|straw|space|none), hatColor, shirt, pants, shoes, outfit (casual|labcoat|armor|hoodie|suit|overalls|suit-space|robot), extras [goggles, glasses, backpack, cape, beard, mustache], prop (sword|shield|wrench|phone|book|cup|torch|flashlight|sign|umbrella|briefcase|flask), propL, expression, actions: [{do, at, duration, to: x or [x,z], dir, expression, height}]}]. Actions: walk, run, march, sneak, wave, point, talk, look, shock, jump, cheer, shrug, nod, shake, think, scared, cry, laugh, angry, yell, crouch, brace, block, attack, punch, throw, fall, fly, tumble, blown-away, hold, raise, hug, sit, dance, turn, type, zap. Expressions: " + Object.keys(EXPR).join(', ') },
       fx: { type: 'array', default: [], doc: "effects: [{type: lightning|fireball|explosion|tornado|debris|sparks|confetti|rain|snow|dust|embers, at, duration, from, to (cast id, anchor name like coil/castle, or [x,y,z]), pos, count, arc, size}]" },
       camera: { type: 'object', default: null, doc: "{shot: extreme|wide|full|medium|close|extremeclose|low|high|ots, target: cast id or [x,y,z], yaw: degrees around the target, orbit: degrees across the scene, push: end zoom like 1.15, moves: [{at, duration, shot, target, yaw}], shake: 0 to 2}" },
       steps: { type: 'number', default: 0, doc: 'animate on 1s, 2s or 3s (stop-motion); 0 uses the look default' },
@@ -797,8 +829,17 @@
       g.renderer.toneMappingExposure = p.exposure || 1.05;
       if (setName === 'none') { const sh = new T.Mesh(new T.PlaneGeometry(30, 30), new T.ShadowMaterial({ opacity: 0.28 })); sh.rotation.x = -Math.PI / 2; sh.receiveShadow = true; g.scene.add(sh); }
       const figures = {};
+      (p.props || []).forEach((pr, i) => {
+        const m = buildModel(T, kit, pr.model, look, pr.colors);
+        const holder = new T.Group();
+        holder.add(m.root);
+        holder.position.set(+pr.x || 0, 0, +pr.z || 0);
+        holder.rotation.y = (+pr.yaw || 0) * DEG;
+        holder.scale.setScalar(+pr.scale || 1);
+        g.scene.add(holder);
+      });
       const list = (p.cast || []).map((c, i) => {
-        const f = buildFigure(T, kit, c, i);
+        const f = c.model ? buildModelFigure(T, kit, c, i, look) : buildFigure(T, kit, c, i);
         f.idx = i; f.lastY = 0;
         f.facing = (c.facing != null ? +c.facing : 0) * DEG;
         g.scene.add(f.root);
@@ -835,6 +876,13 @@
         const stepIdx = Math.floor(t0 * ctx.fps / Math.max(1, steps));
         list.forEach((f) => {
           const o = posePerson(t, f, list, t0);
+          if (f.isModel) {
+            f.root.position.set(o.x, Math.max(0, o.y > 0.05 ? o.y : 0), o.z);
+            f.root.rotation.set(0, o.yaw != null ? o.yaw : f.facing, 0);
+            window.AU_MODEL.animate(f.model, t, f.p.actions || []);
+            f.lastY = 0;
+            return;
+          }
           applyPose(T, f, o, f.facing);
           f.lastY = o.y;
           if (boil > 0) { const j = boil * 0.006; f.root.position.x += (hash(stepIdx * 1.7 + f.idx) - 0.5) * j; f.root.rotation.y += (hash(stepIdx * 2.3 + f.idx) - 0.5) * j * 2; f.head.rotation.z += (hash(stepIdx * 3.1 + f.idx) - 0.5) * j * 3; }
@@ -864,10 +912,18 @@
         const pv = new T.Vector3();
         list.forEach((f) => {
           const sc = f.root.scale.x;
-          f.head.getWorldPosition(pv);
-          pv.y += f.D.headH * 0.55 * sc;
+          let half;
+          if (f.isModel) {
+            f.root.getWorldPosition(pv);
+            pv.y += f.height * 0.85;
+            half = Math.max(0.08, f.height * 0.18);
+          } else {
+            f.head.getWorldPosition(pv);
+            pv.y += f.D.headH * 0.55 * sc;
+            half = f.D.headW * 0.62 * sc;
+          }
           const c = pv.clone().project(g.camera);
-          const edge = pv.clone().add(new T.Vector3(f.D.headW * 0.62 * sc, 0, 0)).project(g.camera);
+          const edge = pv.clone().add(new T.Vector3(half, 0, 0)).project(g.camera);
           const rx = Math.abs(edge.x - c.x) / 2 * box.width;
           const cx = box.left + (c.x + 1) / 2 * box.width, cy = box.top + (1 - c.y) / 2 * box.height;
           if (c.z < 1) actors[f.p.id || ('c' + f.idx)] = { face: [cx - rx, cy - rx * 1.1, rx * 2, rx * 2.2], top: cy - rx * 1.3, x: cx };

@@ -25,6 +25,8 @@ FFPROBE = os.environ.get("FFPROBE_PATH", shutil.which("ffprobe") or "ffprobe")
 MAX_UPLOAD_MB = int(os.environ.get("AUTEUR_MAX_UPLOAD_MB", "512"))
 SCENE_CONCURRENCY = int(os.environ.get("AUTEUR_SCENE_CONCURRENCY", "4"))
 RENDER_CONCURRENCY = int(os.environ.get("AUTEUR_RENDER_CONCURRENCY", "3"))
+RELAY = os.environ.get("AUTEUR_RELAY", "1") != "0"
+POLISH = os.environ.get("AUTEUR_POLISH", "1") != "0"
 MAX_REPAIR_ROUNDS = int(os.environ.get("AUTEUR_MAX_REPAIRS", "2"))
 REPAIR_STEPS = int(os.environ.get("AUTEUR_REPAIR_STEPS", "12"))
 SCENE_SECONDS = int(os.environ.get("AUTEUR_SCENE_SECONDS", "540"))

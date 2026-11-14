@@ -200,7 +200,9 @@ def build_document(project: dict[str, Any], scene: dict[str, Any], mode: str = "
     fragment = scene.get("code") or house_fragment(scene.get("archetype") or "kinetic-title")
     fragment = sanitize_fragment(fragment)
     house = "AU_ARCH" in fragment
-    uses_three = "three(" in fragment or "THREE" in fragment or "model3d" in fragment or "world3d" in fragment or "figure3d" in fragment or (house and (scene.get("archetype") == "three-hero"))
+    layer_comps = {str(L.get("component")) for L in (scene.get("layers") or []) if isinstance(L, dict) and L.get("kind") == "component"}
+    uses_three = "three(" in fragment or "THREE" in fragment or "model3d" in fragment or "world3d" in fragment or "figure3d" in fragment or "model-spec" in fragment or (house and (scene.get("archetype") == "three-hero")) \
+        or bool(layer_comps & {"model3d", "world3d", "figure3d", "model-spec"})
     uses_gl = any(i in fragment for i in gl_map_ids(project))
     return _document(project, cfg, fragment, house=house, uses_three=uses_three, mode=mode, libs=scene_libs(fragment), uses_gl=uses_gl)
 
@@ -259,7 +261,7 @@ def _document(project: dict[str, Any], cfg: dict[str, Any], fragment: str, house
         '<link rel="stylesheet" href="/vendor/maplibre/maplibre-gl.css"><script src="/vendor/maplibre/maplibre-gl.js"></script>' if uses_gl else "",
         "".join(f'<script src="/vendor/lib/{name}.js"></script>' for name in (libs or [])),
         f"<script>window.AU_CONFIG={cfg_json};</script>",
-        '<script src="/runtime/auteur.js"></script><script src="/runtime/components.js"></script><script src="/runtime/characters.js"></script><script src="/runtime/models.js"></script><script src="/runtime/documentary.js"></script><script src="/runtime/actors.js"></script><script src="/runtime/lens.js"></script><script src="/runtime/toons.js"></script><script src="/runtime/sets.js"></script><script src="/runtime/world3d.js"></script><script src="/runtime/stickman.js"></script><script src="/runtime/animals.js"></script>',
+        '<script src="/runtime/auteur.js"></script><script src="/runtime/components.js"></script><script src="/runtime/characters.js"></script><script src="/runtime/models.js"></script><script src="/runtime/documentary.js"></script><script src="/runtime/actors.js"></script><script src="/runtime/lens.js"></script><script src="/runtime/toons.js"></script><script src="/runtime/sets.js"></script><script src="/runtime/world3d.js"></script><script src="/runtime/modelspec.js"></script><script src="/runtime/modellib.js"></script><script src="/runtime/stickman.js"></script><script src="/runtime/animals.js"></script><script src="/runtime/anime.js"></script>',
         '<script src="/runtime/archetypes.js"></script><script src="/runtime/archetypes2.js"></script><script src="/runtime/archetypes3.js"></script>' if house else "",
         "</head><body class=\"au-body\">",
         '<div id="au-stage" class="au-stage">',
@@ -283,7 +285,9 @@ _runtime_cache: dict[str, Any] = {"key": None, "sig": ""}
 
 def runtime_signature() -> str:
     from . import config
-    files = [config.WEB / "runtime" / n for n in ("auteur.js", "auteur.css", "components.js", "components.css", "characters.js", "models.js", "documentary.js", "actors.js", "lens.js", "toons.js", "sets.js", "archetypes.js", "archetypes.css", "archetypes2.js", "archetypes2.css", "archetypes3.js", "archetypes3.css")]
+    runtime = config.WEB / "runtime"
+    files = sorted([f for f in runtime.iterdir() if f.is_file() and f.suffix in (".js", ".css")] if runtime.exists() else [])
+    files.append(config.ROOT / "renderer" / "src" / "capture.mjs")
     key = tuple((f.stat().st_mtime_ns, f.stat().st_size) for f in files if f.exists())
     if key != _runtime_cache["key"]:
         digest = hashlib.sha1()

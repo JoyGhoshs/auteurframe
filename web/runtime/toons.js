@@ -24,7 +24,27 @@
     beekeeper: { hat: 'beekeeper', hatColor: '#efe6c8', shirt: '#efe6c8', beard: 'full', beardColor: '#eeeae2' },
     thief: { hat: 'beanie', hatColor: '#d9772b', shirt: '#7b4fb8', mouth: 'smirk', expression: 'smirk' },
     zombie: { zombie: true, skin: '#a8c49a', hair: 'messy', hairColor: '#4a4a3a', shirt: '#6b6f5a', pants: '#4d4a44', expression: 'zombie', torn: true },
-    hero: { hair: 'spiky', hairColor: '#2a211c', shirt: '#2f6fd6', extras: ['scarf'] }
+    hero: { hair: 'spiky', hairColor: '#2a211c', shirt: '#2f6fd6', extras: ['scarf'] },
+    teacher: { hair: 'bun', hairColor: '#5a3a26', shirt: '#3f7f6a', extras: ['glasses', 'necklace'], prop: 'pointer' },
+    nurse: { hat: 'nurse', hair: 'bun', hairColor: '#3b2a20', shirt: '#7fc8d8', pants: '#7fc8d8', extras: ['stethoscope'], prop: 'clipboard' },
+    firefighter: { hat: 'firefighter', hatColor: '#c62f2f', shirt: '#3a3a40', pants: '#3a3a40', extras: ['vest'], vestColor: '#f2c230' },
+    astronaut: { hat: 'space', shirt: '#e9ecef', pants: '#c9ced6', extras: ['badge', 'belt'], beltColor: '#8a93a0' },
+    pirate: { hat: 'pirate', hatColor: '#1d1a1f', beard: 'full', beardColor: '#3a2418', shirt: '#8a2b2b', extras: ['eyepatch', 'belt'], prop: 'sword' },
+    wizard: { hat: 'wizard', hatColor: '#3d3a8c', beard: 'full', beardColor: '#eeeae2', brows: 'bushy', shirt: '#3d3a8c', pants: '#2c2a66', prop: 'wand' },
+    king: { hat: 'crown', beard: 'full', beardColor: '#8a5a34', shirt: '#7a2a8a', extras: ['cape', 'sash'], capeColor: '#b23a3a' },
+    queen: { hat: 'crown', hair: 'long', hairColor: '#6b3a22', shirt: '#2f6f9e', extras: ['cape', 'necklace'], capeColor: '#7a2a8a' },
+    princess: { hat: 'crown', hair: 'long', hairColor: '#e8b84a', shirt: '#e88fb4', extras: ['necklace'] },
+    ninja: { hat: 'ninja', hatColor: '#24242c', shirt: '#24242c', pants: '#24242c', extras: ['belt'], beltColor: '#c62f2f', prop: 'sword' },
+    farmer: { hat: 'cowboy', hatColor: '#e0c068', shirt: '#3a6ab8', beard: 'stubble', extras: ['belt'] },
+    artist: { hat: 'beret', hatColor: '#b83a3a', beard: 'mustache', shirt: '#f2f2ee', extras: ['scarf'], scarfColor: '#e2a33a', prop: 'paintbrush' },
+    detective: { hat: 'fedora', hatColor: '#6b5a48', shirt: '#9a8466', extras: ['tie'], tieColor: '#5a3a2a', prop: 'magnifier' },
+    graduate: { hat: 'graduation', hair: 'side', hairColor: '#2b1d16', shirt: '#1d1a1f', prop: 'book' },
+    builder: { hat: 'hardhat', shirt: '#3a6ab8', extras: ['vest'], prop: 'hammer' },
+    viking: { hat: 'viking', hatColor: '#9aa0a8', hair: 'long', hairColor: '#c9772e', beard: 'full', beardColor: '#c9772e', shirt: '#7a5a3a', extras: ['belt'] },
+    'mail-carrier': { hat: 'cap', hatColor: '#2f4f8f', shirt: '#6f9fd8', prop: 'bag' },
+    singer: { hair: 'curly', hairColor: '#2b1d16', shirt: '#c23b7a', extras: ['earrings'], prop: 'microphone' },
+    athlete: { hat: 'headband', hatColor: '#d94b3d', hair: 'side', hairColor: '#2b1d16', shirt: '#2f9e5f', pants: '#1d1a1f', prop: 'ball' },
+    photographer: { hair: 'messy', hairColor: '#3b2a20', shirt: '#4a5a6a', extras: ['vest'], vestColor: '#8a7a5a', prop: 'camera' }
   };
 
   const HATS = {
@@ -46,7 +66,28 @@
     tophat: () => `<rect x="80" y="-6" width="80" height="62" rx="4" fill="#1d1a1f" stroke="${INK}" stroke-width="6"/><rect x="58" y="52" width="124" height="14" rx="6" fill="#1d1a1f" stroke="${INK}" stroke-width="6"/><rect x="80" y="40" width="80" height="10" fill="#b83a3a"/>`,
     hardhat: (c) => `<path d="M58 70 Q60 20 120 18 Q180 20 182 70 Z" fill="${c || '#f2c230'}" stroke="${INK}" stroke-width="6"/><rect x="48" y="62" width="144" height="14" rx="7" fill="${c || '#f2c230'}" stroke="${INK}" stroke-width="6"/>`,
     headband: (c) => `<path d="M60 62 Q120 46 180 62 L180 76 Q120 60 60 76 Z" fill="${c}" stroke="${INK}" stroke-width="5"/>`,
-    party: (c) => `<path d="M92 50 L120 -14 L148 50 Z" fill="${c}" stroke="${INK}" stroke-width="6" stroke-linejoin="round"/><circle cx="120" cy="-16" r="8" fill="#fff" stroke="${INK}" stroke-width="4"/>`
+    party: (c) => `<path d="M92 50 L120 -14 L148 50 Z" fill="${c}" stroke="${INK}" stroke-width="6" stroke-linejoin="round"/><circle cx="120" cy="-16" r="8" fill="#fff" stroke="${INK}" stroke-width="4"/>`,
+    wizard: (c) => `<path d="M72 66 L132 -66 Q142 -72 140 -56 L168 66 Z" fill="${c}" stroke="${INK}" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M34 64 Q120 88 206 64 Q196 82 120 84 Q44 82 34 64 Z" fill="${c}" stroke="${INK}" stroke-width="6"/>
+      <path d="M118 10 l4 9 h10 l-8 6 3 10 -9 -6 -9 6 3 -10 -8 -6 h10 Z M140 40 l3 6 h6 l-5 4 2 6 -6 -4 -6 4 2 -6 -5 -4 h6 Z" fill="#f1c84b" stroke="${INK}" stroke-width="2"/>`,
+    beret: (c) => `<ellipse cx="112" cy="44" rx="70" ry="24" fill="${c}" stroke="${INK}" stroke-width="6" transform="rotate(-10 112 44)"/><path d="M106 22 L104 10" stroke="${INK}" stroke-width="6" stroke-linecap="round"/>`,
+    bandana: (c) => `<path d="M60 70 Q58 26 120 24 Q182 26 180 70 Q120 54 60 70 Z" fill="${c}" stroke="${INK}" stroke-width="6"/><path d="M62 64 L30 82 L40 96 L66 76 Z" fill="${c}" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/>
+      <g fill="#fff" opacity=".8"><circle cx="92" cy="44" r="4"/><circle cx="120" cy="36" r="4"/><circle cx="148" cy="44" r="4"/><circle cx="106" cy="58" r="3"/><circle cx="136" cy="58" r="3"/></g>`,
+    firefighter: (c) => `<path d="M56 72 Q56 14 120 12 Q184 14 184 72 Z" fill="${c}" stroke="${INK}" stroke-width="6"/><path d="M120 14 V60" stroke="${INK}" stroke-width="4" opacity=".5"/>
+      <path d="M36 70 Q120 52 204 70 Q212 86 200 88 Q120 74 40 88 Q28 86 36 70 Z" fill="${c}" stroke="${INK}" stroke-width="6"/><path d="M104 24 h32 v30 l-16 10 -16 -10 Z" fill="#f1c84b" stroke="${INK}" stroke-width="4"/>`,
+    graduation: (c) => `<path d="M80 46 L80 72 Q120 86 160 72 L160 46 Z" fill="#1d1a1f" stroke="${INK}" stroke-width="6"/><path d="M120 6 L204 34 L120 62 L36 34 Z" fill="#1d1a1f" stroke="${INK}" stroke-width="6" stroke-linejoin="round"/>
+      <path d="M120 34 L190 40 L192 78" fill="none" stroke="${c || '#f1c84b'}" stroke-width="5"/><path d="M186 76 h12 l-2 20 h-8 Z" fill="${c || '#f1c84b'}" stroke="${INK}" stroke-width="3"/>`,
+    pirate: (c) => `<path d="M34 68 Q44 18 80 40 Q120 0 160 40 Q196 18 206 68 Q120 86 34 68 Z" fill="${c || '#1d1a1f'}" stroke="${INK}" stroke-width="6" stroke-linejoin="round"/>
+      <circle cx="120" cy="44" r="9" fill="#fff" stroke="${INK}" stroke-width="3"/><path d="M104 58 L136 66 M136 58 L104 66" stroke="#fff" stroke-width="5" stroke-linecap="round"/>`,
+    nurse: () => `<path d="M74 62 L82 28 L158 28 L166 62 Q120 52 74 62 Z" fill="#fff" stroke="${INK}" stroke-width="6" stroke-linejoin="round"/><path d="M116 32 h8 v8 h8 v8 h-8 v8 h-8 v-8 h-8 v-8 h8 Z" fill="#d94b3d"/>`,
+    space: () => `<circle cx="120" cy="96" r="82" fill="rgba(180,220,255,.2)" stroke="${INK}" stroke-width="6"/><path d="M70 52 Q92 26 126 24" stroke="#fff" stroke-width="9" stroke-linecap="round" opacity=".75" fill="none"/>
+      <rect x="56" y="168" width="128" height="20" rx="9" fill="#d9dde3" stroke="${INK}" stroke-width="5"/>`,
+    ninja: (c) => `<path fill-rule="evenodd" d="M50 96 a70 70 0 1 0 140 0 a70 70 0 1 0 -140 0 Z M70 78 H170 V112 H70 Z" fill="${c}" stroke="${INK}" stroke-width="6"/>
+      <path d="M186 84 L222 70 L216 90 L226 104 L190 100 Z" fill="${c}" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/>`,
+    fedora: (c) => `<path d="M30 70 Q120 92 210 70 Q200 84 120 88 Q40 84 30 70 Z" fill="${c}" stroke="${INK}" stroke-width="6"/><path d="M72 72 Q70 22 102 26 Q120 38 138 26 Q170 22 168 72 Z" fill="${c}" stroke="${INK}" stroke-width="6"/>
+      <path d="M72 60 Q120 70 168 60 L168 70 Q120 80 72 70 Z" fill="#1d1a1f"/>`,
+    viking: (c) => `<path d="M64 52 Q28 44 30 2 Q46 34 74 38 Z M176 52 Q212 44 210 2 Q194 34 166 38 Z" fill="#f3ead2" stroke="${INK}" stroke-width="5" stroke-linejoin="round"/>
+      <path d="M56 74 Q56 16 120 14 Q184 16 184 74 Z" fill="${c || '#9aa0a8'}" stroke="${INK}" stroke-width="6"/><path d="M120 16 V72 M56 70 H184" stroke="${INK}" stroke-width="5"/>`
   };
 
   const HAIR = {
@@ -95,6 +136,10 @@
     if (s.has('bandage')) head.push(`<rect x="132" y="60" width="30" height="12" rx="4" fill="#f4e3c8" stroke="${INK}" stroke-width="3" transform="rotate(-20 147 66)"/>`);
     if (s.has('freckles')) head.push(`<g fill="#c98a6a"><circle cx="90" cy="112" r="2.4"/><circle cx="98" cy="116" r="2.4"/><circle cx="142" cy="116" r="2.4"/><circle cx="150" cy="112" r="2.4"/></g>`);
     if (s.has('scar')) head.push(`<path d="M146 76 L156 104 M146 84 L156 82 M148 94 L158 92" stroke="#8a3a3a" stroke-width="3"/>`);
+    if (s.has('bowtie')) body.push(`<path d="M120 164 L100 152 L100 176 Z M120 164 L140 152 L140 176 Z" fill="${col(o.tieColor, '#b83a3a')}" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/><circle cx="120" cy="164" r="5" fill="${INK}"/>`);
+    if (s.has('necklace')) body.push(`<path d="M92 156 Q120 186 148 156" fill="none" stroke="#f1c84b" stroke-width="4" stroke-dasharray="1 7" stroke-linecap="round"/><circle cx="120" cy="176" r="6" fill="${col(o.gemColor, '#4fa3e0')}" stroke="${INK}" stroke-width="3"/>`);
+    if (s.has('sash')) body.push(`<path d="M84 160 L100 156 L160 284 L144 292 Z" fill="${col(o.sashColor, '#f1c84b')}" stroke="${INK}" stroke-width="4" stroke-linejoin="round"/>`);
+    if (s.has('belt')) body.push(`<rect x="78" y="262" width="84" height="14" fill="${col(o.beltColor, '#4a3426')}" stroke="${INK}" stroke-width="4"/><rect x="112" y="260" width="16" height="18" rx="2" fill="#f1c84b" stroke="${INK}" stroke-width="3"/>`);
     if (s.has('earrings')) head.push(`<circle cx="62" cy="114" r="4" fill="#f1c84b"/><circle cx="178" cy="114" r="4" fill="#f1c84b"/>`);
     return { back: back.join(''), body: body.join(''), head: head.join('') };
   }
@@ -111,7 +156,20 @@
     cup: `<path d="M-12 -6 h24 l-3 26 h-18 Z" fill="#fff" stroke="${INK}" stroke-width="3"/>`,
     umbrella: `<path d="M0 30 V-70" stroke="${INK}" stroke-width="4"/><path d="M-54 -66 Q0 -120 54 -66 Z" fill="#d94b3d" stroke="${INK}" stroke-width="4"/>`,
     map: `<path d="M-26 -8 l18 4 l16 -4 l18 4 v30 l-18 -4 l-16 4 l-18 -4 Z" fill="#efe2b8" stroke="${INK}" stroke-width="3"/>`,
-    key: `<circle cx="0" cy="-4" r="8" fill="none" stroke="#c9a12a" stroke-width="4"/><path d="M0 4 V26 M0 18 h7 M0 24 h6" stroke="#c9a12a" stroke-width="4"/>`
+    key: `<circle cx="0" cy="-4" r="8" fill="none" stroke="#c9a12a" stroke-width="4"/><path d="M0 4 V26 M0 18 h7 M0 24 h6" stroke="#c9a12a" stroke-width="4"/>`,
+    wand: `<path d="M0 24 L0 -46" stroke="#4a3426" stroke-width="6" stroke-linecap="round"/><path d="M0 -66 l5 10 h11 l-9 7 3 11 -10 -7 -10 7 3 -11 -9 -7 h11 Z" fill="#f1c84b" stroke="${INK}" stroke-width="3"/>`,
+    sword: `<path d="M-4 -96 L0 -108 L4 -96 L4 -10 L-4 -10 Z" fill="#d9dde3" stroke="${INK}" stroke-width="3"/><rect x="-16" y="-12" width="32" height="7" rx="3" fill="#c9a12a" stroke="${INK}" stroke-width="3"/><rect x="-4" y="-5" width="8" height="22" rx="2" fill="#4a3426" stroke="${INK}" stroke-width="3"/>`,
+    clipboard: `<rect x="-20" y="-16" width="40" height="52" rx="4" fill="#c9a26a" stroke="${INK}" stroke-width="3"/><rect x="-15" y="-8" width="30" height="40" fill="#fff"/><rect x="-8" y="-20" width="16" height="8" rx="2" fill="#8a93a0" stroke="${INK}" stroke-width="2"/><path d="M-10 2 h20 M-10 10 h20 M-10 18 h14" stroke="#8a93a0" stroke-width="2"/>`,
+    paintbrush: `<path d="M0 24 L0 -40" stroke="#c9772e" stroke-width="6" stroke-linecap="round"/><rect x="-5" y="-50" width="10" height="12" fill="#b0b6bf" stroke="${INK}" stroke-width="2"/><path d="M-5 -50 Q0 -70 5 -50 Z" fill="#d94b3d" stroke="${INK}" stroke-width="2"/>`,
+    pointer: `<path d="M0 24 L0 -86" stroke="#8a5a34" stroke-width="5" stroke-linecap="round"/><circle cx="0" cy="-88" r="4" fill="#d94b3d"/>`,
+    microphone: `<rect x="-5" y="-14" width="10" height="38" rx="4" fill="#2d2d33" stroke="${INK}" stroke-width="3"/><circle cx="0" cy="-22" r="11" fill="#9aa0a8" stroke="${INK}" stroke-width="3"/><path d="M-8 -26 h16 M-8 -20 h16" stroke="${INK}" stroke-width="1.5" opacity=".5"/>`,
+    camera: `<rect x="-24" y="-12" width="48" height="32" rx="5" fill="#2d2d33" stroke="${INK}" stroke-width="3"/><rect x="-10" y="-18" width="16" height="7" rx="2" fill="#2d2d33"/><circle cx="0" cy="4" r="10" fill="#4f6a8a" stroke="#d9dde3" stroke-width="4"/>`,
+    balloon: `<path d="M0 24 Q-8 -20 2 -60" stroke="${INK}" stroke-width="2" fill="none"/><ellipse cx="2" cy="-86" rx="22" ry="27" fill="#d94b3d" stroke="${INK}" stroke-width="4"/><path d="M-1 -59 l3 5 l3 -5 Z" fill="#d94b3d" stroke="${INK}" stroke-width="2"/>`,
+    flower: `<path d="M0 24 Q4 -10 0 -36" stroke="#3f8a3a" stroke-width="4" fill="none"/><g fill="#f28ab2" stroke="${INK}" stroke-width="2.5"><circle cx="0" cy="-52" r="9"/><circle cx="-12" cy="-42" r="9"/><circle cx="12" cy="-42" r="9"/><circle cx="-7" cy="-30" r="8"/><circle cx="7" cy="-30" r="8"/></g><circle cx="0" cy="-40" r="7" fill="#f1c84b" stroke="${INK}" stroke-width="2.5"/>`,
+    hammer: `<rect x="-4" y="-40" width="8" height="64" rx="3" fill="#c9772e" stroke="${INK}" stroke-width="3"/><rect x="-20" y="-54" width="40" height="18" rx="3" fill="#8a93a0" stroke="${INK}" stroke-width="3"/>`,
+    pan: `<circle cx="0" cy="-34" r="24" fill="#3a3a40" stroke="${INK}" stroke-width="4"/><rect x="-4" y="-10" width="8" height="34" rx="3" fill="#2d2d33" stroke="${INK}" stroke-width="3"/>`,
+    ball: `<circle cx="0" cy="-14" r="20" fill="#f2a03a" stroke="${INK}" stroke-width="4"/><path d="M-20 -14 H20 M0 -34 V6 M-14 -28 Q0 -14 -14 0 M14 -28 Q0 -14 14 0" stroke="${INK}" stroke-width="2.5" fill="none"/>`,
+    magnifier: `<rect x="-4" y="-6" width="8" height="30" rx="3" fill="#4a3426" stroke="${INK}" stroke-width="3"/><circle cx="0" cy="-24" r="17" fill="rgba(180,220,255,.35)" stroke="${INK}" stroke-width="5"/>`
   };
 
   function rigSVG(o, id) {
@@ -310,7 +368,7 @@
     hat: { type: 'enum', default: '', options: [''].concat(Object.keys(HATS)), doc: 'empty keeps the preset; none removes it' }, hatColor: { type: 'string', default: '' },
     hair: { type: 'enum', default: '', options: [''].concat(Object.keys(HAIR)) }, hairColor: { type: 'string', default: '' },
     beard: { type: 'enum', default: '', options: ['', 'none', 'full', 'stubble', 'mustache'] }, beardColor: { type: 'string', default: '' },
-    extras: { type: 'array', default: [], doc: 'backpack, cape, tie, badge, scarf, apron, stethoscope, vest, glasses, sunglasses, eyepatch, bandage, freckles, scar, earrings' },
+    extras: { type: 'array', default: [], doc: 'backpack, cape, tie, bowtie, badge, scarf, apron, stethoscope, vest, belt, sash, necklace, glasses, sunglasses, eyepatch, bandage, freckles, scar, earrings (colours: capeColor, tieColor, scarfColor, vestColor, beltColor, sashColor, gemColor, backpackColor)' },
     prop: { type: 'enum', default: '', options: [''].concat(Object.keys(PROPS)), doc: 'item in the front hand' },
     expression: { type: 'enum', default: '', options: [''].concat(Object.keys(EXPR)) },
     zombie: { type: 'boolean', default: false, doc: 'undead look and default shamble pose' }, torn: { type: 'boolean', default: false },
@@ -322,7 +380,7 @@
   };
 
   reg.define('toon', {
-    category: 'character', description: 'Story cartoon character in the bold outlined style of animated story channels: big white round head, expressive brows and eyes, coloured body, stick limbs. Build any cast from presets (kid, teen-girl, teen-boy, old-man, old-woman, police, soldier, doctor, scientist, businessman, chef, biker, beekeeper, thief, zombie, hero) or from parts (hats, hair, beards, extras, props, colours, custom SVG parts). Acts with walk, run, shamble, wave, point, talk with lip sync, shock, cheer, scared, cry, laugh, fall, hug and more, each with an expression.',
+    category: 'character', description: 'Story cartoon character in the bold outlined style of animated story channels: big white round head, expressive brows and eyes, coloured body, stick limbs. Build any cast from presets (kid, teen-girl, teen-boy, old-man, old-woman, police, soldier, doctor, nurse, teacher, scientist, businessman, chef, biker, beekeeper, thief, zombie, hero, firefighter, astronaut, pirate, wizard, king, queen, princess, ninja, farmer, artist, detective, graduate, builder, viking, mail-carrier, singer, athlete, photographer) or from parts (hats, hair, beards, extras, props, colours, custom SVG parts). Acts with walk, run, shamble, wave, point, talk with lip sync, shock, cheer, scared, cry, laugh, fall, hug and more, each with an expression.',
     params: TOON_PARAMS,
     example: "component('toon', { preset: 'teen-girl', x: 30, shirt: '#d94b3d', prop: 'flashlight', actions: [{ do: 'run', at: 0.3, duration: 2, to: 60, expression: 'scared' }, { do: 'look', dir: 'left', at: 2.4, duration: 1 }] })"
   }, (ctx, p, h) => buildToon(ctx, p, h, 'auc-toon'));

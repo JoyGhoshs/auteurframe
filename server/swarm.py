@@ -22,6 +22,8 @@ ROSTER = [
     {"id": "director", "name": "Director", "role": "Writes the screenplay and fits it to the master clock", "icon": "clapperboard"},
     {"id": "narrator", "name": "Narrator", "role": "Voices the narration with free neural TTS and locks word timing", "icon": "mic"},
     {"id": "sound", "name": "Sound Designer", "role": "Places synthesised and library sound effects and ambience on every scene", "icon": "audio-lines"},
+    {"id": "composer", "name": "Composer", "role": "Writes an original score in a genre picked for the film, shaped to the scene cuts", "icon": "music"},
+    {"id": "polish", "name": "Finisher", "role": "Polishes each accepted scene while the lead animator writes the next one", "icon": "sparkles"},
     {"id": "scout", "name": "Asset Scout", "role": "Collects real photos, footage, icons, sound and music from free libraries", "icon": "binoculars"},
     {"id": "art", "name": "Art Director", "role": "Locks the style bible, palette, type and motif", "icon": "palette"},
     {"id": "animator-1", "name": "Animator A", "role": "Writes scene compositions", "icon": "pen-tool"},
@@ -389,6 +391,15 @@ async def stage_sound(run: Run) -> None:
     project = store.get(run.pid)
     opts = project.get("options") or {}
     audio_cfg = project.get("audio") or {}
+    choice = audio_cfg.get("music", "auto")
+    if choice in (None, "auto") or str(choice).startswith("mood:"):
+        from . import composer
+        plan = composer.choose(project, str(choice)[5:] if str(choice).startswith("mood:") else None)
+        if audio_cfg.get("score") != plan:
+            store.mutate(run.pid, lambda p, s=plan: p.setdefault("audio", {}).__setitem__("score", s))
+            run.agent("composer", "done", f"{plan['label']} · {plan['bpm']} BPM")
+            run.brain.decide("composer", f"Score: {plan['label']} in {plan['mode']} at {plan['bpm']} BPM",
+                             f"chosen from the {plan['why']}; sections, risers and the peak follow the scene cuts")
     if run.mode == "house" or opts.get("sound_design") is False or audio_cfg.get("sfx_locked"):
         return
     if run.mode == "render" and audio_cfg.get("sound_designed"):
@@ -514,9 +525,9 @@ async def stage_stock(run: Run) -> None:
     run.agent("producer", "done", "imagery placed")
 
 
-async def write_scene(run: Run, scene_id: str, animators: Pool, instruction: str = "") -> None:
+async def write_scene(run: Run, scene_id: str, animators: Pool, instruction: str = "", relay: dict[str, Any] | None = None) -> None:
     project = store.get(run.pid)
-    scene = next(s for s in project["scenes"] if s["id"] == scene_id)
+    scene = with_relay(next(s for s in project["scenes"] if s["id"] == scene_id), relay)
     idx = scene["index"]
     model = llmmod.LLM("animator")
     agent_mode = model.available and run.mode != "house" and project["options"].get("mode", "auto") != "house" and not scene.get("locked") \
@@ -549,7 +560,7 @@ async def write_scene(run: Run, scene_id: str, animators: Pool, instruction: str
             run.check()
             patch_scene(run, scene_id, {"code": code, "source": "agent", "status": "qa"})
             project = store.get(run.pid)
-            scene = next(s for s in project["scenes"] if s["id"] == scene_id)
+            scene = with_relay(next(s for s in project["scenes"] if s["id"] == scene_id), relay)
             run.agent("critic", "working", f"probing scene {idx + 1} round {round_no + 1}", idx)
             run.cursor("critic", idx, label="probe")
             lint = qa.lint(code)
@@ -564,6 +575,7 @@ async def write_scene(run: Run, scene_id: str, animators: Pool, instruction: str
             if drift:
                 result["issues"] = drift + result["issues"]
                 result["pass"] = False
+                result["score"] = penalised(result.get("score"), drift)
                 run.brain.decide("critic", f"Scene {idx + 1}: continuity", "; ".join(d["message"] for d in drift)[:300])
             notes = []
             if probe.get("shots") and critic_rounds < config.MAX_REPAIR_ROUNDS + 2:
@@ -573,7 +585,7 @@ async def write_scene(run: Run, scene_id: str, animators: Pool, instruction: str
                     critic_rounds += 1
                     run.stats["llm_calls"] += 1
                     notes = verdict.get("notes", []) if isinstance(verdict, dict) else []
-                    result["critic"] = {k: verdict.get(k) for k in ("reads_clearly", "on_bible", "verdict", "frames")} if isinstance(verdict, dict) else {}
+                    result["critic"] = {k: verdict.get(k) for k in ("reads_clearly", "on_bible", "verdict", "frames", "stranger")} if isinstance(verdict, dict) else {}
                     for n in notes:
                         if isinstance(n, dict) and n.get("severity") in ("P0", "P1"):
                             result["issues"].append({"kind": "critic", "severity": n["severity"], "message": f"{n.get('problem', '')} ({n.get('layer', '')} at {n.get('time', '?')}s)", "fix": n.get("fix", "")})
@@ -615,12 +627,12 @@ async def write_scene(run: Run, scene_id: str, animators: Pool, instruction: str
             run.brain.decide(who, f"Scene {idx + 1} rebuilt from scratch", "repairs did not reach the quality bar")
             try:
                 project = store.get(run.pid)
-                scene = next(s for s in project["scenes"] if s["id"] == scene_id)
+                scene = with_relay(next(s for s in project["scenes"] if s["id"] == scene_id), relay)
                 code2 = await agents.animate(project, scene, run.emit, feedback=qa.repair_brief(result) + RESCUE_BRIEF, previous_code="", instruction=instruction, topups=1)
                 run.stats["llm_calls"] += 1
                 patch_scene(run, scene_id, {"code": code2, "source": "agent", "status": "qa"})
                 project = store.get(run.pid)
-                scene = next(s for s in project["scenes"] if s["id"] == scene_id)
+                scene = with_relay(next(s for s in project["scenes"] if s["id"] == scene_id), relay)
                 probe2 = await render.probe_scene(project, scene)
                 result2 = qa.evaluate(probe2, float(scene["duration"]), qa.lint(code2))
                 from . import continuity
@@ -628,6 +640,7 @@ async def write_scene(run: Run, scene_id: str, animators: Pool, instruction: str
                 if drift2:
                     result2["issues"] = drift2 + result2["issues"]
                     result2["pass"] = False
+                    result2["score"] = penalised(result2.get("score"), drift2)
                 if probe2.get("shots"):
                     sheet2 = qa.contact_sheet(probe2["shots"][:: max(1, len(probe2["shots"]) // 6)][:6])
                     try:
@@ -655,6 +668,13 @@ async def write_scene(run: Run, scene_id: str, animators: Pool, instruction: str
             await quick_qa(run, scene_id, "critic")
         else:
             patch_scene(run, scene_id, {"code": code, "source": "agent", "status": "written"})
+        from . import recall
+        try:
+            recall.feedback(run.pid, scene_id, bool(result.get("pass")) and not blocking)
+            if not blocking and recall.remember(store.get(run.pid), scene, code, result):
+                run.brain.decide("critic", f"Scene {idx + 1} added to the scene memory", f"score {result.get('score')}, reusable for similar beats")
+        except Exception as error:
+            run.emit("run.warning", {"message": f"scene memory skipped: {str(error)[:120]}"})
         run.stats["written"] += 1
     except asyncio.CancelledError:
         raise
@@ -666,6 +686,104 @@ async def write_scene(run: Run, scene_id: str, animators: Pool, instruction: str
     finally:
         run.agent(who, "idle", "", None)
         run.agent("critic", "idle", "")
+        await animators.give(who)
+
+
+def penalised(score: Any, issues: list[dict[str, Any]]) -> int:
+    cost = {"P0": 30, "P1": 12, "P2": 4}
+    return max(0, int(round(float(score or 0))) - sum(cost.get(i.get("severity"), 0) for i in issues))
+
+
+def with_relay(scene: dict[str, Any], relay: dict[str, Any] | None) -> dict[str, Any]:
+    if not relay or not relay.get("code"):
+        return scene
+    return dict(scene, relay_code=relay["code"], relay_from=relay.get("index", 0) + 1, relay_kind=relay.get("kind", "style"))
+
+
+def relay_plan(project: dict[str, Any], ids: list[str]) -> dict[str, str | None]:
+    plan: dict[str, str | None] = {i: None for i in ids}
+    if not config.RELAY or project["options"].get("relay") is False:
+        return plan
+    order = [x["id"] for x in sorted(project["scenes"], key=lambda x: x["index"])]
+    for i, sid in enumerate(order):
+        if sid in plan and i > 0:
+            plan[sid] = order[i - 1]
+    return plan
+
+
+def relay_kind(project: dict[str, Any], scene: dict[str, Any]) -> str:
+    from . import continuity
+    b = continuity.bible(project)
+    return "cast" if b and b.get("cast") and continuity.mentions(scene, b) else "style"
+
+
+POLISH_BRIEF = """
+This scene is already accepted. You are the finisher: make it better without changing what works. Keep the layout, the characters,
+the palette, every layer name and the timing of every beat exactly; never start over. Fix the remaining notes above, then tighten the
+craft: consistent easing, staggered entrances, a little secondary motion on any layer that sits still for more than two seconds, clean
+type spacing inside the safe area. Preview once, fix what the preview shows, and finish."""
+
+
+def _structural(result: dict[str, Any]) -> dict[str, Any]:
+    return dict(result, issues=[i for i in result.get("issues") or [] if i.get("kind") != "critic"])
+
+
+async def polish_scene(run: Run, scene_id: str, animators: Pool, instruction: str = "") -> None:
+    if not config.POLISH or run.mode == "house" or run.cancelled:
+        return
+    project = store.get(run.pid)
+    scene = next((s for s in project["scenes"] if s["id"] == scene_id), None)
+    if not scene or scene.get("source") != "agent" or not scene.get("code") or scene.get("locked") or project["options"].get("polish") is False:
+        return
+    before = scene.get("qa") or {}
+    notes = [i for i in before.get("issues") or [] if i.get("severity") in ("P1", "P2") and i.get("kind") != "continuity"]
+    if float(before.get("score") or 0) >= 98 and not notes:
+        return
+    if not llmmod.LLM("animator").available:
+        return
+    idx = scene["index"]
+    who = await animators.take()
+    try:
+        run.check()
+        run.agent("polish", "working", f"polishing scene {idx + 1} ({len(notes)} notes)", idx)
+        run.agent(who, "working", f"finishing scene {idx + 1}", idx)
+        run.cursor(who, idx, label="polish", panel="timeline")
+        code0 = scene["code"]
+        code = await agents.animate(project, scene, run.emit, feedback=qa.repair_brief(before) + POLISH_BRIEF, previous_code=code0, instruction=instruction,
+                                    steps=config.REPAIR_STEPS, topups=0)
+        run.stats["llm_calls"] += 1
+        if not code or code.strip() == code0.strip():
+            run.agent("polish", "done", f"scene {idx + 1} already at its best")
+            return
+        project = store.get(run.pid)
+        scene = next(s for s in project["scenes"] if s["id"] == scene_id)
+        trial = dict(scene, code=code, source="agent")
+        trial_project = dict(project, scenes=[trial if s["id"] == scene_id else s for s in project["scenes"]])
+        probe = await render.probe_scene(trial_project, trial)
+        result = qa.evaluate(probe, float(scene["duration"]), qa.lint(code))
+        from . import continuity
+        drift = continuity.check(project, trial, code)
+        if drift:
+            result["issues"] = drift + result["issues"]
+            result["pass"] = False
+            result["score"] = penalised(result.get("score"), drift)
+        ok = quality_key(result) >= quality_key(_structural(before)) and float(result.get("score") or 0) >= float(before.get("score") or 0) \
+            and (result.get("pass") or not before.get("pass"))
+        if ok:
+            result["round"] = "polish"
+            patch_scene(run, scene_id, {"code": code, "qa": {k: v for k, v in result.items() if k != "energy"}, "polished": True})
+            run.emit("qa.report", {"scene": idx, "score": result["score"], "pass": result["pass"], "issues": result["issues"][:8], "round": "polish"})
+            run.brain.decide("polish", f"Scene {idx + 1} polished", f"score {before.get('score')} to {result.get('score')}")
+            run.agent("polish", "done", f"scene {idx + 1} polished")
+        else:
+            run.brain.decide("polish", f"Scene {idx + 1}: polish discarded", "QA scored the polished version lower, the accepted version stays")
+            run.agent("polish", "done", f"scene {idx + 1} kept as accepted")
+    except asyncio.CancelledError:
+        raise
+    except Exception as error:
+        run.emit("run.warning", {"message": f"scene {idx + 1}: polish skipped ({str(error)[:120]})"})
+    finally:
+        run.agent(who, "idle", "", None)
         await animators.give(who)
 
 
@@ -797,11 +915,35 @@ async def stage_scenes(run: Run, do_render: bool, only: list[str] | None = None,
     await render.ensure_renderer()
     ids = only or [s["id"] for s in project["scenes"]]
     results: dict[str, Path] = {}
+    writing = run.mode not in ("render", "scene-render", "edit")
+    plan = relay_plan(project, ids) if writing else {i: None for i in ids}
+    written = {i: asyncio.Event() for i in ids}
+    if any(plan.values()):
+        run.brain.decide("director", "Scenes run as a relay in story order",
+                         f"{sum(1 for v in plan.values() if v)} scenes each start when the scene before is accepted and continue from its code; "
+                         "the finisher polishes every accepted scene while the next one is written, and renders follow in parallel")
 
     async def pipeline(scene_id: str) -> None:
-        run.check()
-        if run.mode not in ("render", "scene-render", "edit"):
-            await write_scene(run, scene_id, animators, instruction)
+        try:
+            run.check()
+            if writing:
+                relay = None
+                dep = plan.get(scene_id)
+                if dep:
+                    if dep in written:
+                        run.agent("director", "working", "holding a scene until the scene before it is accepted")
+                        await written[dep].wait()
+                        run.agent("director", "idle", "")
+                    run.check()
+                    prev = next((x for x in store.get(run.pid)["scenes"] if x["id"] == dep), None)
+                    if prev and prev.get("code") and prev.get("source") == "agent":
+                        me = next(x for x in store.get(run.pid)["scenes"] if x["id"] == scene_id)
+                        relay = {"code": prev["code"], "index": prev["index"], "kind": relay_kind(store.get(run.pid), me)}
+                await write_scene(run, scene_id, animators, instruction, relay)
+        finally:
+            written[scene_id].set()
+        if writing:
+            await polish_scene(run, scene_id, animators, instruction)
             await thumb(run, scene_id)
         if do_render:
             results[scene_id] = await render_one(run, scene_id, renderers, draft)

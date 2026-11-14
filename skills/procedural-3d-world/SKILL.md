@@ -65,6 +65,14 @@ tumble, blown-away (with `height`), hold, raise, hug, sit, dance, turn, type, za
 Write every beat as an action card: setup, anticipation (0.15 to 0.3 s), contact, exaggerated consequence, delayed
 secondary motion, recovery. Never leave a character idle for more than 2 seconds on screen; give listeners reactions.
 
+## Animals, vehicles and objects
+
+People come from the cast presets. Everything else is a ModelSpec (model-spec-3d skill):
+- cast members: `{ id: 'rex', model: 'dog', x: 1, z: 0.5, actions: [{ do: 'walk', at: 0.4, duration: 2, to: [3, 0.5] }, { do: 'wag', at: 2.6, duration: 1 }] }`
+- set dressing: `props: [{ model: 'car', x: 3, z: -2, yaw: -70 }, { model: 'tree', x: -3, z: -2, scale: 1.3 }]`
+- library: dog, cat, bird, car, tree, house, chair, table, desk-lamp, sofa; write a spec for anything else (a fox, a bicycle, a lighthouse).
+Give library models the film's colours with `colors: { coat: '#c98b4e' }`.
+
 ## Effects
 
 - lightning: from the Tesla coil by default; `to: 'doc'` zaps a character (pair it with the `zap` action).

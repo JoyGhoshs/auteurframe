@@ -155,7 +155,12 @@
     const box = o.box ? $(o.box) : node.parentElement;
     let size = o.max || parseFloat(getComputedStyle(node).fontSize) || 64;
     node.style.fontSize = size + 'px';
-    const fits = () => node.scrollWidth <= Math.max(node.clientWidth, box ? box.clientWidth : node.clientWidth) + 1 && (!box || node.scrollHeight <= box.clientHeight + 1 || box.clientHeight === 0);
+    const fits = () => {
+      if (node.scrollWidth > node.clientWidth + 1 || (node.clientHeight > 0 && node.scrollHeight > node.clientHeight + 1)) return false;
+      if (!box || box.id === 'au-scene' || box.classList.contains('scene')) return true;
+      const r = node.getBoundingClientRect(), b = box.getBoundingClientRect();
+      return r.right <= b.right + 1 && r.left >= b.left - 1 && (box.clientHeight === 0 || r.bottom <= b.bottom + 1);
+    };
     let guard = 0;
     while (!fits() && size > o.min && guard < 60) {
       size = Math.max(o.min, size * o.step);
@@ -886,12 +891,86 @@
     slideLeft: { to: { opacity: 0, x: -140 } }, slideRight: { to: { opacity: 0, x: 140 } }, wipe: { to: { clipPath: 'inset(0 0 0 100%)' } }, none: null
   };
 
+  const KEY_EASE = {
+    linear: (u) => u, in: (u) => u * u * u, out: (u) => 1 - Math.pow(1 - u, 3),
+    inOut: (u) => (u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2),
+    back: (u) => { const c = 1.70158; return 1 + (c + 1) * Math.pow(u - 1, 3) + c * Math.pow(u - 1, 2); },
+    bounce: (u) => { const n = 7.5625, d = 2.75; if (u < 1 / d) return n * u * u; if (u < 2 / d) { u -= 1.5 / d; return n * u * u + 0.75; } if (u < 2.5 / d) { u -= 2.25 / d; return n * u * u + 0.9375; } u -= 2.625 / d; return n * u * u + 0.984375; },
+    hold: () => 0
+  };
+
+  function layerKeys(L) {
+    return (Array.isArray(L.keys) ? L.keys : []).filter((k) => k && isFinite(+k.t)).map((k) => ({
+      t: clamp(+k.t, 0, D), dx: +k.dx || 0, dy: +k.dy || 0, scale: k.scale == null || !isFinite(+k.scale) ? 1 : +k.scale,
+      rotate: +k.rotate || 0, opacity: k.opacity == null || !isFinite(+k.opacity) ? 1 : clamp(+k.opacity, 0, 1), ease: KEY_EASE[k.ease] ? k.ease : 'inOut'
+    })).sort((a, b) => a.t - b.t);
+  }
+
+  function keyValue(keys, t) {
+    if (t <= keys[0].t) return keys[0];
+    const last = keys[keys.length - 1];
+    if (t >= last.t) return last;
+    let i = 0;
+    while (i < keys.length - 2 && keys[i + 1].t <= t) i++;
+    const a = keys[i], b = keys[i + 1];
+    const u = KEY_EASE[b.ease]((t - a.t) / Math.max(1e-4, b.t - a.t));
+    return { dx: lerp(a.dx, b.dx, u), dy: lerp(a.dy, b.dy, u), scale: lerp(a.scale, b.scale, u), rotate: lerp(a.rotate, b.rotate, u), opacity: lerp(a.opacity, b.opacity, u) };
+  }
+
+  function keyMotion(wrap, L, pivot) {
+    const keys = layerKeys(L);
+    if (!keys.length) return;
+    wrap.style.transformOrigin = pivot;
+    const apply = (t) => {
+      const v = keyValue(keys, t);
+      wrap.style.transform = `translate(${(v.dx * W / 100).toFixed(2)}px, ${(v.dy * H / 100).toFixed(2)}px) rotate(${v.rotate.toFixed(3)}deg) scale(${v.scale.toFixed(4)})`;
+      wrap.style.opacity = String(v.opacity);
+    };
+    onFrame(apply);
+    apply(0);
+  }
+
+  function keyWrap(parent, L, z) {
+    const wrap = make('div', 'au-ukeys', parent);
+    css(wrap, { position: 'absolute', inset: '0', pointerEvents: 'none', zIndex: z });
+    return wrap;
+  }
+
+  function buildUserComponents() {
+    const reg = window.AU_COMPONENTS;
+    const root = document.querySelector('#au-scene .scene') || document.getElementById('au-scene');
+    if (!reg || !root) return;
+    (CFG.layers || []).forEach((L, i) => {
+      if (L.hidden || L.kind !== 'component' || !L.component) return;
+      if (!reg.has(L.component)) { errors.push('layer ' + (L.id || i) + ': unknown component ' + L.component); return; }
+      const id = L.id || 'user-' + i;
+      const before = new Set(Array.from(root.children));
+      const params = Object.assign({}, L.params || {}, { layer: id });
+      component(L.component, params);
+      const wrap = keyWrap(root, L, L.z != null ? 20 + (+L.z || 0) : 'auto');
+      wrap.setAttribute('data-user-comp', id);
+      if (L.back) root.insertBefore(wrap, root.firstChild);
+      Array.from(root.children).filter((n) => !before.has(n) && n !== wrap).forEach((n) => { wrap.appendChild(n); });
+      const main = wrap.querySelector(`[data-layer="${CSS.escape(id)}"]`);
+      if (main) { main.setAttribute('data-user', '1'); main.style.pointerEvents = 'auto'; }
+      const start = clamp(L.start || 0, 0, D);
+      const end = clamp(L.end ?? D, start + 0.1, D);
+      if (start > 0.001) { tl.set(wrap, { autoAlpha: 0 }, 0); tl.set(wrap, { autoAlpha: 1 }, start); }
+      if (end < D - 0.01) tl.set(wrap, { autoAlpha: 0 }, end);
+      const px = params.x != null ? +params.x : 50, py = params.y != null ? +params.y : 50;
+      keyMotion(wrap, L, `${px}% ${py}%`);
+    });
+  }
+
   function buildUserLayers() {
     const host = document.getElementById('au-user');
     if (!host) return;
     (CFG.layers || []).forEach((L, i) => {
-      if (L.hidden) return;
-      const el = make('div', 'au-ulayer kind-' + (L.kind || 'text'), host);
+      if (L.hidden || L.kind === 'component') return;
+      const hasKeys = Array.isArray(L.keys) && L.keys.length > 0;
+      const parent = hasKeys ? keyWrap(host, L, 10 + (L.z || i)) : host;
+      const el = make('div', 'au-ulayer kind-' + (L.kind || 'text'), parent);
+      if (hasKeys) el.style.pointerEvents = 'auto';
       el.setAttribute('data-layer', L.id || 'user-' + i);
       el.setAttribute('data-user', '1');
       css(el, {
@@ -936,8 +1015,10 @@
       const ex = EXIT[(L.exit && L.exit.preset) || L.exit || 'none'];
       const ed = (L.enter && L.enter.duration) || 0.7;
       const xd = (L.exit && L.exit.duration) || 0.4;
-      tl.set(el, { autoAlpha: 0 }, 0);
-      tl.set(el, { autoAlpha: 1 }, start);
+      if (start > 0.001) {
+        tl.set(el, { autoAlpha: 0 }, 0);
+        tl.set(el, { autoAlpha: 1 }, start);
+      }
       if (textFx) {
         if (enterName === 'typewriter') {
           const chars = split(el, { type: 'chars' }).chars;
@@ -969,6 +1050,7 @@
       }
       if (ex && end < D - 0.05) tl.to(el, Object.assign({}, ex.to, { duration: xd, ease: 'au.exit' }), end - xd);
       if (end < D - 0.01) tl.set(el, { autoAlpha: 0 }, end);
+      if (hasKeys) keyMotion(parent, L, `${(L.x ?? 10) + (L.w ?? 30) / 2}% ${(L.y ?? 10) + (L.h ?? 10) / 2}%`);
     });
   }
 
@@ -1053,7 +1135,7 @@
     let n = 0;
     const root = w.querySelector('.scene') || w;
     Array.from(root.children).forEach((el) => {
-      if (!el.hasAttribute('data-layer') && !/^(STYLE|SCRIPT)$/.test(el.tagName)) el.setAttribute('data-layer', 'auto-' + (n++));
+      if (!el.hasAttribute('data-layer') && !el.classList.contains('au-ukeys') && !/^(STYLE|SCRIPT)$/.test(el.tagName)) el.setAttribute('data-layer', 'auto-' + (n++));
     });
     $$('[data-depth]').forEach((el) => parallax.push(el));
   }
@@ -1138,16 +1220,31 @@
     const ctx = {
       tl, W, H, D, fps: CFG.fps, seed: CFG.seed, rand: rng, pick, range, clamp, lerp, theme: CFG.theme, cues: CFG.cues, data: CFG.data || {},
       assets: CFG.assets, safe, portrait, $, $$, icon, split, counter, draw, rough, camera, chart, math, typewrite, scramble, onFrame, particles, ambient, fit, asset, three, cssColor,
-      index: CFG.sceneIndex, globalStart: CFG.globalStart, component, defer, interpolate, spring, make, css
+      index: CFG.sceneIndex, globalStart: CFG.globalStart, component, defer, interpolate, spring, make, css,
+      ones: (d) => 'steps(' + Math.max(1, Math.round(d * 24)) + ')', twos: (d) => 'steps(' + Math.max(1, Math.round(d * 12)) + ')', threes: (d) => 'steps(' + Math.max(1, Math.round(d * 8)) + ')',
+      held: (t, on) => Math.floor(t * 24 / (on || 2) + 1e-6) / (24 / (on || 2)),
+      dip: (at, color, inDur, outDur) => {
+        const host = document.querySelector('#au-scene .scene') || document.getElementById('au-scene');
+        if (!host) return null;
+        const el = make('div', 'au-dip', host);
+        css(el, { position: 'absolute', inset: '0', background: cssColor(color || 'var(--ink)'), opacity: 0, zIndex: 900, pointerEvents: 'none' });
+        el.setAttribute('data-layer', 'dip-' + Math.round(at * 100));
+        const a = inDur == null ? 0.25 : inDur, b = outDur == null ? 0.35 : outDur;
+        if (at - a > 0) tl.to(el, { opacity: 1, duration: a, ease: 'power2.in' }, at - a); else tl.set(el, { opacity: 1 }, 0);
+        if (at + 0.05 < D) tl.to(el, { opacity: 0, duration: b, ease: 'power2.out' }, at + 0.05);
+        return el;
+      }
     };
     currentCtx = ctx;
     try { if (sceneFn) sceneFn(ctx); } catch (e) { errors.push('scene: ' + (e && e.message || e)); console.error(e); }
+    try { buildUserComponents(); } catch (e) { errors.push('component layers: ' + e.message); }
     try { if (CFG.lens && CFG.lens.type && CFG.lens.type !== 'none' && !window.__AU_LENS_USED) component('lens', CFG.lens); } catch (e) { errors.push('lens: ' + e.message); }
     try { sceneCamera(CFG.camera); } catch (e) { errors.push('camera: ' + e.message); }
     for (let guard = 0; pending.length && guard < 4; guard++) {
       const batch = pending.splice(0, pending.length);
       await Promise.race([Promise.all(batch), new Promise((r) => setTimeout(r, 20000))]);
     }
+    try { autoFit(); } catch (e) { errors.push('fit: ' + e.message); }
     try { absorbStrays(t0); } catch (e) { errors.push('strays: ' + e.message); }
     autoTag();
     try { buildUserLayers(); } catch (e) { errors.push('layers: ' + e.message); }
@@ -1370,6 +1467,31 @@
           if (area > 0 && ix * iy / area > 0.25) { seen.add('overlap|' + a.text + '|' + b.text); issues.push({ kind: 'text-overlap', a: a.text, b: b.text, layer: a.owner.getAttribute('data-layer') || '' }); }
         }
       }
+      const visibleBox = (node) => {
+        let n = node, depth = 0;
+        while (n && n.id !== 'au-scene' && depth < 5) {
+          const cs = getComputedStyle(n);
+          const bg = cs.backgroundColor;
+          const filled = (bg && bg !== 'transparent' && !/rgba\([^)]*,\s*0\)$/.test(bg)) || cs.backgroundImage !== 'none' || parseFloat(cs.borderTopWidth) > 0 || parseFloat(cs.borderLeftWidth) > 0;
+          if (filled) {
+            const r = n.getBoundingClientRect();
+            if (r.width * r.height < W * H * 0.6) return { el: n, r };
+            return null;
+          }
+          n = n.parentElement; depth++;
+        }
+        return null;
+      };
+      texts.forEach((x) => {
+        if (x.el.closest('.katex')) return;
+        const b = visibleBox(x.el);
+        if (!b) return;
+        let tr;
+        try { const range = document.createRange(); range.selectNodeContents(x.el); tr = range.getBoundingClientRect(); } catch (e) { return; }
+        if (!tr || tr.width < 2) return;
+        const over = Math.max(b.r.left - tr.left, tr.right - b.r.right, b.r.top - tr.top, tr.bottom - b.r.bottom);
+        if (over > Math.max(4, x.fs * 0.15)) report('text-outside-box', x.owner, { size: Math.round(over) });
+      });
       const faces = actorFaces();
       const scale = typeScale();
       const bodies = $$('#au-scene .auc-toon').filter((el) => getComputedStyle(el).visibility !== 'hidden').map((el) => el.getBoundingClientRect().height);

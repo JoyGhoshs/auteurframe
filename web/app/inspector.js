@@ -1,5 +1,6 @@
 import { html, useState, useEffect, useRef, Icon, api, toast, ARCH_ICON } from './lib.js';
 import { FontSelect } from './fontpicker.js';
+import { ComponentParams, MotionSection } from './motiontools.js';
 
 const ARCHS = ['kinetic-title', 'word-stack', 'big-number', 'bar-race', 'line-chart', 'donut', 'versus', 'timeline', 'quote', 'list-reveal', 'process-flow', 'icon-grid', 'doodle-explain', 'equation', 'image-focus', 'scale-zoom', 'map-pins', 'ui-mockup', 'lower-third', 'end-card', 'phone-showcase', 'ui-cascade', 'code-typing', 'shape-morph', 'particles-type', 'photo-stack', 'music-visualizer', 'paper-cut', 'vox-board', 'three-hero', 'logo-reveal', 'kinetic-beat', 'diagram-build', 'mascot-talk', 'line-art'];
 const TRANS = ['fade', 'smoothleft', 'smoothright', 'smoothup', 'slideleft', 'slideup', 'wipeleft', 'wiperight', 'circleopen', 'zoomin', 'fadeblack', 'fadewhite', 'dissolve', 'pixelize', 'hlslice', 'radial', 'squeezeh', 'hblur', 'cut'];
@@ -63,7 +64,7 @@ export function SceneTab({ project, scene, patch, onRun, onAdd, onDelete, onRend
   </div>`;
 }
 
-export function LayerTab({ project, scene, selected, onOverride, onLayerPatch, onLayerDelete, onLayerDuplicate, onClear }) {
+export function LayerTab({ project, scene, selected, onOverride, onLayerPatch, onLayerDelete, onLayerDuplicate, onClear, localTime, record, onRecord }) {
   if (!selected || !scene || selected.sceneId !== scene.id) {
     return html`<div class="empty"><${Icon} name="mouse-pointer-click" /><b style=${{ color: 'var(--ink)' }}>Select something on stage</b>Pause, then click any element to move, scale, rotate, recolour or retext it. Drag media from the left panel onto the stage to add layers.</div>`;
   }
@@ -80,10 +81,14 @@ export function LayerTab({ project, scene, selected, onOverride, onLayerPatch, o
         ${L.kind === 'text' ? html`<${Text} rows=${2} value=${L.text} onCommit=${(v) => p({ text: v })} />` : null}
         ${L.kind === 'icon' ? html`<${Text} value=${L.icon} placeholder="lucide icon name" onCommit=${(v) => p({ icon: v })} />` : null}
       </div>
+      ${L.kind === 'component' ? html`<${ComponentParams} layer=${L} onPatch=${p} />` : null}
+      <${MotionSection} layer=${L} sceneDuration=${scene.duration} localTime=${localTime} onPatch=${p} record=${record} onRecord=${onRecord} Num=${Num} />
       <div class="insp-sec"><div class="section-title">Transform · % of stage</div>
         <div class="grid2"><${Num} label="X" value=${L.x} onChange=${(v) => p({ x: v })} /><${Num} label="Y" value=${L.y} onChange=${(v) => p({ y: v })} />
           <${Num} label="W" value=${L.w} onChange=${(v) => p({ w: v })} /><${Num} label="H" value=${L.h ?? ''} onChange=${(v) => p({ h: v })} />
-          <${Num} label="ROT" unit="°" value=${L.rotate || 0} onChange=${(v) => p({ rotate: v })} /><${Num} label="OPA" value=${L.opacity ?? 1} step=${0.05} min=${0} max=${1} onChange=${(v) => p({ opacity: v })} /></div></div>
+          <${Num} label="ROT" unit="°" value=${L.rotate || 0} onChange=${(v) => p({ rotate: v })} /><${Num} label="OPA" value=${L.opacity ?? 1} step=${0.05} min=${0} max=${1} onChange=${(v) => p({ opacity: v })} /></div>
+        ${L.kind === 'component' ? html`<div class="row" style=${{ marginTop: '6px' }}><span class="muted" style=${{ fontSize: '12px' }}>Stacking</span>
+          <button class=${'btn sm ' + (L.back ? 'on' : '')} onClick=${() => p({ back: !L.back })}><${Icon} name="send-to-back" size=${12} />${L.back ? 'Behind the scene' : 'In front'}</button></div>` : null}</div>
       <div class="insp-sec"><div class="section-title">Timing · seconds in scene</div>
         <div class="grid2"><${Num} label="IN" value=${L.start || 0} step=${0.1} onChange=${(v) => p({ start: v })} /><${Num} label="OUT" value=${L.end ?? scene.duration} step=${0.1} onChange=${(v) => p({ end: v })} /></div>
         <div class="grid3"><select class="select sm" value=${(L.enter && L.enter.preset) || L.enter || 'rise'} onChange=${(e) => p({ enter: { preset: e.target.value, duration: 0.7 } })}>${ENTERS.map((x) => html`<option value=${x}>in: ${x}</option>`)}</select>
@@ -159,15 +164,19 @@ export function ChatTab({ project, scene, messages, onSend, llm, busy }) {
 }
 
 export function QATab({ scene }) {
-  const qa = scene.qa;
-  if (!qa) return html`<div class="empty"><${Icon} name="scan-eye" />QA has not checked this scene yet.</div>`;
+  const draft = scene.qa_draft;
+  const official = scene.qa;
+  if (!official && !draft) return html`<div class="empty"><${Icon} name="scan-eye" />QA has not checked this scene yet.</div>`;
+  const qa = official || { ...draft, round: 'draft', layers: 0 };
+  const draftNote = !official && draft ? html`<div class="insp-sec"><div class="muted" style=${{ fontSize: '12px' }}>Live check from the animator's preview #${draft.preview}. The official QA score arrives when the animator hands the scene over.${draft.why ? ' Blocking: ' + draft.why : ''}</div></div>` : null;
   const color = qa.score >= 85 ? 'var(--ok)' : qa.score >= 70 ? 'var(--warn)' : 'var(--err)';
   return html`<div>
     <div class="insp-sec"><div class="row" style=${{ gap: '14px' }}>
       <div class="qa-score" style=${{ background: `conic-gradient(${color} ${qa.score * 3.6}deg, var(--bg-sunk) 0)` }}><span style=${{ width: '44px', height: '44px', borderRadius: '50%', background: '#fff', display: 'grid', placeItems: 'center' }}>${qa.score}</span></div>
-      <div class="col" style=${{ gap: '3px' }}><b>${qa.pass ? 'Passed' : 'Needs work'}</b><span class="muted" style=${{ fontSize: '12px' }}>Round ${qa.round || 1} · ${qa.layers || 0} layers · min type ${qa.minFont || '?'}px</span>
+      <div class="col" style=${{ gap: '3px' }}><b>${qa.pass ? 'Passed' : 'Needs work'}${!official ? ' (draft)' : ''}</b><span class="muted" style=${{ fontSize: '12px' }}>Round ${qa.round || 1} · ${qa.layers || 0} layers · min type ${qa.minFont || '?'}px</span>
         ${qa.critic ? html`<span class="muted" style=${{ fontSize: '12px' }}>Critic: reads ${qa.critic.reads_clearly ?? '?'}/5 · on-bible ${qa.critic.on_bible ?? '?'}/5</span>` : null}</div></div></div>
+    ${draftNote}
     <div class="insp-sec">${(qa.issues || []).length ? qa.issues.map((i) => html`<div class="qa-issue"><b class=${i.severity === 'P0' ? 'chip err' : i.severity === 'P1' ? 'chip warn' : 'chip'} style=${{ alignSelf: 'flex-start' }}>${i.severity} · ${i.kind}</b><span>${i.message}</span><span class="muted">${i.fix}</span></div>`) : html`<div class="muted">No issues. Layout, contrast, type size and motion energy all within the ruleset.</div>`}</div>
-    ${qa.critic && qa.critic.frames ? html`<div class="insp-sec"><div class="section-title">Critic saw</div>${qa.critic.frames.map((f) => html`<div style=${{ fontSize: '12px' }}>· ${f}</div>`)}</div>` : null}
+    ${qa.critic && qa.critic.frames ? html`<div class="insp-sec"><div class="section-title">Critic saw</div>${qa.critic.frames.map((f) => html`<div style=${{ fontSize: '12px' }}>· ${f}</div>`)}${qa.critic.stranger ? html`<div style=${{ fontSize: '12px', marginTop: '6px' }}><b>A stranger would say:</b> ${qa.critic.stranger}</div>` : null}</div>` : null}
   </div>`;
 }

@@ -340,6 +340,9 @@ def animator_system(project: dict[str, Any], scene: dict[str, Any]) -> tuple[str
         elif sheet["medium"] == "stickman":
             must = [m for m in must if m not in ("svg-character-design", "3d-models")]
             extra = ["stickman-direction"]
+        elif sheet["medium"] == "anime":
+            must = [m for m in must if m not in ("svg-character-design", "3d-models", "three-d-motion")]
+            extra = ["anime-direction"]
         else:
             must = [m for m in must if m != "3d-models"]
             extra = ["svg-character-design"]
@@ -366,6 +369,11 @@ def cast3d_line(project: dict[str, Any]) -> str:
     return continuity.text_for_animator(project)
 
 
+def recall_text(project: dict[str, Any], scene: dict[str, Any]) -> str:
+    from . import recall
+    return recall.text_for_animator(project, scene)
+
+
 def direction_text(scene: dict[str, Any]) -> str:
     out = []
     if scene.get("direction"):
@@ -373,6 +381,17 @@ def direction_text(scene: dict[str, Any]) -> str:
     if scene.get("reference_code"):
         out.append("Reference scene to match (same characters with identical parameters, same set, palette, type and motion language; write your own code for "
                    "the new beat, do not just copy it):\n```html\n" + str(scene["reference_code"])[:7000] + "\n```")
+    if scene.get("relay_code"):
+        if scene.get("relay_kind") == "cast":
+            keep = ("Keep every recurring character with identical component parameters (preset, skin, hair, outfit, colours, model, scale), the same world, "
+                    "set, palette, light, type and motion language, and the same screen direction (who stands left, who faces where). Pick up from the state "
+                    "the previous scene ended in (positions, props in hand, mood) and move the story forward")
+        else:
+            keep = ("Keep the film's visual system exactly: the same palette and background treatment, the same type families, sizes and weights, the same "
+                    "layout grid and margins, the same easing and motion language, and the recurring motifs (shapes, icons, textures, accent marks). Let the "
+                    "first frame continue from the previous scene's last frame so the cut feels like one film, and give this scene its own new idea")
+        out.append(f"RELAY: this is the next scene after scene {scene.get('relay_from', '?')}, which is finished and accepted. Its code is below. "
+                   + keep + "; write the new beat yourself, never copy it:\n```html\n" + str(scene["relay_code"])[:6000] + "\n```")
     if scene.get("reference_asset"):
         out.append("A reference image or video from the user is attached as frames: match its composition, character designs, colours and motion style using "
                    "AuteurFrame components (toon, toon-set, toon-prop) or your own SVG.")
@@ -417,6 +436,7 @@ Facts you may cite (never invent numbers): {'; '.join(f.get('claim', '')[:120] +
 {scout_text(scene) if harness else ""}
 {direction_text(scene)}
 {cast3d_line(project)}
+{recall_text(project, scene)}
 {extra}
 {"Build this scene as scene.html in your workspace with the tools: plan, read the skills you need, write it (in parts if long), preview, fix, then finish." if harness else "Output ONE html fragment in a ```html code block: markup inside <div class=" + chr(34) + "scene" + chr(34) + ">...</div>, one <style>, one <script> calling AU.scene."}
 The ctx passed to AU.scene has: tl, $, $$, W, H, D, fps, seed, rand, clamp, lerp, data, assets, safe, portrait, split, counter, draw, rough, camera, chart, math, icon, ambient, particles, onFrame, three, typewrite, scramble, fit, asset, cssColor.
@@ -477,8 +497,11 @@ async def critique(project: dict[str, Any], scene: dict[str, Any], result: dict[
     user = f"""Scene {scene['index'] + 1}: intended visual: {scene.get('visual', '')}; on-screen words: {scene.get('onscreen', '')}; style {project['bible']['name']}.
 Automated probe issues:\n{issues}
 {continuity_line(project) + ' If a character in the frames does not match this model sheet (different medium, face, hair, clothes or colours), report a P0 continuity note.' if continuity_line(project) else ''}
-{'The attached contact sheet shows frames across the scene; first describe each frame in one short sentence.' if sheet_b64 else 'No frames attached.'}
-Return JSON only: {{"frames": [str], "reads_clearly": 1-5, "on_bible": 1-5, "verdict": "pass" or "repair",
+{'The attached contact sheet shows frames across the scene. Work in this order: (1) describe each frame in one short sentence as a stranger who never read the brief would, naming only what is visible; (2) in one sentence, say what a stranger thinks the scene is about; (3) compare that with the intended visual. If the stranger would miss the point, that is a P1 note.' if sheet_b64 else 'No frames attached.'}
+Notes are instructions for the animator, not opinions. Each note names the time, the layer and the visible problem, then the change with numbers
+("title at 1.2s overlaps the robot's face -> move it to y 12% and size 64px", never "improve the layout"). Report at most 6 notes, most visible first.
+Do not report taste preferences that the frames do not show as a problem. A scene that reads clearly and matches the bible passes even if you would have made it differently.
+Return JSON only: {{"frames": [str], "stranger": str, "reads_clearly": 1-5, "on_bible": 1-5, "verdict": "pass" or "repair",
 "notes": [{{"severity": "P0|P1|P2", "layer": "data-layer or element", "time": seconds, "problem": str, "fix": str}}]}}"""
     on_token, flush = _tokens(emit, "critic", scene["index"])
     images = [sheet_b64] if sheet_b64 and model.vision and llmmod.read_settings().get("vision_critic", True) else []

@@ -9,10 +9,10 @@
 </p>
 
 <p align="center">
-  <img alt="version" src="https://img.shields.io/badge/version-1.0.0-4D74FF">
+  <img alt="version" src="https://img.shields.io/badge/version-1.1.0-4D74FF">
   <img alt="python" src="https://img.shields.io/badge/python-3.11%20%7C%203.12-0B0D12">
   <img alt="node" src="https://img.shields.io/badge/node-18%2B-0B0D12">
-  <img alt="platforms" src="https://img.shields.io/badge/platforms-Linux%20%7C%20WSL2%20%7C%20Docker-8F7BFF">
+  <img alt="platforms" src="https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20%7C%20WSL2%20%7C%20Docker-8F7BFF">
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-AGPL--3.0-4D74FF"></a>
 </p>
 
@@ -22,6 +22,7 @@
 
 - [What AuteurFrame does](#what-auteurframe-does)
 - [Screenshots](#screenshots)
+- [Windows desktop app](#windows-desktop-app)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Connect a model](#connect-a-model)
@@ -36,6 +37,7 @@
 - [Project layout](#project-layout)
 - [Releasing a new version](#releasing-a-new-version)
 - [Troubleshooting](#troubleshooting)
+- [Security](#security)
 - [License](#license)
 - [Contributing and credits](#contributing-and-credits)
 
@@ -47,7 +49,7 @@ you see in the editor is exactly what renders.
 
 | | |
 |---|---|
-| **Agent swarm** | Producer, Research Scout, Director, Art Director, Narrator, four parallel Animators, a vision Critic, Sound Designer and Editor work on one shared brain. |
+| **Agent swarm** | Producer, Research Scout, Director, Art Director, Narrator, a lead Animator per scene, a Finisher, a vision Critic, Composer, Sound Designer and Editor work on one shared brain. |
 | **Original scenes** | Animators write each scene from scratch in a sandboxed workshop, preview it in the real renderer, read the errors and fix them before handing over. |
 | **Quality loop** | The critic probes layout, contrast, type size and motion energy frame by frame and sends scenes back until they pass, with a capped, converging repair budget. |
 | **Real editor** | Scene, caption, layer and audio tracks. Drag, trim, split, retime, and right-click any scene to rebuild it, extend the story or replicate it with an agent. |
@@ -55,7 +57,13 @@ you see in the editor is exactly what renders.
 | **Any model** | Anthropic, OpenAI, Gemini, OpenRouter, Groq, DeepSeek, Mistral, xAI, Together, Ollama, LM Studio or any OpenAI-compatible endpoint, routed per agent role. With no model, the house director still produces complete films. |
 | **Templates** | 21 directed templates that need no AI at all, plus a template feed that delivers community templates straight into the studio. |
 | **3D in code** | `world3d` builds whole 3D cartoon worlds without model files or Blender: sets (lab, battlefield, suburb, living room, forest, city, space), characters made from primitives with painted, expressive faces, actions, lightning, fireballs, tornadoes and explosions, and a directed camera. Looks: low-poly, felt, clay, toy and paper, with stop-motion timing for the craft looks. |
-| **Animals** | `toon-animal` pets and animal characters (dog, cat, rabbit, fox, pig, bird) in the toon style, with walk, run, sit, jump, wag, bark, eat, sniff, beg and sleep. |
+| **Animals** | `toon-animal` pets and animal characters (dog, cat, rabbit, fox, pig, bird, bear, mouse, lion, sheep, cow, horse, panda) in the toon style, with walk, run, sit, jump, wag, bark, eat, sniff, beg and sleep. |
+| **Anime** | A full anime medium: `anime-face` close-ups (cel-painted eyes with window catchlights, hair masses with a sheen band, lip sync, turns with hair follow-through), `anime-figure` full-body acting in held drawings on twos (walk and run cycles, windup, strike with a smear frame, leap, land), `anime-set` painted backgrounds with seeded rain, snow and petals, and `anime-fx` speed lines, slashes and impacts, all in one closed colour script. The director plans anime shot sheets with one sakuga action shot per sequence and cuts instead of zooms. |
+| **Cast and scenery** | 36 toon character presets (teacher, nurse, firefighter, astronaut, pirate, wizard, king, queen, ninja, detective and more), 26 hats, 25 hand props, 31 painted sets (kitchen, bedroom, classroom, office, park, market, harbour, launchpad and more) and 101 props, buildings and furniture. |
+| **3D models from code** | ModelSpec turns a JSON list of named parts into a real 3D model (anchors, templates, mirroring, joints) with validation that rejects blobs and missing limbs. A library of dogs, cats, birds, cars, trees, houses and furniture is ready to use, and agents write new specs for anything else. |
+| **Scene relay** | Every film, from motion graphics to character stories, is written in story order: one lead animator per scene, and each scene starts from the accepted scene before it (characters for stories; palette, type, grid and motion language for everything else). While the next scene is written, the Finisher polishes the accepted one and keeps the polish only if QA scores it at least as well; renders run in parallel. |
+| **Original scores** | The Composer writes a new score for every film in one of 12 genres (pulse electronic, lo-fi, cinematic, ambient, corporate, tension, playful, synthwave, solo piano, hip-hop, taiko, chiptune), chosen from the brief, mood, style and medium. Sections follow the scene cuts, energy builds to a peak, risers and hits land on the cuts, and a recurring motif gives each film its own theme. |
+| **Scene memory** | A small local retrieval store (BM25 plus trigram similarity with a quality prior) remembers accepted scenes and shows animators the closest two as worked examples. It learns from every passed scene and seeds itself from your existing projects. |
 | **Stick figures** | `stickman` actors with IK legs that keep feet planted, distance-driven walks, squash-and-stretch jumps, mood faces, impact bursts and stage shake. |
 | **Continuity** | Before anyone animates, the art director locks a continuity bible: one medium (3D, 2D cartoon or stick figure), a model sheet for every character and one world. The director plans inside it, every animator copies it exactly, and the critic sends back any scene that switches medium or redesigns a character. |
 | **Text and layout** | Every film uses one type scale with fixed roles (title, headline, card, speech, label). The `speech` bubble follows its speaker, and the critic measures every frame for text over faces, oversized or off-scale text, text outside the frame and characters drawn too small. |
@@ -84,6 +92,34 @@ you see in the editor is exactly what renders.
   </tr>
 </table>
 
+## Windows desktop app
+
+The easiest way to use AuteurFrame on Windows 10 or 11 (64-bit) is the desktop installer. It contains everything
+AuteurFrame needs, so **nothing else has to be installed**: no Python, Node.js, FFmpeg, Chrome, Git, Docker or WSL.
+
+1. Download **`AuteurFrame-Setup-<version>.exe`** from the [latest release](https://github.com/joyghoshs/auteurframe/releases/latest).
+2. Double-click it and follow the wizard. It installs for your user account without administrator rights
+   (choose "all users" in the first dialog to install into Program Files instead).
+3. Start **AuteurFrame** from the Start menu or the desktop shortcut.
+4. Pick a template to make a film right away, or open **Settings** and connect an AI model for the agent swarm.
+
+| | |
+|---|---|
+| **Included** | the AuteurFrame app, embedded Python 3.12 with every package, Node.js, FFmpeg and FFprobe, Chrome for Testing (rendering), and the Microsoft Visual C++ runtime |
+| **Window** | a native window using the Microsoft Edge WebView2 runtime that Windows 11 already has; the installer adds it on Windows 10 if missing, and AuteurFrame falls back to its own browser window otherwise |
+| **Your work** | projects, settings, API keys and logs live in `%LOCALAPPDATA%\AuteurFrame`; upgrades never touch them and the uninstaller asks before deleting them |
+| **Size** | a 410 MB download, about 1.5 GB installed |
+| **Privacy** | the studio listens on `127.0.0.1` only and is never reachable from other computers |
+
+Exported films are saved through the normal Windows download prompt. If the window ever reports a problem, open
+**AuteurFrame logs** from the Start menu and attach `server.log` and `launcher.log` to an issue.
+
+The installer is unsigned, so Windows SmartScreen may show "Windows protected your PC" the first time: choose
+**More info** and **Run anyway**, and compare the file with the `.sha256` checksum published next to it on the release page.
+
+Building the installer yourself is described in [desktop/windows/README.md](desktop/windows/README.md); GitHub Actions
+builds and attaches it to every published release.
+
 ## Requirements
 
 ### Supported platforms
@@ -91,7 +127,7 @@ you see in the editor is exactly what renders.
 | Platform | Status | Notes |
 |---|---|---|
 | **Ubuntu 22.04 / 24.04, Debian 12** (x86_64) | Supported | Developed and tested on Ubuntu 24.04. All features, including the agents' sandboxed terminal. |
-| **Windows 10 / 11** | Supported through **WSL2** | Install Ubuntu in WSL2 and follow the Linux steps. Tested. Native Windows (outside WSL) is not supported. |
+| **Windows 10 / 11** (x64) | Supported | Use the **Windows desktop app** (one installer, nothing else to install; see below), or install Ubuntu in WSL2 and follow the Linux steps. Running from source in native Windows Python is not supported; the desktop app is the native Windows route. |
 | **Docker** (Linux, Windows or macOS host) | Supported | Uses the included `Dockerfile`; everything is installed in the image. Tested on a Linux host. |
 | **macOS 13 or newer** (Apple silicon or Intel) | Expected to work, not yet tested | The agents' sandboxed terminal needs Linux, so on macOS agents work without it. Use Docker for the full feature set. |
 | **Linux on ARM64** | Not tested | Some Python packages may need to build from source. |
@@ -217,7 +253,7 @@ without the terminal tool.
 ### Check the installation
 
 Open **http://127.0.0.1:8800/api/health**. You should see `"ok": true`, a `renderer` entry with your Chrome path and
-`"version": "1.0.0"`. In the studio, the top bar shows **Render farm · N nodes** once Chrome has started.
+the version from `release.json` (for example `"version": "1.2.0"`). In the studio, the top bar shows **Render farm · N nodes** once Chrome has started.
 
 ## Connect a model
 
@@ -257,6 +293,8 @@ master appears under **Master** when the editor finishes, and the export menu do
 | **Inspector** | **Swarm** (agents and render farm), **Scene** (title, narration, timing, archetype data), **Layer**, **Look** (film and scene colour grade, scene camera keyframes, audio master), **Code** (edit the composition and apply with `Ctrl+S`), **Direct** (chat with the scene's animator) and **QA** (the critic's notes). |
 | **Agent cursors** | While the swarm works, each agent's pointer animates over the timeline clip it is building, with its name and current task. |
 | **Media** | Search photos, vectors, footage, sound effects and music from open libraries with no keys, then drag results onto the stage or timeline. |
+| **Components** | Add any character, animal, set, prop, 3D model or library component by click or drag. The Layer tab shows a settings form built from the component's own schema. |
+| **Keyframes** | Every user layer can move, scale, rotate and fade on keyframes with per-key easing (linear, in, out, in-out, back, bounce, hold). Add a key at the playhead, apply one of 14 motion presets, or switch on **Record** and drag on the stage to keyframe by hand. |
 | **Revisions** | Every change is versioned. Roll back any scene or the whole project. |
 
 Only changed scenes re-render, so **Render changes** after an edit is fast.
@@ -461,8 +499,10 @@ All settings are optional environment variables.
    sets and props, real 3D models and libraries such as d3, PixiJS, p5, Matter, Lottie and three.js, preview in the real
    renderer and fix what they see.
 8. **Critic** lints and probes every scene in Chrome (overflow, overlap, safe area, type size, contrast, dead frames) and
-   optionally looks at the frames with a vision model. Repairs stop as soon as the scene is good enough, stops
-   improving or repeats the same notes.
+   optionally looks at the frames with a vision model, first describing them as a stranger would and then writing notes
+   as concrete changes with numbers. Repairs stop as soon as the scene is good enough, stops improving or repeats the
+   same notes. Inside the workshop a loop governor tracks repeated notes, escalates the advice and restores the best
+   earlier version when the preview budget runs out, so animators never get stuck.
 9. **Render nodes** capture scenes in parallel across a pool of Chrome pages and encode H.264 segments, cached by content
    hash.
 10. **Sound Designer** places music and effects; the **Editor** joins segments on exact frames, ducks music under the
@@ -532,6 +572,27 @@ Set up branch protection by importing [.github/rulesets/main.json](.github/rules
 | 429 or overloaded errors | Keep the rate limiter on for free tiers or route the Animator to a different model. |
 | Update check shows an error | The studio is offline or the feed URL is wrong. Everything else keeps working. |
 | Agents say the terminal is unavailable | Expected on macOS and in Docker without `seccomp=unconfined`; agents work without it. |
+
+## Security
+
+AuteurFrame runs a local web server, so it is built to stay local and to contain the code that agents write:
+
+- The server binds to `127.0.0.1` and only answers requests addressed to `127.0.0.1` or `localhost`, which defeats
+  DNS-rebinding attacks. Requests that a browser marks as cross-site, and writes from any other origin, are refused,
+  so a web page you visit cannot drive your studio. To reach the studio from another machine on purpose, set
+  `AUTEUR_HOST=0.0.0.0` and list the names you use in `AUTEUR_ALLOWED_HOSTS` (comma-separated).
+- The render service only accepts JSON requests from AuteurFrame itself, never from a browser.
+- API keys are masked in every response, and a saved key is dropped when a connection is pointed at a different
+  provider or address, so it can never be redirected to another server.
+- Scene code runs under a strict Content Security Policy with no outside network access. The critic rejects scene code
+  that tries to reach the studio (parent or top frames, navigation, storage, sockets, beacons or `/api/` calls), and
+  community template packs pass an even stricter filter before they are installed.
+- Template downloads are checked against SHA-256 checksums from the release feed and must come from the same host.
+- The Docker setup publishes the port on `127.0.0.1` only.
+- The Windows app keeps all child processes in a job object, opens only links you click in your own browser, grants
+  no camera, microphone or location access, and stores data in your user profile.
+
+Please report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
 
 ## License
 

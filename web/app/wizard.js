@@ -63,6 +63,7 @@ export function Wizard({ preset, health }) {
   const [fromNarr, setFromNarr] = useState(false);
   const [research, setResearch] = useState(!!base.research);
   const [narration, setNarration] = useState('off');
+  const [medium, setMedium] = useState('auto');
   const [scoutOn, setScoutOn] = useState(true);
   const [libMusic, setLibMusic] = useState(true);
   const [mode, setMode] = useState('auto');
@@ -82,7 +83,7 @@ export function Wizard({ preset, health }) {
     try {
       const p = await api.post('/api/projects', {
         title: title || (brief.split(/[.!?]/)[0] || 'Untitled film').slice(0, 70), brief, aspect, style, duration: Number(duration), fps: Number(fps),
-        options: { research, mode, quality, audience, tone, language, narration, scout: scoutOn, library_music: libMusic }, captions: { enabled: capOn, style: caption || null, from_narration: fromNarr || narration === 'ai' }
+        options: { research, mode, quality, audience, tone, language, narration, medium, scout: scoutOn, library_music: libMusic }, captions: { enabled: capOn, style: caption || null, from_narration: fromNarr || narration === 'ai' }
       });
       for (const f of files) {
         await api.upload(`/api/projects/${p.id}/assets`, f.file, { role: f.role === 'subtitles' ? 'subtitles' : f.role });
@@ -169,6 +170,10 @@ export function Wizard({ preset, health }) {
         <span class="spacer"></span><button class=${'btn sm ' + (caption === '' ? 'on' : '')} onClick=${() => setCaption('')}>Auto from style</button></div>
       <div class="cap-styles" style=${{ opacity: capOn ? 1 : 0.4 }}>${CAPS.map((c) => html`<div class=${'cap-style ' + (caption === c.id ? 'on' : '')} onClick=${() => setCaption(c.id)}><div class="cap-demo">${c.demo}</div><b style=${{ fontSize: '12px' }}>${c.name}</b></div>`)}</div>
       <div class="divider" style=${{ margin: '18px 0' }}></div>
+      <div class="row" style=${{ marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}><b style=${{ marginRight: '6px' }}>Characters</b>
+        ${[['auto', 'Auto from the brief'], ['3d', '3D characters'], ['toon', '2D cartoon'], ['anime', 'Anime'], ['stickman', 'Stick figures'], ['none', 'No characters']].map(([id, label]) =>
+          html`<button class=${'btn sm ' + (medium === id ? 'on' : '')} onClick=${() => setMedium(id)}>${label}</button>`)}
+        <span class="muted" style=${{ fontSize: '12px', flexBasis: '100%' }}>Every scene keeps the same characters in this medium. Auto reads the brief.</span></div>
       <div class="grid3" style=${{ gap: '16px' }}>
         <div class="row" style=${{ alignItems: 'flex-start' }}><button class=${'switch ' + (research ? 'on' : '')} onClick=${() => setResearch(!research)}></button>
           <div><b>Web research</b><div class="muted" style=${{ fontSize: '12px' }}>Scout searches DuckDuckGo, Brave, Bing and Wikipedia, opens sources and grounds every number.</div></div></div>

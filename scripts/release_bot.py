@@ -17,7 +17,7 @@ GROUPS = [("skills/", "Skills"), ("server/", "Server"), ("web/", "Studio"), ("re
           (".github/", "Automation"), ("scripts/", "Scripts"), ("docs/", "Docs"), ("README.md", "Docs"), ("CONTRIBUTING.md", "Docs"),
           ("requirements.txt", "Dependencies"), ("package.json", "Dependencies"), ("package-lock.json", "Dependencies"), ("assets/", "Assets"),
           ("brand/", "Brand"), ("LICENSE", "Legal"), ("NOTICE.txt", "Legal"), ("COMMERCIAL.md", "Legal"), ("TRADEMARKS.md", "Legal"),
-          ("THIRD_PARTY_NOTICES.md", "Legal"), ("templates/", "Templates")]
+          ("THIRD_PARTY_NOTICES.md", "Legal"), ("SECURITY.md", "Legal"), ("templates/", "Templates"), ("desktop/", "Desktop")]
 SELF_MANAGED = {"release.json", "changelog.txt"}
 
 

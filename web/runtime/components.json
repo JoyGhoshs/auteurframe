@@ -1299,7 +1299,7 @@
   {
    "name": "toon",
    "category": "character",
-   "description": "Story cartoon character in the bold outlined style of animated story channels: big white round head, expressive brows and eyes, coloured body, stick limbs. Build any cast from presets (kid, teen-girl, teen-boy, old-man, old-woman, police, soldier, doctor, scientist, businessman, chef, biker, beekeeper, thief, zombie, hero) or from parts (hats, hair, beards, extras, props, colours, custom SVG parts). Acts with walk, run, shamble, wave, point, talk with lip sync, shock, cheer, scared, cry, laugh, fall, hug and more, each with an expression.",
+   "description": "Story cartoon character in the bold outlined style of animated story channels: big white round head, expressive brows and eyes, coloured body, stick limbs. Build any cast from presets (kid, teen-girl, teen-boy, old-man, old-woman, police, soldier, doctor, nurse, teacher, scientist, businessman, chef, biker, beekeeper, thief, zombie, hero, firefighter, astronaut, pirate, wizard, king, queen, princess, ninja, farmer, artist, detective, graduate, builder, viking, mail-carrier, singer, athlete, photographer) or from parts (hats, hair, beards, extras, props, colours, custom SVG parts). Acts with walk, run, shamble, wave, point, talk with lip sync, shock, cheer, scared, cry, laugh, fall, hug and more, each with an expression.",
    "params": {
     "preset": {
      "type": "enum",
@@ -1321,7 +1321,27 @@
       "beekeeper",
       "thief",
       "zombie",
-      "hero"
+      "hero",
+      "teacher",
+      "nurse",
+      "firefighter",
+      "astronaut",
+      "pirate",
+      "wizard",
+      "king",
+      "queen",
+      "princess",
+      "ninja",
+      "farmer",
+      "artist",
+      "detective",
+      "graduate",
+      "builder",
+      "viking",
+      "mail-carrier",
+      "singer",
+      "athlete",
+      "photographer"
      ],
      "doc": "starting look; any field below overrides it"
     },
@@ -1376,7 +1396,18 @@
       "tophat",
       "hardhat",
       "headband",
-      "party"
+      "party",
+      "wizard",
+      "beret",
+      "bandana",
+      "firefighter",
+      "graduation",
+      "pirate",
+      "nurse",
+      "space",
+      "ninja",
+      "fedora",
+      "viking"
      ],
      "doc": "empty keeps the preset; none removes it"
     },
@@ -1426,7 +1457,7 @@
     "extras": {
      "type": "array",
      "default": [],
-     "doc": "backpack, cape, tie, badge, scarf, apron, stethoscope, vest, glasses, sunglasses, eyepatch, bandage, freckles, scar, earrings"
+     "doc": "backpack, cape, tie, bowtie, badge, scarf, apron, stethoscope, vest, belt, sash, necklace, glasses, sunglasses, eyepatch, bandage, freckles, scar, earrings (colours: capeColor, tieColor, scarfColor, vestColor, beltColor, sashColor, gemColor, backpackColor)"
     },
     "prop": {
      "type": "enum",
@@ -1445,7 +1476,20 @@
       "cup",
       "umbrella",
       "map",
-      "key"
+      "key",
+      "wand",
+      "sword",
+      "clipboard",
+      "paintbrush",
+      "pointer",
+      "microphone",
+      "camera",
+      "balloon",
+      "flower",
+      "hammer",
+      "pan",
+      "ball",
+      "magnifier"
      ],
      "doc": "item in the front hand"
     },
@@ -1592,7 +1636,7 @@
   {
    "name": "toon-prop",
    "category": "set",
-   "description": "A cartoon object or building in the toon style (thick ink outline, flat colours) that lives and moves: smoke from chimneys and fires, flickering lit windows, blinking antennas, spinning windmills and rotors, rolling wheels, swaying trees, siren lights, opening gates. Vehicles can drive to a position. Objects: house, apartment, tower, shop, pharmacy, hospital, school, church, factory, tent, cabin, bridge, gate, fence, barricade, wall, car, police-car, bus, truck, bicycle, boat, helicopter, plane, tree, pine, palm, bush, rock, lamp, traffic-light, billboard, sign, bench, table, chair, bed, sofa, tv, computer, desk, door, window, beehive, campfire, fire, radio, barrel, crate, radio-tower, water-tower, windmill, mountain, cloud, sun, moon, well, mailbox, hydrant, trash-can, satellite-dish.",
+   "description": "A cartoon object or building in the toon style (thick ink outline, flat colours) that lives and moves: smoke from chimneys and fires, flickering lit windows, blinking antennas, spinning windmills and rotors, rolling wheels, swaying trees, siren lights, opening gates. Vehicles can drive to a position. Objects: house, apartment, tower, shop, pharmacy, hospital, school, church, factory, tent, cabin, bridge, gate, fence, barricade, wall, car, police-car, bus, truck, bicycle, boat, helicopter, plane, tree, pine, palm, bush, rock, lamp, traffic-light, billboard, sign, bench, table, chair, bed, sofa, tv, computer, desk, door, window, beehive, campfire, fire, radio, barrel, crate, radio-tower, water-tower, windmill, mountain, cloud, sun, moon, well, mailbox, hydrant, trash-can, satellite-dish, fridge, stove, counter, sink, dining-table, kitchen-shelf, wardrobe, bookshelf, floor-lamp, rug, curtains, window-frame, painting, clock, potted-plant, armchair, coffee-table, bathtub, toilet, desk-lamp, laptop, blackboard, whiteboard, lockers, school-desk, office-chair, filing-cabinet, swing, slide, fountain, statue, flower-bed, mushroom, snowman, food-truck, market-stall, bus-stop, train, ship, rocket.",
    "params": {
     "name": {
      "type": "enum",
@@ -1658,7 +1702,47 @@
       "mailbox",
       "hydrant",
       "trash-can",
-      "satellite-dish"
+      "satellite-dish",
+      "fridge",
+      "stove",
+      "counter",
+      "sink",
+      "dining-table",
+      "kitchen-shelf",
+      "wardrobe",
+      "bookshelf",
+      "floor-lamp",
+      "rug",
+      "curtains",
+      "window-frame",
+      "painting",
+      "clock",
+      "potted-plant",
+      "armchair",
+      "coffee-table",
+      "bathtub",
+      "toilet",
+      "desk-lamp",
+      "laptop",
+      "blackboard",
+      "whiteboard",
+      "lockers",
+      "school-desk",
+      "office-chair",
+      "filing-cabinet",
+      "swing",
+      "slide",
+      "fountain",
+      "statue",
+      "flower-bed",
+      "mushroom",
+      "snowman",
+      "food-truck",
+      "market-stall",
+      "bus-stop",
+      "train",
+      "ship",
+      "rocket"
      ]
     },
     "y": {
@@ -1736,7 +1820,7 @@
   {
    "name": "toon-set",
    "category": "set",
-   "description": "A complete animated environment behind toon characters: sky by time of day (stars and moon at night, sun by day), a far parallax layer (skyline with lit windows, mountains, hills, dunes, sea), living mid-ground objects and buildings, and a ground line. Presets: city-night, city-day, burning-city, street, suburb, rooftop, forest, desert, beach, mountains, farm, interior, office, bridge, checkpoint, campsite. Add weather (rain, snow, fog), burning, a slow camera pan, extra props.",
+   "description": "A complete animated environment behind toon characters: sky by time of day (stars and moon at night, sun by day), a far parallax layer (skyline with lit windows, mountains, hills, dunes, sea), living mid-ground objects and buildings, and a ground line. Presets: city-night, city-day, burning-city, street, suburb, rooftop, forest, desert, beach, mountains, farm, interior, office, bridge, checkpoint, campsite, kitchen, bedroom, living-room, bathroom, classroom, office-open, park, playground, market, bus-station, harbor, launchpad, winter-village, fairy-forest, train-station. Add weather (rain, snow, fog), burning, a slow camera pan, extra props.",
    "params": {
     "preset": {
      "type": "enum",
@@ -1757,7 +1841,22 @@
       "office",
       "bridge",
       "checkpoint",
-      "campsite"
+      "campsite",
+      "kitchen",
+      "bedroom",
+      "living-room",
+      "bathroom",
+      "classroom",
+      "office-open",
+      "park",
+      "playground",
+      "market",
+      "bus-station",
+      "harbor",
+      "launchpad",
+      "winter-village",
+      "fairy-forest",
+      "train-station"
      ]
     },
     "time": {
@@ -1863,10 +1962,15 @@
      ],
      "doc": "lighting and sky; empty uses the set default"
     },
+    "props": {
+     "type": "array",
+     "default": [],
+     "doc": "ModelSpec set dressing: [{model: library name (dog, cat, bird, car, tree, house, chair, table, desk-lamp, sofa) or a ModelSpec object, x, z, yaw, scale, colors}]"
+    },
     "cast": {
      "type": "array",
      "default": [],
-     "doc": "characters: [{id, preset, x, z, facing (degrees, 0 faces camera), scale, skin, hair (short|side|spiky|messy|ponytail|bun|long|curly|bald), hairColor, hat (helmet|cap|hardhat|chef|beanie|crown|tophat|straw|space|none), hatColor, shirt, pants, shoes, outfit (casual|labcoat|armor|hoodie|suit|overalls|suit-space|robot), extras [goggles, glasses, backpack, cape, beard, mustache], prop (sword|shield|wrench|phone|book|cup|torch|flashlight|sign|umbrella|briefcase|flask), propL, expression, actions: [{do, at, duration, to: x or [x,z], dir, expression, height}]}]. Actions: walk, run, march, sneak, wave, point, talk, look, shock, jump, cheer, shrug, nod, shake, think, scared, cry, laugh, angry, yell, crouch, brace, block, attack, punch, throw, fall, fly, tumble, blown-away, hold, raise, hug, sit, dance, turn, type, zap. Expressions: neutral, happy, sad, angry, worried, shocked, scared, smirk, laugh, determined, sleepy, zombie, love, thinking, yell, excited"
+     "doc": "a cast member may be a ModelSpec creature or object instead of a person: {id, model: 'dog' or a spec, x, z, facing, scale, colors, actions: walk/run (to), wag, nod, spin, joint}. People: characters: [{id, preset, x, z, facing (degrees, 0 faces camera), scale, skin, hair (short|side|spiky|messy|ponytail|bun|long|curly|bald), hairColor, hat (helmet|cap|hardhat|chef|beanie|crown|tophat|straw|space|none), hatColor, shirt, pants, shoes, outfit (casual|labcoat|armor|hoodie|suit|overalls|suit-space|robot), extras [goggles, glasses, backpack, cape, beard, mustache], prop (sword|shield|wrench|phone|book|cup|torch|flashlight|sign|umbrella|briefcase|flask), propL, expression, actions: [{do, at, duration, to: x or [x,z], dir, expression, height}]}]. Actions: walk, run, march, sneak, wave, point, talk, look, shock, jump, cheer, shrug, nod, shake, think, scared, cry, laugh, angry, yell, crouch, brace, block, attack, punch, throw, fall, fly, tumble, blown-away, hold, raise, hug, sit, dance, turn, type, zap. Expressions: neutral, happy, sad, angry, worried, shocked, scared, smirk, laugh, determined, sleepy, zombie, love, thinking, yell, excited"
     },
     "fx": {
      "type": "array",
@@ -1986,6 +2090,84 @@
     }
    },
    "example": "component('figure3d', { preset: 'kid', look: 'felt', x: 30, y: 10, w: 40, h: 85, actions: [{ do: 'shock', at: 0.5, duration: 1.2 }] })"
+  },
+  {
+   "name": "model-spec",
+   "category": "3d",
+   "description": "A 3D model generated from a ModelSpec: a JSON list of named parts (box, cylinder, cone, sphere, capsule, torus, lathe, loft, tube, gable) attached to each other by anchors, with templates (head, torso, limb, tail, wheel, roof, canopy, eye), mirroring, named joints and materials. Use a library model by name (dog, cat, bird, car, tree, house, chair, table, desk-lamp, sofa) or write your own spec for any character, animal, vehicle, building, furniture or prop. Validation rejects single-blob models and floating parts. Animate with walk, run, wag, nod, flap, spin or a named joint.",
+   "params": {
+    "at": {
+     "type": "number",
+     "default": 0
+    },
+    "model": {
+     "type": "string",
+     "default": "",
+     "doc": "library model name"
+    },
+    "spec": {
+     "type": "object",
+     "default": null,
+     "doc": "a ModelSpec object (see the procedural-3d-world skill)"
+    },
+    "look": {
+     "type": "enum",
+     "default": "lowpoly",
+     "options": [
+      "lowpoly",
+      "felt",
+      "clay",
+      "toy",
+      "paper"
+     ]
+    },
+    "h": {
+     "type": "number",
+     "default": 70,
+     "doc": "viewport height in % of frame"
+    },
+    "yaw": {
+     "type": "number",
+     "default": -30
+    },
+    "pitch": {
+     "type": "number",
+     "default": 12
+    },
+    "spin": {
+     "type": "number",
+     "default": 0,
+     "doc": "turntable degrees per second"
+    },
+    "orbit": {
+     "type": "number",
+     "default": 20
+    },
+    "zoom": {
+     "type": "number",
+     "default": 1.05
+    },
+    "enter": {
+     "type": "enum",
+     "default": "pop",
+     "options": [
+      "pop",
+      "rise",
+      "none"
+     ]
+    },
+    "colors": {
+     "type": "object",
+     "default": null,
+     "doc": "palette overrides {name: \"#hex\"}"
+    },
+    "actions": {
+     "type": "array",
+     "default": [],
+     "doc": "[{do: walk|run|wag|nod|flap|spin|joint, at, duration, joint, to, amount}]"
+    }
+   },
+   "example": "component('model-spec', { model: 'dog', x: 20, y: 15, w: 60, h: 70, actions: [{ do: 'walk', at: 0, duration: 3 }, { do: 'wag', at: 3, duration: 2 }] })"
   },
   {
    "name": "stickman",
@@ -2122,7 +2304,7 @@
   {
    "name": "toon-animal",
    "category": "character",
-   "description": "Cartoon animal in the same bold outlined style as toon: dog, cat, rabbit, fox, pig or bird with expressive face, collar and spots. Acts with walk, run, sniff (with to: x%), sit, lie, sleep, jump, wag, happy, bark, eat, look, sad, beg and shock. Use for pets and animal characters in toon stories.",
+   "description": "Cartoon animal in the same bold outlined style as toon: dog, cat, rabbit, fox, pig, bird, bear, mouse, lion, sheep, cow, horse or panda with expressive face, collar and spots. Acts with walk, run, sniff (with to: x%), sit, lie, sleep, jump, wag, happy, bark, eat, look, sad, beg and shock. Use for pets and animal characters in toon stories.",
    "params": {
     "at": {
      "type": "number",
@@ -2137,7 +2319,14 @@
       "rabbit",
       "fox",
       "pig",
-      "bird"
+      "bird",
+      "bear",
+      "mouse",
+      "lion",
+      "sheep",
+      "cow",
+      "horse",
+      "panda"
      ]
     },
     "y": {
@@ -2193,6 +2382,487 @@
     }
    },
    "example": "component('toon-animal', { species: 'dog', x: 70, color: '#C98B4E', collar: '#D32F2F', actions: [{ do: 'run', at: 0.4, duration: 1.6, to: 40 }, { do: 'wag', at: 2.2, duration: 1.5 }] })"
+  },
+  {
+   "name": "anime-face",
+   "category": "character",
+   "description": "Anime close-up: a cel-painted bust with large eyes (sclera, iris, pupil, two window catchlights), two or three hair masses with one hard sheen band, one hard shadow shape and tapered ink line, in a closed colour script. Acts on twos: talk with lip sync, blink, discrete head turns with hair follow-through, looks, shock, cry, shout, laugh, blush. Use for close-ups and reaction shots in anime films; pair with anime-figure for wide and action shots using the same hair, colours and outfit.",
+   "params": {
+    "script": {
+     "type": "enum",
+     "default": "indigo",
+     "options": [
+      "indigo",
+      "ember",
+      "noon",
+      "sakura",
+      "festival",
+      "storm",
+      "dawn",
+      "neon"
+     ],
+     "doc": "colour script: the closed palette for the whole film"
+    },
+    "x": {
+     "type": "number",
+     "default": 50,
+     "doc": "centre of the bust in % of frame width"
+    },
+    "y": {
+     "type": "number",
+     "default": 100,
+     "doc": "bottom of the bust in % of frame height"
+    },
+    "h": {
+     "type": "number",
+     "default": 92,
+     "doc": "bust height in % of frame height (92 close-up, 60 medium close-up)"
+    },
+    "facing": {
+     "type": "enum",
+     "default": "right",
+     "options": [
+      "right",
+      "left"
+     ]
+    },
+    "hair": {
+     "type": "enum",
+     "default": "short",
+     "options": [
+      "short",
+      "spiky",
+      "messy",
+      "long",
+      "bob",
+      "ponytail",
+      "twintails",
+      "bun"
+     ]
+    },
+    "hairColor": {
+     "type": "string",
+     "default": ""
+    },
+    "iris": {
+     "type": "string",
+     "default": ""
+    },
+    "skin": {
+     "type": "string",
+     "default": ""
+    },
+    "outfit": {
+     "type": "enum",
+     "default": "coat",
+     "options": [
+      "coat",
+      "uniform",
+      "hoodie",
+      "kimono",
+      "armor",
+      "jacket",
+      "dress",
+      "shirt"
+     ]
+    },
+    "coat": {
+     "type": "string",
+     "default": ""
+    },
+    "accent": {
+     "type": "string",
+     "default": ""
+    },
+    "accessory": {
+     "type": "enum",
+     "default": "none",
+     "options": [
+      "none",
+      "scarf",
+      "ribbon",
+      "tie",
+      "headband",
+      "hairclip",
+      "glasses"
+     ]
+    },
+    "expression": {
+     "type": "enum",
+     "default": "neutral",
+     "options": [
+      "neutral",
+      "happy",
+      "smile",
+      "sad",
+      "angry",
+      "surprised",
+      "shocked",
+      "determined",
+      "worried",
+      "crying",
+      "shout",
+      "sleepy",
+      "blush"
+     ]
+    },
+    "turn": {
+     "type": "number",
+     "default": 0.25,
+     "doc": "-1 looks left of frame, 0 front, 1 right"
+    },
+    "wind": {
+     "type": "number",
+     "default": 0,
+     "doc": "0 to 1: hair and scarf sway on twos"
+    },
+    "actions": {
+     "type": "array",
+     "default": [],
+     "doc": "[{do: talk|blink|turn (to)|look (dir)|nod|shock|cry|shout|laugh|blush|tilt, at, duration, expression, hold}]; expressions cut on the drawing, never tween"
+    },
+    "lipsync": {
+     "type": "string",
+     "default": "",
+     "doc": "'voice' or an audio asset id"
+    },
+    "lipsyncAt": {
+     "type": "number",
+     "default": 0
+    },
+    "enter": {
+     "type": "enum",
+     "default": "cut",
+     "options": [
+      "cut",
+      "none"
+     ],
+     "doc": "anime characters cut in with the shot; they never fade in"
+    }
+   },
+   "example": "component('anime-face', { layer: 'ren', script: 'indigo', hair: 'messy', hairColor: '#191720', iris: '#e3a04b', outfit: 'coat', accessory: 'scarf', x: 38, turn: 0.4, actions: [{ do: 'talk', at: 0.4, duration: 1.6 }, { do: 'turn', at: 2.2, to: -0.2 }, { do: 'shock', at: 2.6, duration: 0.8 }] })"
+  },
+  {
+   "name": "anime-figure",
+   "category": "character",
+   "description": "Anime full-body character in limited animation: discrete key drawings held on twos (walk and run cycles, crouch, leap, land, windup, strike with a one-frame smear, follow-through, wave, reach, point, kneel, hit, sit), never tweened between poses. Same hair, colours and outfit as anime-face so the character matches across shot sizes. Wide shots draw it as a flat silhouette with a rim line.",
+   "params": {
+    "script": {
+     "type": "enum",
+     "default": "indigo",
+     "options": [
+      "indigo",
+      "ember",
+      "noon",
+      "sakura",
+      "festival",
+      "storm",
+      "dawn",
+      "neon"
+     ],
+     "doc": "colour script: the closed palette for the whole film"
+    },
+    "x": {
+     "type": "number",
+     "default": 50,
+     "doc": "feet centre in % of frame width"
+    },
+    "y": {
+     "type": "number",
+     "default": 90,
+     "doc": "ground line in % of frame height"
+    },
+    "h": {
+     "type": "number",
+     "default": 60,
+     "doc": "figure height in % of frame height"
+    },
+    "facing": {
+     "type": "enum",
+     "default": "right",
+     "options": [
+      "right",
+      "left"
+     ]
+    },
+    "hair": {
+     "type": "enum",
+     "default": "short",
+     "options": [
+      "short",
+      "spiky",
+      "messy",
+      "long",
+      "bob",
+      "ponytail",
+      "twintails",
+      "bun"
+     ]
+    },
+    "hairColor": {
+     "type": "string",
+     "default": ""
+    },
+    "iris": {
+     "type": "string",
+     "default": ""
+    },
+    "skin": {
+     "type": "string",
+     "default": ""
+    },
+    "outfit": {
+     "type": "enum",
+     "default": "coat",
+     "options": [
+      "coat",
+      "uniform",
+      "hoodie",
+      "kimono",
+      "armor",
+      "jacket",
+      "dress",
+      "shirt"
+     ]
+    },
+    "coat": {
+     "type": "string",
+     "default": ""
+    },
+    "pants": {
+     "type": "string",
+     "default": ""
+    },
+    "accent": {
+     "type": "string",
+     "default": ""
+    },
+    "accessory": {
+     "type": "enum",
+     "default": "none",
+     "options": [
+      "none",
+      "scarf",
+      "ribbon",
+      "tie",
+      "headband",
+      "hairclip",
+      "glasses"
+     ]
+    },
+    "expression": {
+     "type": "enum",
+     "default": "neutral",
+     "options": [
+      "neutral",
+      "happy",
+      "smile",
+      "sad",
+      "angry",
+      "surprised",
+      "shocked",
+      "determined",
+      "worried",
+      "crying",
+      "shout",
+      "sleepy",
+      "blush"
+     ]
+    },
+    "silhouette": {
+     "type": "enum",
+     "default": "auto",
+     "options": [
+      "auto",
+      "on",
+      "off"
+     ],
+     "doc": "auto draws figures under 32% of frame height as flat silhouettes, the way wide anime shots do"
+    },
+    "pose": {
+     "type": "enum",
+     "default": "stand",
+     "options": [
+      "stand",
+      "breathe",
+      "walk1",
+      "walk2",
+      "run1",
+      "run2",
+      "crouch",
+      "leap",
+      "land",
+      "windup",
+      "strike",
+      "follow",
+      "reach",
+      "point",
+      "wave1",
+      "wave2",
+      "kneel",
+      "hit",
+      "lookup",
+      "crossed",
+      "fist",
+      "sit",
+      "walk3",
+      "walk4",
+      "run3",
+      "run4"
+     ]
+    },
+    "wind": {
+     "type": "number",
+     "default": 0
+    },
+    "actions": {
+     "type": "array",
+     "default": [],
+     "doc": "[{do: walk|run (to: x%)|strike|slash (anticipation 4 frames, smear 2 frames, hold)|jump (height, to)|wave|talk|turn (dir)|hit|reach|point|kneel|lookup|crossed|fist|sit|crouch|stand, at, duration, expression, hold: true}]"
+    },
+    "enter": {
+     "type": "enum",
+     "default": "cut",
+     "options": [
+      "cut",
+      "none"
+     ],
+     "doc": "anime characters cut in with the shot; they never fade in"
+    }
+   },
+   "example": "component('anime-figure', { layer: 'ren', script: 'indigo', hair: 'messy', outfit: 'coat', accessory: 'scarf', x: 20, h: 64, actions: [{ do: 'run', at: 0.2, duration: 1.4, to: 55 }, { do: 'strike', at: 1.8, duration: 1.2, to: 68, hold: true }] })"
+  },
+  {
+   "name": "anime-set",
+   "category": "set",
+   "description": "Painted anime background in a closed colour script: sky gradient, moon or sun, layered skylines with lit practical windows, hills, shrine, classroom, bedroom, rainy street, seaside, sakura path, ruins, open sky or a void for action. Weather runs on ones or twos from seeded positions, an optional 100 to 106 percent push holds the shot, and letterbox bars frame cinematic shots.",
+   "params": {
+    "script": {
+     "type": "enum",
+     "default": "indigo",
+     "options": [
+      "indigo",
+      "ember",
+      "noon",
+      "sakura",
+      "festival",
+      "storm",
+      "dawn",
+      "neon"
+     ],
+     "doc": "colour script: the closed palette for the whole film"
+    },
+    "preset": {
+     "type": "enum",
+     "default": "city-night",
+     "options": [
+      "city-night",
+      "rooftop",
+      "street-rain",
+      "field-dusk",
+      "shrine",
+      "classroom",
+      "bedroom",
+      "seaside",
+      "sakura-path",
+      "ruins",
+      "sky",
+      "void"
+     ]
+    },
+    "weather": {
+     "type": "enum",
+     "default": "none",
+     "options": [
+      "none",
+      "rain",
+      "snow",
+      "petals",
+      "embers",
+      "fireflies"
+     ],
+     "doc": "rain and embers on ones, snow and petals on twos; positions are seeded"
+    },
+    "push": {
+     "type": "number",
+     "default": 1,
+     "doc": "camera push across the shot, 1.06 at most (only on holds; cut closer instead of zooming)"
+    },
+    "letterbox": {
+     "type": "boolean",
+     "default": false
+    },
+    "seed": {
+     "type": "number",
+     "default": 0
+    }
+   },
+   "example": "component('anime-set', { preset: 'rooftop', script: 'indigo', weather: 'rain', push: 1.06, letterbox: true })"
+  },
+  {
+   "name": "anime-fx",
+   "category": "ambient",
+   "description": "Anime effects drawn as flat shapes on ones: parallel speed lines or radial focus lines that flicker every frame, a two-frame impact burst, a tapered blade slash with a trailing smear, sparks and a full-frame flash. Use them inside the one sakuga action shot, not everywhere.",
+   "params": {
+    "script": {
+     "type": "enum",
+     "default": "indigo",
+     "options": [
+      "indigo",
+      "ember",
+      "noon",
+      "sakura",
+      "festival",
+      "storm",
+      "dawn",
+      "neon"
+     ],
+     "doc": "colour script: the closed palette for the whole film"
+    },
+    "type": {
+     "type": "enum",
+     "default": "speedlines",
+     "options": [
+      "speedlines",
+      "focus",
+      "impact",
+      "slash",
+      "sparks",
+      "flash"
+     ],
+     "doc": "speedlines and focus lines flicker on ones; impact and flash last two frames"
+    },
+    "x": {
+     "type": "number",
+     "default": 50
+    },
+    "y": {
+     "type": "number",
+     "default": 50
+    },
+    "angle": {
+     "type": "number",
+     "default": 0,
+     "doc": "direction of travel for speedlines and slash, degrees"
+    },
+    "size": {
+     "type": "number",
+     "default": 40,
+     "doc": "size in % of frame height"
+    },
+    "color": {
+     "type": "enum",
+     "default": "line",
+     "options": [
+      "line",
+      "accent",
+      "practical",
+      "moon",
+      "ink"
+     ]
+    }
+   },
+   "example": "component('anime-fx', { type: 'slash', x: 62, y: 46, angle: -20, at: 1.9, duration: 0.3 })"
   }
  ]
 }

@@ -8,11 +8,12 @@ import { AgentCursors } from './agentcursors.js';
 import { SwarmPanel } from './swarmpanel.js';
 import { MediaPanel, DesignPanel, CaptionsPanel, AudioPanel, ResearchPanel, HistoryPanel, ExportPanel } from './leftpanels.js';
 import { TextPanel, StockPanel, SoundPanel } from './editorpanels.js';
+import { ComponentsPanel, componentPatch, recordDrag } from './motiontools.js';
 import { ContextMenu, AskAgentDialog, ReplicateDialog, TextPromptDialog } from './agentmenu.js';
 import { clipLength } from './timeline.js';
 
 const LEFT = [
-  ['media', 'image-plus', 'Media and elements'], ['text', 'type', 'Text styles'], ['stock', 'images', 'Stock and icons'], ['design', 'palette', 'Design'], ['captions', 'captions', 'Captions and timing'], ['audio', 'audio-lines', 'Sound'],
+  ['media', 'image-plus', 'Media and elements'], ['components', 'shapes', 'Characters, props and components'], ['text', 'type', 'Text styles'], ['stock', 'images', 'Stock and icons'], ['design', 'palette', 'Design'], ['captions', 'captions', 'Captions and timing'], ['audio', 'audio-lines', 'Sound'],
   ['research', 'globe', 'Research'], ['history', 'history', 'Revisions'], ['export', 'download', 'Export']
 ];
 const VISUAL_KEYS = ['code', 'data', 'archetype', 'overrides', 'layers', 'variant', 'reseed', 'duration', 'has_code', 'transition', 'source', 'ground', 'texture', 'camera', 'lens'];
@@ -41,6 +42,7 @@ export function Studio({ id, health }) {
   const [run, setRun] = useState(null);
   const [collapsed, setCollapsed] = useState(false);
   const [editTitle, setEditTitle] = useState(false);
+  const [recordKeys, setRecordKeys] = useState(false);
   const reloadTimer = useRef(null);
   const timeRef = useRef(0);
   const setTime = useCallback((t) => { timeRef.current = t; setTimeState(t); }, []);
@@ -279,9 +281,14 @@ export function Studio({ id, health }) {
     delete ov[lid];
     patchScene(sid, { overrides: ov });
   };
-  const onLayerPatch = (sid, lid, patch) => {
+  const onLayerPatch = (sid, lid, patch, fromStage) => {
     const s = project.scenes.find((x) => x.id === sid);
-    patchScene(sid, { layers: (s.layers || []).map((l) => (l.id === lid ? { ...l, ...patch } : l)) });
+    const local = Math.max(0, timeRef.current - (s.start || 0));
+    patchScene(sid, { layers: (s.layers || []).map((l) => {
+      if (l.id !== lid) return l;
+      if (fromStage && recordKeys) return { ...l, ...recordDrag(l, patch, local) };
+      return l.kind === 'component' ? componentPatch(l, patch) : { ...l, ...patch };
+    }) });
   };
   const addLayer = (layer, pos, targetScene) => {
     const s = targetScene || current;
@@ -633,6 +640,7 @@ export function Studio({ id, health }) {
           ${left === 'design' ? html`<${DesignPanel} project=${project} styles=${styles} onPatch=${patchProject} scene=${current} onScenePatch=${(sid, body) => patchScene(sid, body).then(() => bumpAll && bumpAll())} />` : null}
           ${left === 'captions' ? html`<${CaptionsPanel} project=${project} onPatch=${patchProject} onSubtitles=${setSubtitles} onCueEdit=${async (cid, p) => { await snap(true); await api.patch(`/api/projects/${id}/cues/${cid}`, p); load(); bumpAll(); }} onCheckSync=${checkSync} syncing=${syncing} selectedCue=${selCue} onSeek=${(t) => setTime(t)} />` : null}
           ${left === 'audio' ? html`<${SoundPanel} project=${project} time=${time} onPatch=${patchProject} onUpload=${upload} selectedClip=${selClip} onSelectClip=${setSelClip} onClipPatch=${onClipPatch} onDeleteClip=${deleteClip} onAddClip=${(a) => addAudioClip(a, timeRef.current)} />` : null}
+          ${left === 'components' ? html`<${ComponentsPanel} scene=${current} onAdd=${(l) => addLayer({ ...l, start: Math.max(0, Math.round((time - (current ? current.start : 0)) * 10) / 10) })} />` : null}
           ${left === 'text' ? html`<${TextPanel} scene=${current} onAdd=${(l) => addLayer({ ...l, start: Math.max(0, Math.round((time - (current ? current.start : 0)) * 10) / 10) })} />` : null}
           ${left === 'stock' ? html`<${StockPanel} project=${project} scene=${current} onImported=${onImported} />` : null}
           ${left === 'research' ? html`<${ResearchPanel} />` : null}
@@ -679,7 +687,8 @@ export function Studio({ id, health }) {
           ${tab === 'scene' && current ? html`<${SceneTab} project=${project} scene=${current} patch=${(b) => patchScene(current.id, b)} busy=${running}
               onRun=${() => sendChat(current.id, 'Re-animate this scene with a fresh, more cinematic idea.')} onAdd=${addScene} onDelete=${delScene} onThumb=${thumb}
               onRenderScene=${renderSceneNow} />` : null}
-          ${tab === 'layer' ? html`<${LayerTab} project=${project} scene=${current} selected=${selected} onOverride=${onOverride} onLayerPatch=${onLayerPatch} onLayerDelete=${deleteLayer} onLayerDuplicate=${duplicateLayer} onClear=${clearOverride} />` : null}
+          ${tab === 'layer' ? html`<${LayerTab} project=${project} scene=${current} selected=${selected} onOverride=${onOverride} onLayerPatch=${onLayerPatch} onLayerDelete=${deleteLayer} onLayerDuplicate=${duplicateLayer} onClear=${clearOverride}
+              localTime=${current ? time - (current.start || 0) : 0} record=${recordKeys} onRecord=${setRecordKeys} />` : null}
           ${tab === 'look' ? html`<${LookTab} project=${project} scene=${current} time=${time} patch=${(b) => current && patchScene(current.id, b)} patchProject=${patchProject} />` : null}
           ${tab === 'code' && current ? html`<${CodeTab} project=${project} scene=${current} patch=${(b) => patchScene(current.id, b)} />` : null}
           ${tab === 'chat' && current ? html`<${ChatTab} project=${project} scene=${current} messages=${chat} onSend=${sendChat} llm=${health && health.llm} busy=${running && run.mode === 'scene'} />` : null}

@@ -1,0 +1,29 @@
+AuteurFrame for Windows - bundled components
+============================================
+
+AuteurFrame is free software under the GNU Affero General Public License v3 (see LICENSE and
+LICENSE-EXCEPTIONS.md). Source code: https://github.com/joyghoshs/auteurframe
+
+This desktop package runs the unmodified AuteurFrame application with these separately licensed
+programs, installed next to it so that nothing else has to be installed on your computer:
+
+Python (embeddable distribution)    PSF License                  python-LICENSE.txt
+  https://www.python.org/
+Python packages                      various open-source licences listed in python-packages.txt;
+                                      each package keeps its licence file in runtime\python\Lib\site-packages
+Node.js                              MIT and bundled licences     node-LICENSE.txt
+  https://nodejs.org/
+FFmpeg and FFprobe (gyan.dev build)  GPL v3                       ffmpeg-LICENSE.txt
+  Build: https://www.gyan.dev/ffmpeg/builds/   Source: https://ffmpeg.org/download.html
+  FFmpeg runs as a separate program; its source code is available from the links above.
+Chrome for Testing                   Chromium and Google licences chrome-for-testing-LICENSE.html
+  https://googlechromelabs.github.io/chrome-for-testing/
+Microsoft Edge WebView2 SDK          BSD-style licence            webview2-sdk-LICENSE.txt
+Microsoft Visual C++ runtime DLLs    Microsoft Visual C++ redistributable licence (app-local copy)
+
+Open media and fonts used by AuteurFrame are listed in THIRD_PARTY_NOTICES.md.
+
+Where your work is stored
+-------------------------
+Projects, settings, API keys and logs live in %LOCALAPPDATA%\AuteurFrame. Uninstalling AuteurFrame
+asks before deleting them.

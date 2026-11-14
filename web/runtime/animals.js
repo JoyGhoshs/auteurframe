@@ -12,7 +12,14 @@
     rabbit: { color: '#F1EDE6', color2: '#F7C9CF', ears: 'long', tail: 'puff', snout: 0.4, size: [0.8, 0.75] },
     fox: { color: '#E07A2E', color2: '#FFF4E6', ears: 'pointy', tail: 'bushy', snout: 1.1, size: [1, 0.9] },
     pig: { color: '#F2A7B5', color2: '#F7C4CE', ears: 'flap', tail: 'curl', snout: 0.7, size: [1.1, 0.95] },
-    bird: { color: '#4FA3E0', color2: '#FFD24F', ears: 'none', tail: 'feather', snout: 0, size: [0.6, 0.6] }
+    bird: { color: '#4FA3E0', color2: '#FFD24F', ears: 'none', tail: 'feather', snout: 0, size: [0.6, 0.6] },
+    bear: { color: '#8A5A3A', color2: '#D9B08C', ears: 'round', tail: 'puff', snout: 0.9, size: [1.2, 1.1] },
+    mouse: { color: '#A9A9B3', color2: '#F7C9CF', ears: 'round-big', earColor: '#F7C9CF', tail: 'long', snout: 0.5, size: [0.6, 0.6] },
+    lion: { color: '#E0A040', color2: '#F6DDA8', ears: 'round', tail: 'tuft', snout: 0.9, mane: '#B8642A', size: [1.15, 1.05] },
+    sheep: { color: '#F4F1EA', color2: '#E6DED0', ears: 'flap', earColor: '#3A3238', tail: 'puff', snout: 0.6, wool: true, size: [1, 0.95] },
+    cow: { color: '#FFFFFF', color2: '#F2B8C4', ears: 'flap', tail: 'tuft', snout: 1, horns: true, spots: true, size: [1.3, 1.1] },
+    horse: { color: '#9A6236', color2: '#D9B08C', ears: 'pointy', tail: 'bushy', snout: 1.4, mane: '#3A2418', maneStyle: 'crest', size: [1.3, 1.2] },
+    panda: { color: '#FFFFFF', color2: '#F4F4F4', ears: 'round', earColor: '#221c22', tail: 'puff', snout: 0.7, patches: true, legColor: '#221c22', size: [1.15, 1.05] }
   };
   const W0 = 300, H0 = 220;
 
@@ -81,7 +88,7 @@
     const leg = (x0, y0, ang, front) => {
       const a = ang * Math.PI / 180;
       const x1 = x0 + Math.sin(a) * legLen, y1 = y0 + Math.cos(a) * legLen;
-      return `<path d="M${x0} ${y0} L${x1.toFixed(1)} ${y1.toFixed(1)}" stroke="${INK}" stroke-width="22" stroke-linecap="round"/><path d="M${x0} ${y0} L${x1.toFixed(1)} ${y1.toFixed(1)}" stroke="${front ? col : col}" stroke-width="12" stroke-linecap="round"/>`;
+      return `<path d="M${x0} ${y0} L${x1.toFixed(1)} ${y1.toFixed(1)}" stroke="${INK}" stroke-width="22" stroke-linecap="round"/><path d="M${x0} ${y0} L${x1.toFixed(1)} ${y1.toFixed(1)}" stroke="${s.legColor || col}" stroke-width="12" stroke-linecap="round"/>`;
     };
     const sw = o.moving ? Math.sin(o.legs) * (o.moving.run ? 38 : 24) : 0;
     const backLegs = sit > 0.3 ? `<ellipse cx="-44" cy="34" rx="34" ry="20" fill="${col}" ${stroke}/>` : leg(-44, 20, -sw, false) + leg(-30, 20, sw * 0.8, false);
@@ -94,16 +101,38 @@
     else if (s.tail === 'bushy') tail = `<path d="M${tailBase[0]} ${tailBase[1]} q-40 ${-10 + ta * 0.3} -64 ${-40 + ta * 0.6} q22 30 64 40 Z" fill="${col}" ${stroke}/><path d="M-118 ${-40 + ta * 0.6} q8 10 18 12" stroke="${col2}" stroke-width="12" stroke-linecap="round" fill="none"/>`;
     else if (s.tail === 'puff') tail = `<circle cx="-72" cy="-10" r="16" fill="${col2 === '#F7C9CF' ? '#fff' : col2}" ${stroke}/>`;
     else if (s.tail === 'curl') tail = `<path d="M-68 -8 q-16 -6 -14 -18 q4 -10 12 -2 q4 8 -8 10" ${thin}/>`;
+    else if (s.tail === 'tuft') tail = `<path d="M${tailBase[0]} ${tailBase[1]} q-26 ${10 + ta * 0.3} -34 ${36 + ta * 0.5}" ${thin}/><ellipse cx="${tailBase[0] - 34}" cy="${tailBase[1] + 40 + ta * 0.5}" rx="9" ry="13" fill="${s.mane || INK}" ${stroke.replace('6', '4')}/>`;
     const earsUp = o.ears;
     let ears = '';
     if (s.ears === 'floppy') ears = `<path d="M-14 -40 q-22 ${8 + earsUp} -18 ${44 + earsUp} q14 -4 22 -36 Z" fill="${col2 === s.color2 ? '#8A5A30' : col2}" ${stroke}/>`;
     else if (s.ears === 'pointy') ears = `<path d="M-26 -30 L-20 ${-70 + earsUp} L0 -42 Z" fill="${col}" ${stroke}/><path d="M6 -42 L22 ${-72 + earsUp} L30 -32 Z" fill="${col}" ${stroke}/>`;
     else if (s.ears === 'long') ears = `<path d="M-18 -40 q-12 ${-60 + earsUp} 4 ${-80 + earsUp * 1.5} q18 20 6 80 Z" fill="${col}" ${stroke}/><path d="M6 -42 q2 ${-60 + earsUp} 22 ${-74 + earsUp * 1.5} q12 24 -8 76 Z" fill="${col}" ${stroke}/>`;
-    else if (s.ears === 'flap') ears = `<path d="M-20 -34 l-6 -26 l22 14 Z" fill="${col}" ${stroke}/><path d="M10 -38 l8 -26 l12 22 Z" fill="${col}" ${stroke}/>`;
+    else if (s.ears === 'flap') ears = `<path d="M-20 -34 l-6 -26 l22 14 Z" fill="${s.earColor || col}" ${stroke}/><path d="M10 -38 l8 -26 l12 22 Z" fill="${s.earColor || col}" ${stroke}/>`;
+    else if (s.ears === 'round' || s.ears === 'round-big') {
+      const r = s.ears === 'round-big' ? 26 : 16, ec = s.earColor || col;
+      ears = `<circle cx="-22" cy="${-40 + earsUp * 0.3}" r="${r}" fill="${ec}" ${stroke}/><circle cx="36" cy="${-44 + earsUp * 0.3}" r="${r}" fill="${ec}" ${stroke}/>`
+        + (s.ears === 'round-big' ? `<circle cx="-22" cy="-40" r="${r - 10}" fill="${col2}"/><circle cx="36" cy="-44" r="${r - 10}" fill="${col2}"/>` : '');
+    }
+    if (s.horns) ears += `<path d="M-14 -44 q-14 -18 -4 -30 q2 14 14 22 Z M30 -48 q10 -20 24 -22 q-8 12 -12 26 Z" fill="#F3EAD2" ${stroke.replace('6', '4')}/>`;
+    let mane = '';
+    if (s.mane && s.maneStyle === 'crest') mane = `<path d="M-30 -30 q-6 -30 18 -48 q-4 18 10 14 q2 -18 22 -22 q-6 16 6 20 q-30 6 -56 36 Z" fill="${s.mane}" ${stroke}/>`;
+    else if (s.mane) {
+      const pts = [];
+      for (let i = 0; i < 24; i++) { const a = i / 24 * Math.PI * 2, r = i % 2 ? 56 : 70; pts.push(`${(10 + Math.cos(a) * r).toFixed(1)} ${(-6 + Math.sin(a) * r).toFixed(1)}`); }
+      mane = `<path d="M${pts.join(' L')} Z" fill="${s.mane}" ${stroke}/>`;
+    }
+    let wool = '';
+    if (s.wool) {
+      const puffs = [];
+      for (let i = 0; i < 14; i++) { const a = i / 14 * Math.PI * 2; puffs.push(`<circle cx="${(Math.cos(a) * 66).toFixed(1)}" cy="${(Math.sin(a) * 36).toFixed(1)}" r="20" fill="${col}" ${stroke.replace('6', '5')}/>`); }
+      wool = puffs.join('');
+    }
+    const patches = s.patches ? `<ellipse cx="2" cy="-12" rx="12" ry="15" fill="${INK}" transform="rotate(20 2 -12)"/><ellipse cx="30" cy="-12" rx="12" ry="15" fill="${INK}" transform="rotate(-20 30 -12)"/>` : '';
     const snout = s.snout;
     const eye = (x) => (blink || o.eyes === 'closed' ? `<path d="M${x - 7} -12 q7 6 14 0" ${thin}/>` : o.mood === 'surprised'
       ? `<circle cx="${x}" cy="-14" r="10" fill="#fff" ${stroke.replace('6', '4')}/><circle cx="${x}" cy="-13" r="4.5" fill="${INK}"/>`
-      : `<circle cx="${x}" cy="-14" r="6.5" fill="${INK}"/><circle cx="${x + 2}" cy="-16" r="2.2" fill="#fff"/>`);
+      : s.patches ? `<circle cx="${x}" cy="-14" r="5.5" fill="#fff"/><circle cx="${x + 1}" cy="-14" r="3" fill="${INK}"/>`
+        : `<circle cx="${x}" cy="-14" r="6.5" fill="${INK}"/><circle cx="${x + 2}" cy="-16" r="2.2" fill="#fff"/>`);
     const brows = o.mood === 'sad' ? `<path d="M-6 -30 l12 -4 M22 -34 l12 4" ${thin}/>` : o.mood === 'surprised' ? `<path d="M-6 -34 l12 -2 M22 -36 l12 2" ${thin}/>` : '';
     const mouthY = 8 + snout * 4;
     const mouth = o.bark > 0.2 || o.mood === 'surprised' ? `<ellipse cx="${30 + snout * 14}" cy="${mouthY + 4}" rx="8" ry="${6 + o.bark * 6}" fill="#7A1F2B" ${stroke.replace('6', '4')}/>`
@@ -112,21 +141,21 @@
       : `<ellipse cx="${36 + snout * 22}" cy="-4" rx="${7 + snout * 2}" ry="6" fill="${INK}"/>`;
     const snoutShape = snout > 0.5 && sp !== 'pig' ? `<ellipse cx="${30 + snout * 14}" cy="2" rx="${14 + snout * 12}" ry="16" fill="${col2}" ${stroke}/>` : '';
     const collar = c.collar ? `<path d="M-14 26 q24 12 44 -2" stroke="${c.collar}" stroke-width="10" fill="none" stroke-linecap="round"/><circle cx="10" cy="36" r="6" fill="#F2C12E" ${stroke.replace('6', '3')}/>` : '';
-    const spots = c.spots ? `<ellipse cx="-20" cy="-12" rx="16" ry="11" fill="${col2 === s.color2 ? '#3A2A20' : col2}" opacity=".85"/><ellipse cx="16" cy="6" rx="10" ry="7" fill="${col2 === s.color2 ? '#3A2A20' : col2}" opacity=".85"/>` : '';
+    const spots = (c.spots || s.spots) ? `<ellipse cx="-20" cy="-12" rx="16" ry="11" fill="${col2 === s.color2 ? '#3A2A20' : col2}" opacity=".85"/><ellipse cx="16" cy="6" rx="10" ry="7" fill="${col2 === s.color2 ? '#3A2A20' : col2}" opacity=".85"/>` : '';
     const zz = o.zz ? `<text x="60" y="-70" font-family="Kalam, cursive" font-size="34" fill="${INK}" opacity="${(0.5 + 0.5 * Math.sin(t * 3)).toFixed(2)}">z z</text>` : '';
     const headX = 58, headY = -36 - sit * 22 - beg * 40 + o.head * 0.4;
     return `<g transform="translate(150 ${(150 - o.jump + o.bob + lie * 30).toFixed(1)}) scale(${sx} ${sy})">
       <ellipse cx="0" cy="${70 - lie * 6}" rx="${86 - o.jump * 0.5}" ry="10" fill="${INK}" opacity="${(0.14 * clamp(1 - o.jump / 120, 0.3, 1)).toFixed(2)}" transform="translate(0 ${o.jump})"/>
       <g transform="rotate(${bodyTilt.toFixed(1)} -40 20)">
-        ${tail}${backLegs}
-        <ellipse cx="0" cy="0" rx="74" ry="${42 - lie * 6}" fill="${col}" ${stroke}/>
+        ${tail}${backLegs}${wool}
+        <ellipse cx="0" cy="0" rx="74" ry="${42 - lie * 6}" fill="${col}" ${s.wool ? 'stroke="none"' : stroke}/>
         <ellipse cx="10" cy="16" rx="44" ry="18" fill="${col2}" stroke="none"/>
         ${spots}${frontLegs}${collar}
       </g>
       <g transform="translate(${headX} ${headY.toFixed(1)}) rotate(${(o.head + bodyTilt * 0.3).toFixed(1)})">
-        ${s.ears === 'long' || s.ears === 'pointy' || s.ears === 'flap' ? ears : ''}
+        ${mane}${s.ears !== 'floppy' ? ears : ''}
         <circle cx="10" cy="-6" r="44" fill="${col}" ${stroke}/>
-        ${snoutShape}${s.ears === 'floppy' ? ears : ''}${brows}${eye(4)}${eye(28)}${nose}${mouth}
+        ${patches}${snoutShape}${s.ears === 'floppy' ? ears : ''}${brows}${eye(4)}${eye(28)}${nose}${mouth}
         ${o.mood === 'happy' && !o.bark ? `<ellipse cx="-10" cy="10" rx="9" ry="5" fill="#FF8FA3" opacity=".55"/>` : ''}
       </g>${zz}</g>`;
   }
@@ -174,7 +203,7 @@
   });
 
   reg.define('toon-animal', {
-    category: 'character', description: 'Cartoon animal in the same bold outlined style as toon: dog, cat, rabbit, fox, pig or bird with expressive face, collar and spots. Acts with walk, run, sniff (with to: x%), sit, lie, sleep, jump, wag, happy, bark, eat, look, sad, beg and shock. Use for pets and animal characters in toon stories.',
+    category: 'character', description: 'Cartoon animal in the same bold outlined style as toon: dog, cat, rabbit, fox, pig, bird, bear, mouse, lion, sheep, cow, horse or panda with expressive face, collar and spots. Acts with walk, run, sniff (with to: x%), sit, lie, sleep, jump, wag, happy, bark, eat, look, sad, beg and shock. Use for pets and animal characters in toon stories.',
     params: {
       at: { type: 'number', default: 0 }, species: { type: 'enum', default: 'dog', options: Object.keys(SPECIES) },
       y: { type: 'number', default: 88, doc: 'ground line in % of frame height' }, h: { type: 'number', default: 22, doc: 'animal height in % of frame height' },

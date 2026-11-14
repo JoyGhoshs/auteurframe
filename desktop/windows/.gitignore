@@ -1,0 +1,8 @@
+build/
+cache/
+dist/
+launcher/bin/
+launcher/obj/
+*.log
+assets/*preview*.png
+build-local.ps1

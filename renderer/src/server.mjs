@@ -24,8 +24,25 @@ function stream(res) {
   return (obj) => { try { res.write(JSON.stringify(obj) + '\n'); } catch { } };
 }
 
+const LOOPBACK = new Set(['127.0.0.1', 'localhost', '[::1]', '::1']);
+
+function hostName(value) {
+  const v = String(value || '').trim().toLowerCase();
+  if (v.startsWith('[')) return v.slice(0, v.indexOf(']') + 1);
+  return v.split(':')[0];
+}
+
+function guard(req) {
+  if (!LOOPBACK.has(hostName(req.headers.host))) return 'host not allowed';
+  if (req.headers.origin || req.headers['sec-fetch-site'] || req.headers['sec-fetch-mode']) return 'browser requests are not accepted';
+  if (req.method === 'POST' && !String(req.headers['content-type'] || '').toLowerCase().startsWith('application/json')) return 'content type must be application/json';
+  return null;
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${HOST}`);
+  const blocked = guard(req);
+  if (blocked) return json(res, 403, { error: blocked });
   try {
     if (req.method === 'GET' && url.pathname === '/health') {
       return json(res, 200, { ok: true, chrome: chromePath() || null, pages: stats(), max: MAX_PAGES, jobs: jobs.size });

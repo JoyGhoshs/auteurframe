@@ -9,16 +9,6 @@ import numpy as np
 
 SR = 44100
 
-MODES = {
-    "minor": [0, 2, 3, 5, 7, 8, 10], "major": [0, 2, 4, 5, 7, 9, 11], "dorian": [0, 2, 3, 5, 7, 9, 10], "lydian": [0, 2, 4, 6, 7, 9, 11],
-}
-MOOD = {
-    "editorial-paper": ("dorian", 92, 0), "vox-collage": ("dorian", 96, 2), "cosmic-flat": ("lydian", 84, 5), "swiss-kinetic": ("minor", 112, 7),
-    "neon-night": ("minor", 108, 9), "whiteboard-doodle": ("major", 100, 0), "blueprint": ("dorian", 96, 4), "risograph": ("major", 110, 2),
-    "math-stage": ("lydian", 76, 3), "keynote-light": ("major", 98, 5), "data-cinema": ("minor", 90, 9), "brutalist": ("minor", 118, 1),
-    "soft-clay": ("major", 94, 7), "retro-pixel": ("major", 124, 0), "luxury-serif": ("minor", 72, 3), "gradient-product": ("lydian", 104, 2),
-    "creator-bold": ("minor", 120, 4), "documentary": ("dorian", 78, 9),
-}
 
 
 def _env(n: int, attack: float, release: float) -> np.ndarray:
@@ -59,40 +49,17 @@ MOODS = {
 }
 
 
-def music_bed(duration: float, style: str, seed: int, out: Path, mood: str | None = None) -> Path:
-    mode, bpm, root = MOODS[mood][:3] if mood in MOODS else MOOD.get(style, ("dorian", 96, 0))
-    rng = np.random.default_rng(seed)
-    scale = MODES[mode]
-    beat = 60.0 / bpm
-    bar = beat * 4
-    total = duration + 1.5
-    buf = np.zeros(int(total * SR) + SR, dtype=np.float32)
-    progressions = [[0, 5, 3, 4], [0, 3, 4, 3], [0, 4, 5, 3], [5, 3, 0, 4]]
-    prog = progressions[int(rng.integers(len(progressions)))]
-    base = 110.0 * 2 ** (root / 12)
-    bars = int(math.ceil(total / bar))
-    for b in range(bars):
-        degree = prog[b % len(prog)]
-        chord = [scale[(degree + k) % 7] + 12 * ((degree + k) // 7) for k in (0, 2, 4)]
-        t0 = b * bar
-        for note in chord:
-            _place(buf, _tone(base * 2 ** (note / 12), bar + 0.6, "pad"), t0, 0.07)
-        _place(buf, _tone(base / 2 * 2 ** (chord[0] / 12), beat * 1.8, "bass"), t0, 0.22)
-        _place(buf, _tone(base / 2 * 2 ** (chord[0] / 12), beat * 1.2, "bass"), t0 + beat * 2.5, 0.14)
-        for s in range(8):
-            if rng.random() < 0.55:
-                note = scale[int(rng.integers(7))] + 12
-                _place(buf, _tone(base * 2 * 2 ** (note / 12), 0.4, "pluck"), t0 + s * beat / 2, 0.035)
-        for k in range(4):
-            n = int(0.09 * SR)
-            click = (rng.standard_normal(n).astype(np.float32) * _env(n, 0.001, 0.02)) * (0.05 if k % 2 else 0.08)
-            _place(buf, click, t0 + k * beat, 1.0)
-    fade = int(1.2 * SR)
-    end = int(duration * SR)
-    buf[end - fade:end] *= np.linspace(1, 0, fade, dtype=np.float32)
-    buf[end:] = 0
-    buf[: int(0.4 * SR)] *= np.linspace(0, 1, int(0.4 * SR), dtype=np.float32)
-    return _write(buf[:end], out)
+def music_bed(duration: float, style: str, seed: int, out: Path, mood: str | None = None, project: dict[str, Any] | None = None,
+              cuts: list[float] | None = None) -> Path:
+    from . import composer
+    proj = project or {"id": f"{style}-{seed}", "style": style, "seed": seed, "title": "", "brief": "", "options": {}}
+    plan = composer.choose(proj, mood)
+    if cuts is None and project:
+        cuts, t = [], 0.0
+        for s in (project.get("scenes") or [])[:-1]:
+            t += float(s.get("duration") or 0)
+            cuts.append(t)
+    return composer.compose(duration, plan, out, cuts or [])
 
 
 def whoosh(dur: float = 0.45, rng: np.random.Generator | None = None) -> np.ndarray:
@@ -546,7 +513,7 @@ def preview_mix(project: dict, folder: Path, out: Path) -> Path:
         music = _fit(load_wav(assets[music_choice]), n, True)
     elif music_choice == "auto" or (isinstance(music_choice, str) and music_choice.startswith("mood:")):
         tmp = out.parent / "preview_bed.wav"
-        music_bed(total, project.get("style", ""), int(project.get("seed", 1)), tmp, mood=music_choice[5:] if music_choice.startswith("mood:") else None)
+        music_bed(total, project.get("style", ""), int(project.get("seed", 1)), tmp, mood=music_choice[5:] if music_choice.startswith("mood:") else None, project=project)
         music = _fit(load_wav(tmp), n, False)
     if music is not None:
         gain = 10 ** ((float(cfg.get("music_gain", -18.0)) + 12) / 20)

@@ -47,7 +47,13 @@ Choose the right instrument for each part of the shot, and combine them freely:
 - engines when another tool is simply better (Manim for equations and mathematical constructions), rendered to a clip and composited.
 - 3D characters and worlds built in code with world3d (sets, cast with painted faces, actions, lightning, fireball, tornado, explosions,
   directed camera) in lowpoly, felt, clay, toy or paper looks, or figure3d for one 3D character over a 2D scene (procedural-3d-world and
-  stop-motion-craft-looks skills). Stick figure comedy with stickman (IK feet, jumps, impacts; stickman-direction skill).
+  stop-motion-craft-looks skills). Animals, vehicles, buildings, furniture and props in 3D come from ModelSpec: library models (dog, cat, bird,
+  car, tree, house, chair, table, desk-lamp, sofa) by name, or your own spec of named parts (model-spec-3d skill), as world3d cast members,
+  world3d props or the model-spec component. Never stand in a lone sphere, egg or box for a character or object.
+- Stick figure comedy with stickman (IK feet, jumps, impacts; stickman-direction skill). Dialogue goes in AU.component('speech', { target, text }),
+  which sits above the speaker; never type dialogue as loose text near a face.
+- When no component fits, build the thing yourself from named parts (SVG groups for 2D, ModelSpec for 3D) with real structure: a house has walls,
+  roof, door and windows; an animal has head, body, legs and tail. Read svg-architecture-and-props or model-spec-3d first.
 - characters designed for the story: toon (presets, hats, hair, outfits, props, expressions, zombies, toon-crowd) or your own coded SVG rig
   (svg-character-design skill); never reuse one stock figure for different people. Places and objects from toon-set (animated environments)
   and toon-prop (about 50 living buildings, vehicles and objects), or your own SVG architecture (svg-architecture-and-props skill).
@@ -295,6 +301,9 @@ def parse_tools(reply: str) -> tuple[list[tuple[str, str, str]], tuple[str, str,
     return calls, partial
 
 
+PREVIEW_BUDGET = 7
+
+
 class Workshop:
     def __init__(self, project: dict[str, Any], scene: dict[str, Any], emit: Callable[..., Any], model: llmmod.LLM, vision: bool) -> None:
         self.project = project
@@ -313,6 +322,9 @@ class Workshop:
         self.reading_turns = 0
         self.found: dict[int, dict[str, Any]] = {}
         self.found_next = 1
+        self.streak = 0
+        self.last_notes: set[str] = set()
+        self.best: dict[str, Any] | None = None
 
     def path(self, rel: str) -> Path:
         rel = (rel or "scene.html").strip().strip("\"'")
@@ -420,6 +432,11 @@ class Workshop:
             if problems:
                 return "NOT FINISHED. Fix these first:\n- " + "\n- ".join(problems)
             report = await self.preview([], quiet=True)
+            if self.last_preview and self.last_preview.get("blocking") and self.previews > PREVIEW_BUDGET and self.best and not self.best["blocking"]:
+                self.path("scene.html").write_text(self.best["code"], encoding="utf-8")
+                self.done = True
+                self.summary = f"restored preview #{self.best['preview']} after the preview budget"
+                return "finished with the best earlier version"
             if self.last_preview and self.last_preview.get("blocking"):
                 reason = next((l.strip("- ").strip() for l in report.split("\n") if l.startswith("- [P0]") or l.startswith("- ") and "runtime" in report.split(l)[0][-40:]), "see the report")
                 return f"NOT FINISHED: {reason[:160]}\nThe render still has blocking problems; fix them with edit_file, preview again, then finish.\n" + report
@@ -1000,7 +1017,20 @@ class Workshop:
         issues = [i for i in result.get("issues", []) if i["severity"] in ("P0", "P1", "P2")][:10]
         blocking = bool(problems or errors or any(i["severity"] == "P0" for i in issues))
         self.last_preview = {"blocking": blocking, "score": result.get("score")}
-        lines = [f"preview #{self.previews}: score {result.get('score')}, {'PASS' if result.get('pass') and not blocking else 'needs work'}"]
+        why = (problems[0] if problems else ("runtime error: " + str(errors[0]) if errors else next((i["message"] for i in issues if i["severity"] == "P0"),
+               next((i["message"] for i in issues if i["severity"] == "P1"), ""))))
+        ladder = self.govern(code, result, issues, problems, errors, blocking)
+        verdict = "PASS" if result.get("pass") and not blocking else ("needs work: " + why[:120] if why else "needs work")
+        lines = [f"preview #{self.previews}: score {result.get('score')}, {verdict}"]
+        try:
+            from .store import store as st
+            draft = {"score": result.get("score"), "pass": bool(result.get("pass") and not blocking), "blocking": blocking, "why": why[:240],
+                     "issues": [{k: i.get(k) for k in ("kind", "severity", "message", "fix")} for i in issues[:8]] + [{"kind": "static", "severity": "P0", "message": x, "fix": ""} for x in problems[:4]],
+                     "preview": self.previews, "at": time.time()}
+            st.update_scene(self.project["id"], self.scene["id"], {"qa_draft": draft})
+            self.emit("scene.update", {"id": self.scene["id"], "index": self.scene["index"], "patch": {"qa_draft": draft}})
+        except Exception:
+            pass
         if problems:
             lines.append("static problems:\n- " + "\n- ".join(problems))
         if errors:
@@ -1013,11 +1043,51 @@ class Workshop:
         for snap in probe.get("layout") or []:
             items = "; ".join(f"{it['id']} [{it['x']},{it['y']} {it['w']}x{it['h']}]{(' ' + repr(it['text'])) if it['text'] else ''}" for it in snap["items"][:12])
             lines.append(f"layout at {snap['t']:.2f}s (frame {self.project['width']}x{self.project['height']}): {items or 'nothing visible'}")
+        if ladder:
+            lines.append(ladder)
         if self.vision and probe.get("shots") and not quiet:
             shots = probe["shots"][:: max(1, len(probe["shots"]) // 6)][:6]
             self.images = [qa.contact_sheet(shots)]
             lines.append("A contact sheet of the rendered frames is attached.")
         return "\n".join(lines)
+
+    def govern(self, code: str, result: dict[str, Any], issues: list[dict[str, Any]], problems: list[str], errors: list[Any], blocking: bool) -> str:
+        notes = {re.sub(r"[^a-z ]+", " ", str(i.get("message", "")).lower()).strip()[:60] for i in issues if i["severity"] in ("P0", "P1")}
+        notes |= {str(x)[:60] for x in problems[:4]} | {str(x)[:60] for x in errors[:4]}
+        if notes and self.last_notes and len(notes & self.last_notes) >= max(1, int(len(notes) * 0.6)):
+            self.streak += 1
+        else:
+            self.streak = 0
+        self.last_notes = notes
+        serious = sum(1 for i in issues if i["severity"] == "P1")
+        key = (0 if blocking else 1, -serious, float(result.get("score") or 0))
+        if not self.best or key > self.best["key"]:
+            self.best = {"key": key, "code": code, "preview": self.previews, "score": result.get("score"), "blocking": blocking}
+            try:
+                self.path("best.html").write_text(code, encoding="utf-8")
+            except OSError:
+                pass
+        out = []
+        if self.best and self.best["preview"] != self.previews and self.best["key"] > key:
+            out.append(f"This version is worse than preview #{self.best['preview']} (score {self.best['score']}). That version is saved in best.html; "
+                       "read it and go back to it if your last change made things worse.")
+        if self.streak == 1:
+            out.append("The same notes came back after your fix. Do not nudge the same numbers again: change the approach for those layers "
+                       "(restructure, resize, move, retime decisively).")
+        elif self.streak == 2:
+            out.append("Third preview with the same notes. Replace the failing element with a library component (component_info, add_component) or "
+                       "remove it, and leave everything else untouched.")
+        elif self.streak >= 3 or self.previews >= PREVIEW_BUDGET:
+            if not blocking:
+                out.append("Preview budget reached and nothing is blocking: call finish now. Remaining notes go to the critic.")
+            elif self.best and not self.best["blocking"]:
+                self.path("scene.html").write_text(self.best["code"], encoding="utf-8")
+                out.append(f"Preview budget reached and this version is blocked. scene.html was restored to preview #{self.best['preview']} "
+                           f"(score {self.best['score']}, nothing blocking). Call finish now.")
+            else:
+                out.append("Preview budget reached. Fix only the blocking problem above with the smallest edit (or delete the layer that causes it), "
+                           "preview once, then finish.")
+        return "\n".join(out)
 
     def save(self) -> None:
         try:
@@ -1140,6 +1210,8 @@ async def run(project: dict[str, Any], scene: dict[str, Any], emit: Callable[...
                 ws.images = []
             history.append(msg)
         code = ws.read()
+        if ws.best and not ws.best["blocking"] and (ws.last_preview or {}).get("blocking"):
+            code = ws.best["code"]
         if code and not qa.validate_fragment(code):
             ws.save()
             emit("run.warning", {"message": f"scene {idx + 1}: animator ran out of steps; using its last valid scene.html"})

@@ -17,3 +17,8 @@ Thumbs.db
 *.mp4
 *.wav
 !assets/**
+desktop/windows/build/
+desktop/windows/cache/
+desktop/windows/dist/
+desktop/windows/launcher/bin/
+desktop/windows/launcher/obj/

@@ -226,7 +226,7 @@ TEMPLATES2: list[T] = [
     {"id": "cartoon-story", "name": "Cartoon Story", "category": "Characters", "style": "soft-clay", "aspect": "16:9", "mood": "playful", "icon": "users",
      "description": "Two cartoon characters act out your lines in speech bubbles on a painted set, with a title slam and a happy ending.", "build": b_cartoon,
      "slots": [slot("title", "Title", required=True, default="THE KNOCK"), slot("lines", "Lines (one per line, speakers alternate)", "list", default="Wait. Did you hear that?\nIt is just the wind.\nThe wind does not knock.\nOkay. Now I am scared."),
-               slot("hero", "First character (preset)", default="teen-boy", help="kid, teen-girl, teen-boy, old-man, old-woman, police, soldier, doctor, scientist, businessman, chef, biker, beekeeper, thief, zombie, hero"),
+               slot("hero", "First character (preset)", default="teen-boy", help="kid, teen-girl, teen-boy, old-man, old-woman, police, soldier, doctor, scientist, businessman, chef, biker, beekeeper, thief, zombie, hero, teacher, nurse, firefighter, astronaut, pirate, wizard, king, queen, princess, ninja, farmer, artist, detective, graduate, builder, viking, mail-carrier, singer, athlete, photographer"),
                slot("friend", "Second character (preset)", default="teen-girl"), slot("ending", "Ending", default="The *end*")]},
     {"id": "top5-countdown", "name": "Top 5 Countdown", "category": "Kinetic type", "style": "creator-bold", "aspect": "9:16", "mood": "upbeat", "icon": "list-ordered",
      "description": "Crash-zoom title, then numbers 5 to 1 slam in with your items, a beat each, and a follow card.", "build": b_top5,

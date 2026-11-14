@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 import subprocess
 import time
 from pathlib import Path
@@ -175,6 +176,8 @@ async def render_scene(project: dict[str, Any], scene: dict[str, Any], on_progre
     started = time.time()
     job = {"id": f"{project['id']}:{scene['id']}", "url": url, "out": str(out), "width": project["width"], "height": project["height"],
            "fps": project["fps"], "duration": duration, "preview": True, "previewEvery": 6, "previewScale": 0.3, "scale": scale, "crf": 20 if draft else 17}
+    if re.search(r"component\(\s*['\"](world3d|figure3d|model-spec|model3d)['\"]", scene.get("code") or ""):
+        job["maxChunks"] = 2
     result: dict[str, Any] = {}
     async with httpx.AsyncClient(timeout=httpx.Timeout(None, connect=10)) as client:
         async with client.stream("POST", config.RENDERER_URL + "/render", json=job) as response:
@@ -258,12 +261,19 @@ def assemble(project: dict[str, Any], segments: list[Path], on_step: Callable[[s
         trans = prev.get("transition") or {}
         kind = trans.get("type", "fade")
         dur = handle_for(project, prev)
+        label = f"[v{i}]"
+        if kind == "cut":
+            used.append("cut")
+            filters.append(f"{last}trim=end_frame={round(offset * fps)},setpts=PTS-STARTPTS[t{i}]")
+            filters.append(f"{src[i]}setpts=PTS-STARTPTS[s{i}]")
+            filters.append(f"[t{i}][s{i}]concat=n=2:v=1:a=0{label}")
+            last = label
+            continue
         if kind not in XFADE:
             kind = "fade"
         used.append(kind)
-        label = f"[v{i}]"
         at = round(offset * fps) / fps
-        span = max(1, round(dur * fps)) / fps - 0.0001
+        span = (max(1, round(dur * fps)) - 0.5) / fps
         filters.append(f"{last}{src[i]}xfade=transition={kind}:duration={span:.6f}:offset={at:.6f}{label}")
         last = label
     film = grade.ffmpeg_chain(grade.film_grade(project), project["width"], project["height"])
@@ -308,7 +318,7 @@ def assemble(project: dict[str, Any], segments: list[Path], on_step: Callable[[s
     elif music_choice == "auto" or (isinstance(music_choice, str) and music_choice.startswith("mood:")):
         step("composing score")
         mood = music_choice[5:] if music_choice.startswith("mood:") else None
-        bed = audio.music_bed(total, project.get("style", ""), int(project.get("seed", 1)), outdir / "score.wav", mood=mood)
+        bed = audio.music_bed(total, project.get("style", ""), int(project.get("seed", 1)), outdir / "score.wav", mood=mood, project=project)
         extra += ["-i", str(bed)]
         has_music = True
     clips = (project.get("audio") or {}).get("clips") or []

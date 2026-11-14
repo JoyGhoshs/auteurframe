@@ -66,6 +66,8 @@ own license, and you must follow it when you use or redistribute that component.
 | Project | Used for | License |
 |---|---|---|
 | stickman-video-director (<https://github.com/kaomei/stickman-video-director>) | The stickman component's rig model (arm angles, IK legs, distance-driven walk feet, jump squash keys, impact burst and shake timing) and the action-card beat grammar in the stickman-direction skill | MIT, see below |
+| html-anime (<https://github.com/blixvip/html-anime>) | The anime craft rules (closed colour script, cel painting, twos and holds, one sakuga shot, cut on action, colour-dip cut) behind the anime-direction skill and web/runtime/anime.js (written independently for AuteurFrame's runtime; no code copied) | MIT |
+| sand3d (<https://github.com/Sandflow-ai/sand3d>) | The ModelSpec authoring rules and anchor placement ideas in the model-spec-3d skill and web/runtime/modelspec.js (re-implemented for three.js; no code copied) | Apache-2.0 |
 | WeftCut (<https://github.com/WeftCut/WeftCut>) | Ideas for the editor data model (grade, camera keyframes, audio master); no code copied | MIT |
 
 stickman-video-director license:

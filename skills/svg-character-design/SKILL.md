@@ -23,11 +23,12 @@ contact shadow. Colour comes from clothes and hats; faces stay white (zombies gr
 AU.component('toon', { preset: 'teen-girl', x: 30, y: 88, h: 44, shirt: '#d94b3d', prop: 'flashlight',
   actions: [{ do: 'run', at: 0.3, duration: 1.8, to: 62, expression: 'scared' }, { do: 'look', dir: 'left', at: 2.2, duration: 1 }] });
 ```
-- presets: kid, teen-girl, teen-boy, old-man, old-woman, police, soldier, doctor, scientist, businessman, chef, biker, beekeeper, thief, zombie, hero.
-- hat: beanie, cap, police, military, helmet, beekeeper, cowboy, chef, crown, hood, tophat, hardhat, headband, party, none.
+- presets: kid, teen-girl, teen-boy, old-man, old-woman, police, soldier, doctor, scientist, businessman, chef, biker, beekeeper, thief, zombie, hero,
+  teacher, nurse, firefighter, astronaut, pirate, wizard, king, queen, princess, ninja, farmer, artist, detective, graduate, builder, viking, mail-carrier, singer, athlete, photographer.
+- hat: beanie, cap, police, military, helmet, beekeeper, cowboy, chef, crown, hood, tophat, hardhat, headband, party, wizard, beret, bandana, firefighter, graduation, pirate, nurse, space, ninja, fedora, viking, none.
 - hair: messy, bowl, spiky, side, ponytail, long, bun, curly, wild, bald-sides, mohawk, bald.
-- beard: full, stubble, mustache. extras: backpack, cape, tie, badge, scarf, apron, stethoscope, vest, glasses, sunglasses, eyepatch, bandage, freckles, scar, earrings.
-- prop in the front hand: flashlight, phone, money, radio, sign, torch, book, bag, cup, umbrella, map, key.
+- beard: full, stubble, mustache. extras: backpack, cape, tie, badge, scarf, apron, stethoscope, vest, glasses, sunglasses, eyepatch, bandage, freckles, scar, earrings, bowtie, necklace, sash, belt.
+- prop in the front hand: flashlight, phone, money, radio, sign, torch, book, bag, cup, umbrella, map, key, wand, sword, clipboard, paintbrush, pointer, microphone, camera, balloon, flower, hammer, pan, ball, magnifier.
 - expression: neutral, happy, sad, angry, worried, shocked, scared, smirk, laugh, determined, sleepy, zombie, love, thinking.
 - actions: walk, run, shamble (with `to`), wave, point (dir), talk, look (dir), shock, jump, cheer, shrug, nod, shake, think, scared,
   cry, laugh, angry, crouch, fall, hold, raise, hug, turn, pull. Each action can set its own `expression`.

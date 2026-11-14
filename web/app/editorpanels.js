@@ -100,7 +100,7 @@ export function SoundPanel({ project, time, onPatch, onUpload, selectedClip, onS
     <${NarrationBox} project=${project} />
     <div class="section-title" style=${{ marginBottom: '8px' }}>Music</div>
     <div class="mood-list">
-      <button class=${'mood ' + (music === 'auto' ? 'on' : '')} onClick=${() => onPatch({ audio: { music: 'auto' } })}><span class="mood-ic"><${Icon} name="wand-sparkles" size=${14} /></span><span><b>Style matched</b><em>Scored to the visual style</em></span></button>
+      <button class=${'mood ' + (music === 'auto' ? 'on' : '')} onClick=${() => onPatch({ audio: { music: 'auto' } })}><span class="mood-ic"><${Icon} name="wand-sparkles" size=${14} /></span><span><b>Style matched</b><em>${(project.audio || {}).score && music === 'auto' ? `${project.audio.score.label} · ${project.audio.score.bpm} bpm, shaped to the cuts` : 'An original score picked for this film'}</em></span></button>
       ${lib.moods.map((m) => html`<div class=${'mood ' + (music === 'mood:' + m.id ? 'on' : '')} onClick=${() => onPatch({ audio: { music: 'mood:' + m.id } })}>
         <button class="mood-ic" onClick=${(e) => { e.stopPropagation(); preview(`/api/audio/mood/${m.id}.wav`, m.id); }}><${Icon} name=${playing === m.id ? 'pause' : 'play'} size=${13} /></button>
         <span><b>${m.label}</b><em>${m.description} · ${m.bpm} bpm</em></span></div>`)}

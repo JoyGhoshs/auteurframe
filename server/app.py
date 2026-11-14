@@ -54,7 +54,13 @@ app = FastAPI(title="AuteurFrame", version=updates.version(), lifespan=lifespan)
 
 @app.middleware("http")
 async def _revalidate_code(request: Request, call_next):
+    from . import security
+    blocked = security.check(request.method, request.url.path, request.headers.get("host", ""), request.headers.get("origin"), request.headers.get("sec-fetch-site"))
+    if blocked:
+        return JSONResponse({"detail": blocked}, status_code=403)
     response = await call_next(request)
+    for key, value in security.HEADERS.items():
+        response.headers.setdefault(key, value)
     path = request.url.path
     if path == "/" or path.startswith(("/app/", "/runtime/")) or path.endswith(".html"):
         response.headers.setdefault("Cache-Control", "no-cache")
@@ -543,7 +549,7 @@ async def audio_to_clip(pid: str, body: dict[str, Any]) -> dict[str, Any]:
             aid = "as_" + uuid.uuid4().hex[:10]
             out = project_dir(pid) / "assets" / f"{aid}.wav"
             loop = asyncio.get_running_loop()
-            await loop.run_in_executor(None, lambda: audio.music_bed(total, project.get("style", ""), int(project.get("seed", 1)), out, mood=choice[5:] if str(choice).startswith("mood:") else None))
+            await loop.run_in_executor(None, lambda: audio.music_bed(total, project.get("style", ""), int(project.get("seed", 1)), out, mood=choice[5:] if str(choice).startswith("mood:") else None, project=project))
             asset = {"id": aid, "name": "Generated score", "file": out.name, "kind": "audio", "mime": "audio/wav", "size": out.stat().st_size, "role": "music",
                      "url": f"/media/{pid}/assets/{out.name}", "meta": {"duration": total, "generated": True}, "added": time.time()}
         gain = round(10 ** ((float(cfg.get("music_gain", -18.0)) + 12) / 20), 3)
@@ -1233,7 +1239,10 @@ async def icon_import(pid: str, body: dict[str, Any]) -> dict[str, Any]:
 
 @app.get("/api/audio/library")
 async def audio_library() -> dict[str, Any]:
-    return {"moods": [{"id": k, "label": k.capitalize(), "description": v[3], "bpm": v[1]} for k, v in audio.MOODS.items()],
+    from . import composer
+    demo = {k: composer.choose({"id": f"mood-{k}", "style": "", "seed": 7, "title": "", "brief": "", "options": {}}, k) for k in audio.MOODS}
+    return {"moods": [{"id": k, "label": k.capitalize(), "description": " or ".join(composer.GENRES[g]["label"] for g in composer.MOOD_GENRES.get(k, [])[:3]),
+                       "bpm": demo[k]["bpm"]} for k in audio.MOODS],
             "sfx": [{"id": k, "label": k.capitalize(), "description": v} for k, v in audio.SFX_LIBRARY.items()]}
 
 
@@ -1248,10 +1257,11 @@ async def sfx_wav(name: str) -> FileResponse:
 async def mood_wav(name: str) -> FileResponse:
     if name not in audio.MOODS:
         raise HTTPException(404, "unknown mood")
-    path = config.DATA / "moods" / f"{name}.wav"
+    path = config.DATA / "moods-v2" / f"{name}.wav"
     if not path.exists():
+        demo = {"id": f"mood-{name}", "style": "", "seed": 7, "title": "", "brief": "", "options": {}, "scenes": [{"duration": 4}, {"duration": 4}, {"duration": 4}]}
         loop = asyncio.get_running_loop()
-        await loop.run_in_executor(None, lambda: audio.music_bed(12.0, "", 7, path, mood=name))
+        await loop.run_in_executor(None, lambda: audio.music_bed(12.0, "", 7, path, mood=name, project=demo))
     return FileResponse(path, media_type="audio/wav")
 
 

@@ -21,7 +21,16 @@ NOUNS = r"(cartoon|cartoons|character|characters|animation|animated|short|shorts
 
 
 def wants_3d(project: dict[str, Any]) -> bool:
+    medium = ((project.get("options") or {}).get("medium") or "auto").lower()
+    if medium == "3d":
+        return True
+    if medium in ("toon", "2d", "stickman", "anime", "none"):
+        return False
     text = f"{project.get('title', '')} {project.get('brief', '')}".lower()
+    if re.search(r"(?<![a-z])(anime|manga|sakuga|cel[- ]animated)(?![a-z])", text) and not re.search(r"(?<![a-z0-9])(3d|3-d)(?![a-z0-9])", text):
+        return False
+    if re.search(r"(?<![a-z0-9])(3d|3-d)(?![a-z0-9])", text) and not re.search(r"(?<![a-z0-9])(3d|3-d)[\s-]+(print|printing|printer|printed|scan|scanner|scanning|glasses|tv|movie ticket|render|renders|rendering|product|logo|chart|charts|graph|map|maps|model of|mockup|animation of (?:a|an|the|our) (?:phone|product|app|logo))", text):
+        return True
     if any(re.search(r"(?<![a-z0-9])" + re.escape(w) + r"(?![a-z0-9])", text) for w in STRONG):
         return True
     for w in WEAK:
@@ -59,6 +68,15 @@ def validate(raw: Any, project: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(c, dict):
             continue
         cid = re.sub(r"[^a-z0-9-]", "", str(c.get("id") or f"c{i}").lower())[:20] or f"c{i}"
+        if c.get("kind") == "animal" or c.get("model") in ("dog", "cat", "bird"):
+            a: dict[str, Any] = {"id": cid, "kind": "animal", "model": c.get("model") if c.get("model") in ("dog", "cat", "bird") else "dog"}
+            if c.get("name"):
+                a["name"] = str(c["name"])[:40]
+            cols = {k: v for k, v in (c.get("colors") or {}).items() if isinstance(v, str) and HEX.fullmatch(v) and re.fullmatch(r"[a-z_]{1,16}", str(k))}
+            if cols:
+                a["colors"] = cols
+            out["cast"].append(a)
+            continue
         m: dict[str, Any] = {"id": cid, "preset": c.get("preset") if c.get("preset") in PRESETS else "kid"}
         if c.get("name"):
             m["name"] = str(c["name"])[:40]
@@ -92,7 +110,8 @@ Return JSON only:
 {{"look": one of {looks}, "set": the main set, one of {sets},
  "cast": [{{"id": "short-lowercase-id", "name": "Name", "preset": one of {presets}, "hair": one of {hair}, "hairColor": "#hex", "hat": one of {hats},
            "outfit": one of {outfits}, "extras": subset of {extras}, "prop": one of {props} or omit, "propL": "shield" or omit,
-           "skin": "#hex", "shirt": "#hex", "pants": "#hex", "scale": 0.8 for children else 1}}],
+           "skin": "#hex", "shirt": "#hex", "pants": "#hex", "scale": 0.8 for children else 1}},
+          {{"id": "short-id", "name": "Name", "kind": "animal", "model": one of ["dog", "cat", "bird"], "colors": {{"coat": "#hex"}}, "scale": 1}}],
  "why": "one sentence"}}
 Give every character one signature colour and silhouette so they read instantly. One to four characters."""
 

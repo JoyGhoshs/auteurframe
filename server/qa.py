@@ -4,6 +4,7 @@ import base64
 import io
 import os
 import re
+from pathlib import Path
 from typing import Any
 
 from PIL import Image, ImageChops, ImageDraw, ImageStat
@@ -17,6 +18,10 @@ LINT_RULES = [
     (r"\.play\s*\(\s*\)", "autoplay", "Never call tl.play(); the timeline must stay paused for seeking."),
     (r"@keyframes", "css-keyframes", "Prefer tl tweens over CSS @keyframes; if kept, give them no infinite random delays."),
     (r"\bdocument\.write\b|\beval\s*\(", "unsafe", "Remove document.write and eval."),
+    (r"\bwindow\s*\.\s*(top|parent|opener|frameElement)\b|(?<![\w.$])(top|parent|opener)\s*\.\s*(location|document|fetch|AU|postMessage|frames|open|eval|XMLHttpRequest|localStorage|sessionStorage|window)\b|"
+     r"\bwindow\.open\s*\(|sendBeacon|\bWebSocket\b|\bEventSource\b|document\.cookie|localStorage|sessionStorage|indexedDB|"
+     r"\b(window|document|self|globalThis)\.location\b|\blocation\s*\.\s*(href|assign|replace)|/api/",
+     "unsafe", "Scenes may not reach outside their own frame: no parent/top/opener, window.open, location changes, storage, sockets or /api/ calls."),
 ]
 
 
@@ -79,17 +84,20 @@ def validate_fragment(code: str) -> list[str]:
     if re.search(r"(?m)^\s*(Let me|Let's|I will|I'll|Now,|Hmm|Actually|Okay|First,)\b", markup):
         problems.append("The fragment contains planning prose. Output only the final code.")
     if script.strip():
+        import shutil
+        work = tempfile.mkdtemp(prefix="auteur-check-")
         try:
-            with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as fh:
-                fh.write(script)
-                path = fh.name
-            proc = subprocess.run([config.NODE, "--check", path], capture_output=True, text=True, timeout=20)
-            os.unlink(path)
-            if proc.returncode != 0:
+            Path(work, "package.json").write_text('{"name": "auteur-scene-check", "private": true, "type": "commonjs"}', encoding="utf-8")
+            path = os.path.join(work, "scene.js")
+            Path(path).write_text(script, encoding="utf-8")
+            proc = subprocess.run([config.NODE, "--check", path], capture_output=True, text=True, timeout=20, cwd=work)
+            if proc.returncode != 0 and "SyntaxError" in proc.stderr:
                 lines = [l for l in proc.stderr.splitlines() if l.strip() and not l.startswith("    at ") and "node:internal" not in l]
                 problems.append("JavaScript syntax error: " + " ".join(lines[-4:])[:400])
         except (OSError, subprocess.SubprocessError):
             pass
+        finally:
+            shutil.rmtree(work, ignore_errors=True)
     return problems
 
 
@@ -149,7 +157,7 @@ def evaluate(probe: dict[str, Any], duration: float, lint_issues: list[dict[str,
             seen.add(key)
             kind = item["kind"]
             sev = {"off-canvas": "P0", "overflow": "P0", "text-overlap": "P1", "tiny-text": "P1", "low-contrast": "P1", "outside-safe": "P2",
-                   "text-over-face": "P1", "oversized-text": "P1", "off-scale-text": "P2", "tiny-actor": "P2"}.get(kind, "P2")
+                   "text-over-face": "P1", "text-outside-box": "P1", "oversized-text": "P1", "off-scale-text": "P2", "tiny-actor": "P2"}.get(kind, "P2")
             fix = {
                 "off-canvas": "Keep text inside the stage: position within var(--safe-x)/var(--safe-y) and reduce font size or width.",
                 "overflow": "Allow wrapping or reduce font-size so the text fits its box.",
@@ -158,6 +166,7 @@ def evaluate(probe: dict[str, Any], duration: float, lint_issues: list[dict[str,
                 "low-contrast": "Use var(--ink) on var(--bg), or put the text on a solid panel; aim for 4.5:1.",
                 "outside-safe": "Move the element inside the safe area.",
                 "text-over-face": "Never cover a character's face: put cards in the top third or the lower band away from heads, or use AU.component('speech', { target, text }) which sits above the speaker.",
+                "text-outside-box": "The text is bigger than the card, pill or bubble it sits in. Give the text element data-fit (and data-fit-min) so it shrinks to the box, widen the box, or cut words; never let text spill over its container.",
                 "oversized-text": "Cap headlines at var(--fs-hero); use var(--fs-xl) for most titles so text never dominates or crops.",
                 "tiny-actor": "The characters are too small for a story shot: make the hero 35 to 60 percent of the frame height (toon h 40 to 55) and fill the set to the edges.",
                 "off-scale-text": "Use the film's type scale for every text: var(--fs-xl) titles, var(--fs-lg) headlines, var(--fs-md) cards and speech, var(--fs-sm) labels.",

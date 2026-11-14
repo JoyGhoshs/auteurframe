@@ -114,3 +114,13 @@
 .ac-dots span:nth-child(3){animation-delay:.3s}
 @keyframes acDot{0%,100%{opacity:.3}50%{opacity:1}}
 @media (prefers-reduced-motion: reduce){.ac-work.on,.ac-pulse,.ac-dots span{animation:none}}
+
+.keylist { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.keyrow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 6px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-2, #fafafa); }
+.keyrow .select { grid-column: span 2; }
+.chip-cloud { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+.btnchip { cursor: pointer; border: 1px solid var(--line); background: #fff; }
+.btnchip:hover { border-color: var(--brand); color: var(--brand); }
+.comp-group { margin-bottom: 6px; }
+.comp-row { display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 6px 8px; border: 1px solid transparent; border-radius: 8px; background: none; cursor: pointer; font-size: 12px; }
+.comp-row:hover { border-color: var(--line); background: #fff; }

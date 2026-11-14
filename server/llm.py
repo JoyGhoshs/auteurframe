@@ -185,7 +185,9 @@ def write_settings(data: dict[str, Any]) -> dict[str, Any]:
             conn.setdefault("id", "conn_" + uuid.uuid4().hex[:8])
             key = conn.get("api_key", "")
             if (not key or "•" in key) and conn["id"] in old:
-                conn["api_key"] = old[conn["id"]].get("api_key", "")
+                prev = old[conn["id"]]
+                same_target = (conn.get("base_url") or "").rstrip("/") == (prev.get("base_url") or "").rstrip("/") and conn.get("provider", "custom") == prev.get("provider", "custom")
+                conn["api_key"] = prev.get("api_key", "") if same_target else ""
             preset = PRESETS.get(conn.get("provider", "custom"), PRESETS["custom"])
             conn["kind"] = preset["kind"]
             if not conn.get("base_url"):

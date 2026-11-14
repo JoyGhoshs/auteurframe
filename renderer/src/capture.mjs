@@ -12,7 +12,9 @@ const CHROME_CANDIDATES = [
 ].filter(Boolean);
 
 export const FFMPEG = process.env.FFMPEG_PATH || 'ffmpeg';
-export const MAX_PAGES = Math.max(1, parseInt(process.env.RENDER_CONCURRENCY || '', 10) || Math.max(2, Math.floor(os.cpus().length / 2)));
+const CPUS = Math.max(1, os.cpus().length);
+const RAM_PAGES = Math.max(1, Math.floor(os.totalmem() / (1536 * 1024 * 1024) / 2));
+export const MAX_PAGES = Math.max(1, parseInt(process.env.RENDER_CONCURRENCY || '', 10) || Math.min(Math.max(2, Math.floor(CPUS / 2)), Math.max(2, RAM_PAGES)));
 
 const browsers = new Map();
 const freeSlots = [];
@@ -86,6 +88,11 @@ export async function openComposition(url, width, height, slot = 0, scale = 1, a
   return { page, cdp, logs };
 }
 
+async function seekTo(cdp, t) {
+  const res = await cdp.send('Runtime.evaluate', { expression: `window.AU.seek(${Number(t)})`, awaitPromise: true, returnByValue: true });
+  if (res.exceptionDetails) throw new Error('seek failed at ' + t + ': ' + ((res.exceptionDetails.exception && res.exceptionDetails.exception.description) || res.exceptionDetails.text || '').slice(0, 300));
+}
+
 async function grab(cdp, opts) {
   const res = await cdp.send('Page.captureScreenshot', Object.assign({ format: 'jpeg', quality: 92, optimizeForSpeed: true, captureBeyondViewport: false, fromSurface: true }, opts || {}));
   return Buffer.from(res.data, 'base64');
@@ -98,6 +105,7 @@ function encoder(out, fps, opts) {
   ] : [
     '-hide_banner', '-loglevel', 'error', '-y', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'mjpeg', '-i', '-',
     '-c:v', 'libx264', '-preset', opts.preset || 'veryfast', '-crf', String(opts.crf ?? 17), '-pix_fmt', 'yuv420p',
+    ...(opts.threads ? ['-threads', String(opts.threads)] : []),
     '-r', String(fps), '-g', String(fps * 2), '-movflags', '+faststart', '-an', out
   ];
   const proc = spawn(FFMPEG, args, { stdio: ['pipe', 'ignore', 'pipe'] });
@@ -107,10 +115,15 @@ function encoder(out, fps, opts) {
     proc.on('close', (code) => (code === 0 ? resolve() : reject(new Error('ffmpeg ' + code + ': ' + err.slice(-400)))));
     proc.on('error', reject);
   });
-  const write = (buf) => new Promise((resolve, reject) => {
-    if (!proc.stdin.write(buf)) proc.stdin.once('drain', resolve); else resolve();
-    proc.stdin.once('error', reject);
-  });
+  let failed = null;
+  proc.stdin.on('error', (e) => { failed = e; });
+  const exited = done.then(() => { throw new Error('ffmpeg exited early'); }, (e) => { throw e; });
+  exited.catch(() => null);
+  const write = (buf) => {
+    if (failed) return Promise.reject(failed);
+    if (proc.stdin.write(buf)) return Promise.resolve();
+    return Promise.race([new Promise((resolve) => proc.stdin.once('drain', resolve)), exited]);
+  };
   return { write, end: () => { proc.stdin.end(); return done; }, kill: () => proc.kill('SIGKILL') };
 }
 
@@ -120,16 +133,25 @@ export async function renderRange(job, from, to, out, onFrame, signal) {
   try {
     session = await openComposition(job.url, job.width, job.height, slot, job.scale || 1, !!job.alpha);
     const enc = encoder(out, job.fps, job);
-    const shot = job.alpha ? Object.assign({ format: 'png', optimizeForSpeed: true }, job.clip ? { clip: Object.assign({ scale: 1 }, job.clip) } : {}) : { quality: job.quality || 92 };
-    for (let f = from; f < to; f++) {
-      if (signal && signal.aborted) { enc.kill(); throw new Error('cancelled'); }
-      const t = f / job.fps;
-      await session.page.evaluate((x) => window.AU.seek(x), t);
-      const buf = await grab(session.cdp, shot);
-      await enc.write(buf);
-      let small = null;
-      if (job.preview && !job.alpha && f % (job.previewEvery || 15) === 0) small = await grab(session.cdp, { quality: 70, clip: { x: 0, y: 0, width: job.width, height: job.height, scale: job.previewScale || 0.3 } }).catch(() => null);
-      if (onFrame) onFrame(f, buf, small);
+    const shot = job.alpha ? Object.assign({ format: 'png', optimizeForSpeed: false }, job.clip ? { clip: Object.assign({ scale: 1 }, job.clip) } : {}) : { quality: job.quality || 92 };
+    let pending = Promise.resolve();
+    try {
+      for (let f = from; f < to; f++) {
+        if (signal && signal.aborted) throw new Error('cancelled');
+        await seekTo(session.cdp, f / job.fps);
+        const buf = await grab(session.cdp, shot);
+        await pending;
+        pending = enc.write(buf);
+        let small = null;
+        if (job.preview && !job.alpha && f % (job.previewEvery || 15) === 0 && (!job.previewGate || job.previewGate())) {
+          small = await grab(session.cdp, { quality: 70, clip: { x: 0, y: 0, width: job.width, height: job.height, scale: job.previewScale || 0.3 } }).catch(() => null);
+        }
+        if (onFrame) onFrame(f, buf, small);
+      }
+      await pending;
+    } catch (error) {
+      enc.kill();
+      throw error;
     }
     await enc.end();
     return { logs: session.logs };
@@ -149,7 +171,12 @@ export async function render(job, emit, signal) {
   const parts = [];
   let doneFrames = 0;
   let lastEmit = 0;
-  const previewEvery = job.previewEvery || Math.max(1, Math.round(job.fps * 0.5));
+  let lastPreview = 0;
+  const previewMs = job.previewMs || 350;
+  job = Object.assign({}, job, {
+    threads: job.threads || Math.max(2, Math.floor(CPUS / Math.max(1, Math.min(MAX_PAGES, chunks + active)))),
+    previewGate: () => { const now = Date.now(); if (now - lastPreview < previewMs) return false; lastPreview = now; return true; }
+  });
   const tasks = [];
   for (let c = 0; c < chunks; c++) {
     const from = c * per;
@@ -196,7 +223,7 @@ export async function probe(job) {
     const shots = [];
     const scale = job.shotScale || 0.25;
     for (const t of job.shotTimes || []) {
-      await session.page.evaluate((x) => window.AU.seek(x), t);
+      await seekTo(session.cdp, t);
       const buf = await grab(session.cdp, { quality: 80, clip: { x: 0, y: 0, width: job.width, height: job.height, scale } });
       shots.push({ t, jpeg: buf.toString('base64') });
     }
@@ -207,7 +234,7 @@ export async function probe(job) {
     if (job.layoutTimes && job.layoutTimes.length) {
       layout = [];
       for (const t of job.layoutTimes) {
-        await session.page.evaluate((x) => window.AU.seek(x), t);
+        await seekTo(session.cdp, t);
         const items = await session.page.evaluate(() => window.AU.layers().filter((l) => l.visible && !l.caption).slice(0, 18)
           .map((l) => ({ id: l.id, tag: l.tag, x: Math.round(l.x), y: Math.round(l.y), w: Math.round(l.w), h: Math.round(l.h), text: l.text.slice(0, 40) })));
         layout.push({ t, items });
@@ -227,7 +254,7 @@ export async function snapshot(job) {
     session = await openComposition(job.url, job.width, job.height, slot);
     const out = [];
     for (const t of job.times || [job.t || 0]) {
-      await session.page.evaluate((x) => window.AU.seek(x), t);
+      await seekTo(session.cdp, t);
       const buf = await grab(session.cdp, { quality: job.quality || 85, clip: { x: 0, y: 0, width: job.width, height: job.height, scale: job.scale || 1 } });
       if (job.out && (job.times || []).length <= 1) { fs.mkdirSync(path.dirname(job.out), { recursive: true }); fs.writeFileSync(job.out, buf); }
       out.push({ t, jpeg: job.out ? null : buf.toString('base64') });
