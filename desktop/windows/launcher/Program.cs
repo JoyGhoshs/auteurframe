@@ -82,35 +82,45 @@ namespace AuteurFrame.Desktop
                     if (smoke) return SmokeTest(backend);
 
                     var splash = new SplashForm();
-                    bool healthy = false;
+                    var context = new ApplicationContext(splash);
+                    bool healthy = false, shown = false;
                     MainForm main = null;
-                    splash.Shown += async (s, e) =>
+                    System.Windows.Forms.Timer monitor = null;
+                    using (var showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName))
                     {
-                        var progress = new Progress<string>(splash.SetStatus);
-                        var clock = Stopwatch.StartNew();
-                        healthy = await backend.WaitHealthyAsync(TimeSpan.FromSeconds(180), progress, CancellationToken.None);
-                        Log.Write($"splash: engine {(healthy ? "ready" : "failed")} after {clock.Elapsed.TotalSeconds:0.0}s");
-                        if (healthy && MainForm.WebViewVersion() != null)
+                        splash.Shown += async (s, e) =>
                         {
-                            splash.SetStatus("Opening the studio");
-                            main = new MainForm(backend, devTools);
-                            var studio = new TaskCompletionSource<bool>();
-                            main.StudioReady += () => studio.TrySetResult(true);
-                            main.Prepare();
-                            bool loaded = await Task.WhenAny(studio.Task, Task.Delay(TimeSpan.FromSeconds(25))) == studio.Task;
-                            Log.Write($"splash: studio page {(loaded ? "loaded" : "still loading, showing anyway")} after {clock.Elapsed.TotalSeconds:0.0}s");
-                            await splash.FinishAsync();
-                            if (!main.IsDisposed)
+                            var progress = new Progress<string>(splash.SetStatus);
+                            var clock = Stopwatch.StartNew();
+                            healthy = await backend.WaitHealthyAsync(TimeSpan.FromSeconds(180), progress, CancellationToken.None);
+                            Log.Write($"splash: engine {(healthy ? "ready" : "failed")} after {clock.Elapsed.TotalSeconds:0.0}s");
+                            if (healthy && MainForm.WebViewVersion() != null)
                             {
-                                main.Show();
-                                main.Activate();
+                                splash.SetStatus("Opening the studio");
+                                main = new MainForm(backend, devTools);
+                                var studio = new TaskCompletionSource<bool>();
+                                main.StudioReady += () => studio.TrySetResult(true);
+                                main.Prepare();
+                                bool loaded = await Task.WhenAny(studio.Task, Task.Delay(TimeSpan.FromSeconds(25))) == studio.Task;
+                                Log.Write($"splash: studio page {(loaded ? "loaded" : "still loading, showing anyway")} after {clock.Elapsed.TotalSeconds:0.0}s");
+                                await splash.FinishAsync();
+                                if (!main.IsDisposed)
+                                {
+                                    context.MainForm = main;
+                                    main.Show();
+                                    main.Activate();
+                                    monitor = WatchStudio(main, backend, showEvent);
+                                    shown = true;
+                                    Log.Write($"splash: studio shown after {clock.Elapsed.TotalSeconds:0.0}s");
+                                }
                             }
-                            Log.Write($"splash: studio shown after {clock.Elapsed.TotalSeconds:0.0}s");
-                        }
-                        else if (healthy) await splash.FinishAsync();
-                        splash.Close();
-                    };
-                    Application.Run(splash);
+                            else if (healthy) await splash.FinishAsync();
+                            splash.Close();
+                        };
+                        Application.Run(context);
+                        monitor?.Dispose();
+                    }
+
                     if (!healthy)
                     {
                         Log.Write("backend did not become healthy. Tail:\n" + backend.Tail());
@@ -119,49 +129,55 @@ namespace AuteurFrame.Desktop
                         if (answer == DialogResult.Yes) Process.Start(new ProcessStartInfo(AppPaths.LogDir) { UseShellExecute = true });
                         return 4;
                     }
-
                     if (main == null)
                     {
                         Log.Write("WebView2 runtime not found; using the bundled browser window");
                         return RunInChromeApp(backend);
                     }
-                    if (main.IsDisposed) return 6;
-
-                    using (var showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, ShowEventName))
+                    if (!shown)
                     {
-                        var watcher = new Thread(() =>
-                        {
-                            while (true)
-                            {
-                                try { showEvent.WaitOne(); } catch { return; }
-                                if (main.IsDisposed) return;
-                                main.BeginInvoke(new Action(() =>
-                                {
-                                    if (main.WindowState == FormWindowState.Minimized) main.WindowState = FormWindowState.Normal;
-                                    main.Activate();
-                                    main.BringToFront();
-                                }));
-                            }
-                        }) { IsBackground = true };
-                        watcher.Start();
-                        var monitor = new System.Windows.Forms.Timer { Interval = 3000 };
-                        monitor.Tick += (s, e) =>
-                        {
-                            if (!backend.Exited) return;
-                            monitor.Stop();
-                            Log.Write("backend exited unexpectedly. Tail:\n" + backend.Tail());
-                            MessageBox.Show(main, "AuteurFrame's engine stopped unexpectedly. Your projects are saved.\n\nPlease restart AuteurFrame. Details are in the log folder.",
-                                "AuteurFrame", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            main.Close();
-                        };
-                        monitor.Start();
-                        Application.Run(main);
-                        monitor.Dispose();
+                        Log.Write("the studio window could not be opened");
+                        return 6;
                     }
                 }
                 Log.Write("AuteurFrame desktop closed");
                 return 0;
             }
+        }
+
+        private static System.Windows.Forms.Timer WatchStudio(MainForm main, Backend backend, EventWaitHandle showEvent)
+        {
+            var watcher = new Thread(() =>
+            {
+                while (true)
+                {
+                    try { showEvent.WaitOne(); } catch { return; }
+                    if (main.IsDisposed) return;
+                    try
+                    {
+                        main.BeginInvoke(new Action(() =>
+                        {
+                            if (main.WindowState == FormWindowState.Minimized) main.WindowState = FormWindowState.Normal;
+                            main.Activate();
+                            main.BringToFront();
+                        }));
+                    }
+                    catch (InvalidOperationException) { return; }
+                }
+            }) { IsBackground = true };
+            watcher.Start();
+            var monitor = new System.Windows.Forms.Timer { Interval = 3000 };
+            monitor.Tick += (s, e) =>
+            {
+                if (!backend.Exited) return;
+                monitor.Stop();
+                Log.Write("backend exited unexpectedly. Tail:\n" + backend.Tail());
+                MessageBox.Show(main, "AuteurFrame's engine stopped unexpectedly. Your projects are saved.\n\nPlease restart AuteurFrame. Details are in the log folder.",
+                    "AuteurFrame", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                main.Close();
+            };
+            monitor.Start();
+            return monitor;
         }
 
         private static int RunInChromeApp(Backend backend)

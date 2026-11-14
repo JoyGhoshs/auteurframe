@@ -55,18 +55,15 @@ function Topbar({ route, health, updates, children }) {
 }
 
 function FirstLaunchNotice({ legal, onDone }) {
-  const [busy, setBusy] = useState(false);
-  const done = async () => {
-    if (busy) return;
-    setBusy(true);
-    try { await api.post('/api/legal/accept', {}); } catch (e) { }
+  const done = () => {
     onDone();
+    api.post('/api/legal/accept', {}).catch(() => null);
   };
   const repo = legal.repository || 'https://github.com/joyghoshs/auteurframe';
   const link = (label, path) => html`<a href=${repo + path} target="_blank" rel="noopener">${label}</a>`;
   return html`<${Modal} title="Welcome to AuteurFrame" icon="sparkles" onClose=${done} width="min(620px, 92vw)"
     foot=${html`<span class="muted grow" style=${{ fontSize: '12px' }}>Shown once. You can read this again under Models, About AuteurFrame.</span>
-      <button class="btn brand" disabled=${busy} onClick=${done}>I understand, continue</button>`}>
+      <button class="btn brand" onClick=${done}>I understand, continue</button>`}>
     <div style=${{ fontSize: '13px', lineHeight: 1.65 }}>
       <p style=${{ marginTop: 0 }}><b>AuteurFrame by Abdur Rahman Maheer</b> · version ${legal.version}<br />${legal.copyright || 'Copyright (c) 2026 Abdur Rahman Maheer'}.</p>
       <p>AuteurFrame is free software under the GNU Affero General Public License v3 with ${link('additional terms', '/blob/main/LICENSE-EXCEPTIONS.md')}.

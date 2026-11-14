@@ -214,6 +214,20 @@ async def create_project(body: ProjectBody) -> dict[str, Any]:
     return project
 
 
+@app.get("/api/runs/active")
+async def active_runs() -> dict[str, Any]:
+    out = []
+    for pid, run in list(swarm.RUNS.items()):
+        if run.status != "running":
+            continue
+        try:
+            title = store.get(pid).get("title", "")
+        except Exception:
+            title = ""
+        out.append({"id": pid, "title": title, "mode": run.mode, "phase": run.phase})
+    return {"runs": out}
+
+
 @app.get("/api/projects/{pid}")
 async def get_project(pid: str) -> dict[str, Any]:
     project = _project(pid)

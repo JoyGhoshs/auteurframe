@@ -171,19 +171,19 @@ namespace AuteurFrame.Desktop
             try
             {
                 var js = new JavaScriptSerializer { MaxJsonLength = int.MaxValue };
-                string list = _http.GetStringAsync(BaseUrl + "/api/projects").GetAwaiter().GetResult();
-                object parsed = js.DeserializeObject(list);
-                IEnumerable items = parsed as object[];
-                if (items == null && parsed is Dictionary<string, object> d && d.TryGetValue("projects", out var p)) items = p as object[];
-                if (items == null) return result;
-                foreach (var item in items.OfType<Dictionary<string, object>>().Take(300))
+                var call = _http.GetStringAsync(BaseUrl + "/api/runs/active");
+                if (!call.Wait(TimeSpan.FromMilliseconds(1500)))
                 {
-                    if (!item.TryGetValue("id", out var id)) continue;
-                    string runJson = _http.GetStringAsync(BaseUrl + "/api/projects/" + id + "/run").GetAwaiter().GetResult();
-                    if (js.DeserializeObject(runJson) is Dictionary<string, object> rd && rd.TryGetValue("run", out var run) && run is Dictionary<string, object> r
-                        && r.TryGetValue("status", out var st) && (st as string) == "running")
-                        result.Add(item.TryGetValue("title", out var t) ? t as string : id as string);
+                    Log.Write("active run check timed out; closing without asking");
+                    return result;
                 }
+                if (js.DeserializeObject(call.Result) is Dictionary<string, object> d && d.TryGetValue("runs", out var runs) && runs is object[] items)
+                    foreach (var item in items.OfType<Dictionary<string, object>>())
+                    {
+                        item.TryGetValue("title", out var title);
+                        item.TryGetValue("id", out var id);
+                        result.Add(string.IsNullOrWhiteSpace(title as string) ? id as string : title as string);
+                    }
             }
             catch (Exception ex) { Log.Write("active run check failed: " + ex.Message); }
             return result;
