@@ -4,6 +4,24 @@ AuteurFrame changelog
 Newest first. The release bot adds an entry for every change merged into main.
 
 Unreleased
+  No changes yet.
+
+1.3.0 (2026-11-15)
+  * Animate with the agent: select one or more layers on the stage and describe the motion. The animator changes only those layers, can set up a follow camera, and returns a draft you play, then apply or discard. Quick commands like faster, slower, bouncier, fade in, float and stagger apply instantly.
+  * Multi-track timeline: every stacking level is its own video track with scenery on V1, plus voice, score and stackable audio tracks. Drag clips sideways to retime and up or down to change tracks, and resize the timeline.
+  * Follow camera: a game-style camera locks onto a character or any layer with zoom, smoothing, look-ahead and framing, stays inside the scene and hands off between targets.
+  * Library with thumbnails: 36 cartoon characters, 26 anime characters, stick figures, 13 animals, 55 cartoon sets, 25 anime sets, about 100 props, 3D models and 24 effects, by click or drag.
+  * Intros and outros: 16 title designs including neon flicker, line draw, retro 80s, glitch, countdown, terminal, cinematic and an end card, added as their own scene or over a scene.
+  * Text and effects: 30 text styles, 18 text entrances such as stomp, block reveal, bungee and count-up, new 3D extrude, retro, chrome, sticker and glitch designs, and effects like light leak, film grain, VHS, RGB split, lens flare, camera shake and letterbox.
+  * Character action lane: walk, run, wave, talk, jump and other moves are blocks you drag and stretch, with walk targets, directions and expressions. A Layers panel adds rename, hide, lock, reorder and camera follow.
+  * New scene from the timeline: right-click a scene or the scene track, name it, set its duration and optionally describe it for the agent.
+  * Subtitle edits and scenes: scenes remember their captions. Moving a caption flags any scene that no longer lines up, Re-flow scenes to captions re-times every cut in one step, and Scenes follow captions keeps them moving together automatically.
+  * Blank project: start from an empty studio with the format, look, frame rate and number of blank scenes you choose, and build it yourself with or without the agent.
+  * Workspaces: group projects into workspaces from the start page sidebar. Create, rename and delete them (projects are kept), move projects between them, and new projects land in the workspace you have open.
+  * Auteur-Free: with no API key, small tasks run on free public models from LLM7.io, OVHcloud, Kilo, Pollinations and BlockRun, routed within their limits. You can also choose it with your own model, or make a whole film on it after agreeing to its limits.
+  * More reliable models: replies that think inside the text are cleaned, models that think too long are asked again with thinking off, and planning roles answer through forced tool calls with a JSON fallback.
+  * Fixes: characters, props and sets get entrance, exit and loop effects like text, and animals and full-frame props can be clicked on the stage.
+  2026-11-15  AuteurFrame 1.3.0: agent animation, multi-track timeline, follow camera, library, workspaces, blank projects, Auteur-Free: Docs: README.md; Scripts: scripts/components_manifest.mjs; Server: server/agents.py, server/app.py, server/compose.py, server/freepool.py and 9 more; Studio: web/app/animatepanel.js, web/app/dashboard.js, web/app/editor.css, web/app/editorpanels.js and 19 more (@JoyGhoshs)
   2026-11-14  Desktop: keep the studio open after the splash, instant notice, faster close: Desktop: desktop/windows/launcher/Backend.cs, desktop/windows/launcher/Program.cs; Server: server/app.py; Studio: web/app/main.js (@JoyGhoshs)
 
 1.2.0 (2026-11-14)
