@@ -466,10 +466,66 @@
     return keys.sort((a, b) => a.t - b.t);
   }
 
+  const ACTOR_COMPONENTS = new Set(['toon', 'toon-animal', 'stickman', 'anime-figure', 'character', 'mascot']);
+  const TRAVEL_ACTIONS = new Set(['walk', 'run', 'shamble', 'sniff', 'jump', 'strike', 'slash']);
+
+  function travelX(L, t) {
+    const p = L.params || {};
+    let x = p.x != null ? +p.x : 50;
+    const acts = (Array.isArray(p.actions) ? p.actions : []).filter((a) => a && a.to != null && TRAVEL_ACTIONS.has(a.do)).sort((a, b) => (+a.at || 0) - (+b.at || 0));
+    for (const a of acts) {
+      const at = +a.at || 0, d = Math.max(0.05, +a.duration || 1);
+      if (t < at) break;
+      const k = clamp((t - at) / d, 0, 1);
+      const e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      x += (+a.to - x) * e;
+    }
+    return x;
+  }
+
+  function trackPos(L, t) {
+    const p = L.params || {};
+    let x, y;
+    if (L.kind === 'component') {
+      if (ACTOR_COMPONENTS.has(L.component)) { x = travelX(L, t); y = (p.y != null ? +p.y : 88) - (+p.h || 40) * 0.55; }
+      else if (p.w != null) { x = (+p.x || 0) + (+p.w) / 2; y = (+p.y || 0) + (+(p.h || p.w)) / 2; }
+      else { x = p.x != null ? +p.x : 50; y = p.y != null ? +p.y : 50; }
+    } else { x = (L.x ?? 10) + (L.w ?? 30) / 2; y = (L.y ?? 10) + (L.h ?? 10) / 2; }
+    const ks = layerKeys(L);
+    if (ks.length) { const v = keyValue(ks, t); x += v.dx; y += v.dy; }
+    return { x, y };
+  }
+
+  function followRig(cam) {
+    const list = Array.isArray(cam.follow) ? cam.follow : cam.follow && cam.follow.target ? [cam.follow] : [];
+    return list.map((f) => ({
+      L: (CFG.layers || []).find((l) => l && l.id === f.target), from: clamp(+f.from || 0, 0, D), to: f.to == null ? D : clamp(+f.to, 0, D),
+      zoom: clamp(+f.zoom || 1.5, 1, 4), lag: clamp(f.lag == null ? 0.35 : +f.lag, 0, 2), lead: clamp(f.lead == null ? 0.2 : +f.lead, 0, 1.5),
+      lockY: !!f.lockY, ox: +f.offsetX || 0, oy: +f.offsetY || 0, blend: clamp(f.blend == null ? 0.6 : +f.blend, 0.05, 2)
+    })).filter((f) => f.L && f.to > f.from);
+  }
+
+  function followState(f, t) {
+    const n = 12;
+    let sx = 0, sy = 0, sw = 0;
+    for (let i = 0; i <= n; i++) {
+      const u = i / n;
+      const ts = clamp(t - f.lag + (f.lag + f.lead) * u, 0, D);
+      const w = 1 - Math.abs(u - f.lag / Math.max(1e-6, f.lag + f.lead)) * 0.6;
+      const q = trackPos(f.L, ts);
+      sx += q.x * w; sy += q.y * w; sw += w;
+    }
+    const enter = f.from <= 0.001 ? 1 : clamp((t - f.from) / f.blend, 0, 1);
+    const leave = f.to >= D - 0.001 ? 1 : clamp((f.to - t) / f.blend, 0, 1);
+    const k = Math.min(enter, leave);
+    return { x: sx / sw + f.ox, y: sy / sw + f.oy, w: k * k * (3 - 2 * k) };
+  }
+
   function sceneCamera(cam) {
-    if (!cam || (!cam.preset && !(cam.keys && cam.keys.length) && !cam.shake)) return;
+    if (!cam || (!cam.preset && !(cam.keys && cam.keys.length) && !cam.shake && !followRig(cam).length)) return;
     const host = document.getElementById('au-scene');
     if (!host) return;
+    const rig = followRig(cam);
     const keys = cameraKeys(cam);
     const easeFn = (name) => { try { return gsap.parseEase(name) || ((x) => x); } catch (e) { return (x) => x; } };
     const eases = keys.map((k) => easeFn(k.ease));
@@ -486,6 +542,17 @@
           st = { zoom: lerp(a.zoom, b.zoom, f), x: lerp(a.x, b.x, f), y: lerp(a.y, b.y, f), rotate: lerp(a.rotate, b.rotate, f) };
           break;
         }
+      }
+      if (rig.length) {
+        st = Object.assign({}, st);
+        rig.forEach((f) => {
+          if (t < f.from - f.blend || t > f.to + f.blend) return;
+          const q = followState(f, t);
+          if (q.w <= 0) return;
+          st.zoom = lerp(st.zoom, f.zoom, q.w);
+          st.x = lerp(st.x, q.x, q.w);
+          if (!f.lockY) st.y = lerp(st.y, q.y, q.w);
+        });
       }
       const z = Math.max(1, st.zoom);
       const fx = st.x / 100 * W, fy = st.y / 100 * H;
@@ -950,7 +1017,9 @@
       const wrap = keyWrap(root, L, L.z != null ? 20 + (+L.z || 0) : 'auto');
       wrap.setAttribute('data-user-comp', id);
       if (L.back) root.insertBefore(wrap, root.firstChild);
-      Array.from(root.children).filter((n) => !before.has(n) && n !== wrap).forEach((n) => { wrap.appendChild(n); });
+      const inner = make('div', 'au-ufx', wrap);
+      css(inner, { position: 'absolute', inset: '0', pointerEvents: 'none' });
+      Array.from(root.children).filter((n) => !before.has(n) && n !== wrap).forEach((n) => { inner.appendChild(n); });
       const main = wrap.querySelector(`[data-layer="${CSS.escape(id)}"]`);
       if (main) { main.setAttribute('data-user', '1'); main.style.pointerEvents = 'auto'; }
       const start = clamp(L.start || 0, 0, D);
@@ -958,6 +1027,24 @@
       if (start > 0.001) { tl.set(wrap, { autoAlpha: 0 }, 0); tl.set(wrap, { autoAlpha: 1 }, start); }
       if (end < D - 0.01) tl.set(wrap, { autoAlpha: 0 }, end);
       const px = params.x != null ? +params.x : 50, py = params.y != null ? +params.y : 50;
+      inner.style.transformOrigin = `${px}% ${py}%`;
+      const enterName = (L.enter && L.enter.preset) || (typeof L.enter === 'string' ? L.enter : 'none');
+      const en = ENTER[enterName];
+      const ed = (L.enter && L.enter.duration) || 0.7;
+      if (en) {
+        if (en.to) tl.fromTo(inner, en.from, Object.assign({}, en.to, { duration: ed, ease: en.ease }), start);
+        else tl.from(inner, Object.assign({}, en.from, { duration: ed, ease: en.ease, immediateRender: false }), start);
+      }
+      const emph = L.emphasis || 'none';
+      if (emph !== 'none') {
+        const period = 2.4;
+        const reps = Math.max(1, Math.floor((end - start - ed) / (period / 2)));
+        const props = emph === 'pulse' ? { scale: 1.05 } : emph === 'float' ? { y: -14 } : emph === 'spin' ? { rotation: 360 } : { rotation: 3 };
+        tl.to(inner, Object.assign(props, { duration: emph === 'spin' ? (end - start) : period / 2, ease: emph === 'spin' ? 'none' : 'sine.inOut', repeat: emph === 'spin' ? 0 : reps, yoyo: emph !== 'spin' }), start + (en ? ed : 0));
+      }
+      const ex = EXIT[(L.exit && L.exit.preset) || (typeof L.exit === 'string' ? L.exit : 'none')];
+      const xd = (L.exit && L.exit.duration) || 0.4;
+      if (ex && end < D - 0.05) tl.to(inner, Object.assign({}, ex.to, { duration: xd, ease: 'au.exit' }), end - xd);
       keyMotion(wrap, L, `${px}% ${py}%`);
     });
   }
@@ -1006,11 +1093,20 @@
         else if (fx === 'highlight') css(el, { background: s.bg || 'var(--accent)', color: s.color || 'var(--bg)', padding: '0.08em 0.3em', boxDecorationBreak: 'clone', webkitBoxDecorationBreak: 'clone' });
         else if (fx === 'glass') css(el, { background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.35)', padding: '0.3em 0.6em', borderRadius: (s.radius || 18) + 'px', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' });
         else if (fx === 'stroke-fill') css(el, { paintOrder: 'stroke fill', webkitTextStroke: `${Math.max(3, (s.size || 64) * 0.09)}px ${s.stroke || '#000'}` });
+        else if (fx === 'extrude') {
+          const sc = s.shadow || 'var(--accent)';
+          css(el, { textShadow: Array.from({ length: 8 }, (_, i) => `${(i + 1) * 0.012}em ${(i + 1) * 0.012}em 0 ${sc}`).join(', ') });
+        } else if (fx === 'retro') css(el, { color: s.color || '#ffd166', textShadow: `0.05em 0.05em 0 ${s.shadow || '#ef476f'}, 0.1em 0.1em 0 ${s.color2 || '#118ab2'}`, fontStyle: 'italic' });
+        else if (fx === 'chrome') css(el, { backgroundImage: 'linear-gradient(180deg, #ffffff 0%, #b8c2cc 45%, #4a5563 50%, #e6ebf0 70%, #8a96a3 100%)', webkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', filter: 'drop-shadow(0 0.04em 0 rgba(0,0,0,0.35))', padding: '0.05em 0' });
+        else if (fx === 'sticker') css(el, { color: s.color || 'var(--accent)', paintOrder: 'stroke fill', webkitTextStroke: `${Math.max(6, (s.size || 64) * 0.14)}px #fff`, filter: 'drop-shadow(0 0.05em 0.06em rgba(0,0,0,0.3))' });
+        else if (fx === 'glitch') css(el, { textShadow: `0.04em 0 0 rgba(255,0,80,0.85), -0.04em 0 0 rgba(0,240,255,0.85)` });
+        else if (fx === 'underline') css(el, { backgroundImage: `linear-gradient(${s.bg || 'var(--accent)'}, ${s.bg || 'var(--accent)'})`, backgroundRepeat: 'no-repeat', backgroundPosition: '0 88%', backgroundSize: '100% 0.22em', padding: '0 0.1em' });
+        else if (fx === 'soft-shadow') css(el, { textShadow: '0 0.08em 0.3em rgba(0,0,0,0.35)' });
       }
       const start = clamp(L.start || 0, 0, D);
       const end = clamp(L.end ?? D, start + 0.1, D);
       const enterName = (L.enter && L.enter.preset) || L.enter || 'rise';
-      const textFx = (L.kind === 'text') && ['chars', 'words', 'typewriter', 'scramble', 'bounce'].includes(enterName);
+      const textFx = (L.kind === 'text') && ['chars', 'words', 'typewriter', 'scramble', 'bounce', 'mask', 'block', 'burst', 'roll', 'skate', 'stomp', 'tumble', 'flicker', 'scrapbook', 'bungee', 'tracking', 'wave', 'count'].includes(enterName);
       const en = textFx ? null : ENTER[enterName];
       const ex = EXIT[(L.exit && L.exit.preset) || L.exit || 'none'];
       const ed = (L.enter && L.enter.duration) || 0.7;
@@ -1032,6 +1128,63 @@
         } else if (enterName === 'bounce') {
           const chars = split(el, { type: 'chars' }).chars;
           tl.from(chars, { yPercent: -120, opacity: 0, duration: 0.6, stagger: 0.035, ease: 'bounce.out', immediateRender: false }, start);
+        } else if (enterName === 'mask') {
+          const words = split(el, { type: 'words' }).words;
+          words.forEach((w) => { const m = document.createElement('span'); css(m, { display: 'inline-block', overflow: 'hidden', verticalAlign: 'bottom', paddingBottom: '0.08em' }); w.parentNode.insertBefore(m, w); m.appendChild(w); });
+          tl.from(words, { yPercent: 115, duration: 0.7, stagger: Math.min(0.08, ed / Math.max(1, words.length)), ease: 'power4.out', immediateRender: false }, start);
+        } else if (enterName === 'block') {
+          const bar = make('span', 'au-block', el);
+          css(bar, { position: 'absolute', inset: '0', background: (L.style && L.style.blockColor) || 'var(--accent)', transformOrigin: '0% 50%', transform: 'scaleX(0)', zIndex: '2' });
+          if (getComputedStyle(el).position === 'static') el.style.position = 'absolute';
+          tl.set(el, { color: 'transparent' }, start);
+          tl.to(bar, { scaleX: 1, duration: ed * 0.5, ease: 'power3.inOut' }, start);
+          tl.set(el, { color: s.color || 'var(--ink)' }, start + ed * 0.5);
+          tl.set(bar, { transformOrigin: '100% 50%' }, start + ed * 0.5);
+          tl.to(bar, { scaleX: 0, duration: ed * 0.5, ease: 'power3.inOut' }, start + ed * 0.5);
+        } else if (enterName === 'burst') {
+          const chars = split(el, { type: 'chars' }).chars;
+          const mid = (chars.length - 1) / 2;
+          tl.from(chars, { scale: 0, opacity: 0, x: (i) => (i - mid) * -14, duration: 0.6, stagger: { each: 0.03, from: 'center' }, ease: 'back.out(2.2)', immediateRender: false }, start);
+        } else if (enterName === 'roll') {
+          const chars = split(el, { type: 'chars' }).chars;
+          tl.from(chars, { rotation: -180, x: -60, opacity: 0, duration: 0.6, stagger: 0.04, ease: 'power3.out', immediateRender: false }, start);
+        } else if (enterName === 'skate') {
+          tl.from(el, { x: -220, skewX: 30, opacity: 0, duration: ed, ease: 'back.out(1.6)', immediateRender: false }, start);
+          tl.to(el, { skewX: 0, duration: 0.3, ease: 'power2.out' }, start + ed * 0.7);
+        } else if (enterName === 'stomp') {
+          const words = split(el, { type: 'words' }).words;
+          tl.from(words, { scale: 3, opacity: 0, duration: 0.28, stagger: 0.22, ease: 'power4.in', immediateRender: false }, start);
+        } else if (enterName === 'tumble') {
+          const chars = split(el, { type: 'chars' }).chars;
+          tl.from(chars, { rotationX: 360, yPercent: -80, opacity: 0, transformOrigin: '50% 50%', duration: 0.8, stagger: 0.04, ease: 'power3.out', immediateRender: false }, start);
+        } else if (enterName === 'flicker') {
+          tl.set(el, { opacity: 0 }, 0);
+          [0, 0.07, 0.12, 0.26, 0.31, 0.5, 0.56].forEach((d, i) => tl.set(el, { opacity: i % 2 ? 0.15 : 1 }, start + d));
+          tl.set(el, { opacity: 1 }, start + 0.7);
+        } else if (enterName === 'scrapbook') {
+          const chars = split(el, { type: 'chars' }).chars;
+          const rr = mulberry(CFG.seed + 515 + i);
+          chars.forEach((ch) => { if (!ch.textContent.trim()) return; css(ch, { display: 'inline-block', background: rr() < 0.5 ? '#fff' : '#fde68a', color: '#111', padding: '0 0.08em', margin: '0 0.02em', boxShadow: '0 0.04em 0.08em rgba(0,0,0,0.25)', transform: `rotate(${((rr() - 0.5) * 14).toFixed(1)}deg)` }); });
+          tl.from(chars, { scale: 1.6, opacity: 0, duration: 0.25, stagger: 0.06, ease: 'power4.in', immediateRender: false }, start);
+        } else if (enterName === 'bungee') {
+          tl.from(el, { y: -320, scaleY: 1.4, opacity: 0, duration: Math.max(0.9, ed * 1.4), ease: 'elastic.out(1, 0.45)', immediateRender: false }, start);
+        } else if (enterName === 'tracking') {
+          tl.from(el, { letterSpacing: '0.6em', opacity: 0, filter: 'blur(6px)', duration: Math.max(1, ed * 1.6), ease: 'power3.out', immediateRender: false }, start);
+        } else if (enterName === 'wave') {
+          const chars = split(el, { type: 'chars' }).chars;
+          tl.from(chars, { y: 40, opacity: 0, duration: 0.5, stagger: 0.03, ease: 'back.out(3)', immediateRender: false }, start);
+          tl.to(chars, { y: -10, duration: 0.3, stagger: { each: 0.04, repeat: 1, yoyo: true }, ease: 'sine.inOut' }, start + 0.6);
+        } else if (enterName === 'count') {
+          const raw = el.textContent;
+          const m = raw.match(/-?\d[\d,]*(\.\d+)?/);
+          if (m) {
+            const target = parseFloat(m[0].replace(/,/g, ''));
+            const dec = m[1] ? m[1].length - 1 : 0;
+            const fmt = (v) => raw.replace(m[0], v.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec }));
+            const o = { v: 0 };
+            el.textContent = fmt(0);
+            tl.to(o, { v: target, duration: Math.max(1, ed * 2), ease: 'power2.out', onUpdate: () => { el.textContent = fmt(o.v); } }, start);
+          }
         } else {
           const sp = split(el, { type: 'chars,words' });
           tl.from(sp.chars, { yPercent: 90, opacity: 0, rotationX: -80, transformOrigin: '50% 100%', duration: 0.55, stagger: Math.min(0.035, ed / Math.max(1, sp.chars.length)), ease: 'au.softLand', immediateRender: false }, start);
@@ -1329,13 +1482,26 @@
     document.querySelectorAll('video').forEach((v) => v.pause());
   }
 
+  function tightBox(el, base) {
+    const big = base.width * base.height * 0.6;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    el.querySelectorAll('path,circle,ellipse,rect,polygon,polyline,line,image,use,img,text').forEach((n) => {
+      const q = n.getBoundingClientRect();
+      if (!q.width || !q.height || q.width * q.height > big) return;
+      x0 = Math.min(x0, q.left); y0 = Math.min(y0, q.top); x1 = Math.max(x1, q.right); y1 = Math.max(y1, q.bottom);
+    });
+    return isFinite(x0) ? { left: x0, top: y0, width: x1 - x0, height: y1 - y0 } : null;
+  }
+
   function layers() {
     const st = stage();
     if (!st) return [];
     const base = st.getBoundingClientRect();
     const sx = W / base.width, sy = H / base.height;
+    const backs = new Set((CFG.layers || []).filter((L) => L && L.back).map((L) => L.id));
     return $$('[data-layer]', st).map((el) => {
-      const r = el.getBoundingClientRect();
+      let r = el.getBoundingClientRect();
+      if (el.hasAttribute('data-user') && r.width * r.height > base.width * base.height * 0.6 && !backs.has(el.getAttribute('data-layer'))) r = tightBox(el, base) || r;
       const cs = getComputedStyle(el);
       return {
         id: el.getAttribute('data-layer'), user: el.hasAttribute('data-user'), tag: el.tagName.toLowerCase(),

@@ -11,9 +11,11 @@ import { TextPanel, StockPanel, SoundPanel } from './editorpanels.js';
 import { ComponentsPanel, componentPatch, recordDrag } from './motiontools.js';
 import { ContextMenu, AskAgentDialog, ReplicateDialog, TextPromptDialog } from './agentmenu.js';
 import { clipLength } from './timeline.js';
+import { AnimateDialog, DraftBar, LayersPanel, FreeFilmDialog, NewSceneDialog } from './animatepanel.js';
+import { IntrosPanel } from './intros.js';
 
 const LEFT = [
-  ['media', 'image-plus', 'Media and elements'], ['components', 'shapes', 'Characters, props and components'], ['text', 'type', 'Text styles'], ['stock', 'images', 'Stock and icons'], ['design', 'palette', 'Design'], ['captions', 'captions', 'Captions and timing'], ['audio', 'audio-lines', 'Sound'],
+  ['media', 'image-plus', 'Media and elements'], ['components', 'shapes', 'Library: characters, scenery, props, effects'], ['layers', 'layers', 'Layers'], ['intros', 'clapperboard', 'Intros, outros and title cards'], ['text', 'type', 'Text styles'], ['stock', 'images', 'Stock and icons'], ['design', 'palette', 'Design'], ['captions', 'captions', 'Captions and timing'], ['audio', 'audio-lines', 'Sound'],
   ['research', 'globe', 'Research'], ['history', 'history', 'Revisions'], ['export', 'download', 'Export']
 ];
 const VISUAL_KEYS = ['code', 'data', 'archetype', 'overrides', 'layers', 'variant', 'reseed', 'duration', 'has_code', 'transition', 'source', 'ground', 'texture', 'camera', 'lens'];
@@ -29,6 +31,9 @@ export function Studio({ id, health }) {
   const [tab, setTab] = useState('swarm');
   const [selScene, setSelScene] = useState(null);
   const [selected, setSelected] = useState(null);
+  const [multi, setMulti] = useState([]);
+  const [tlH, setTlH] = useState(() => { try { return Math.max(160, Math.min(700, +localStorage.getItem('af.tlh') || 300)); } catch (e) { return 300; } });
+  const resizeTimeline = (h) => { setTlH(h); try { localStorage.setItem('af.tlh', String(h)); } catch (e) { } };
   const [versions, setVersions] = useState({});
   const [roster, setRoster] = useState([]);
   const [agents, setAgents] = useState({});
@@ -187,7 +192,7 @@ export function Studio({ id, health }) {
       }
       if (e.key === 'Home') setTime(0);
       if (e.key === 'End') setTime(Math.max(0, total() - 0.001));
-      if (e.key === 'Escape') setSelected(null);
+      if (e.key === 'Escape') { setSelected(null); setMulti([]); }
       if ((e.key === 'Delete' || e.key === 'Backspace') && selClip) { deleteClip(selClip); return; }
       if ((e.key === 'Delete' || e.key === 'Backspace') && selected && selected.user) deleteLayer(selected.sceneId, selected.id);
     };
@@ -378,7 +383,11 @@ export function Studio({ id, health }) {
   const onCuePatch = async (cid, p) => {
     await snap(true);
     setProject((cur) => ({ ...cur, cues: (cur.cues || []).map((c) => (c.id === cid ? { ...c, ...p } : c)) }));
-    try { await api.patch(`/api/projects/${id}/cues/${cid}`, p); bumpAll(); } catch (e) { toast(e.message, 'err'); load(); }
+    try {
+      await api.patch(`/api/projects/${id}/cues/${cid}`, p);
+      if ((project.captions || {}).link_scenes) await load();
+      bumpAll();
+    } catch (e) { toast(e.message, 'err'); load(); }
   };
   const checkSync = async () => {
     setSyncing(true);
@@ -409,9 +418,40 @@ export function Studio({ id, health }) {
       load(); bumpAll();
     } catch (e) { toast(e.message, 'err'); }
   };
-  const startRun = async (mode) => {
+  const startRun = async (mode, options) => {
     if (mode !== 'render') await snap(true);
-    try { const r = await api.post(`/api/projects/${id}/run`, { mode }); setRun(r); setTab('swarm'); toast(mode === 'render' ? 'Rendering all scenes' : 'Swarm launched', 'ok'); } catch (e) { toast(e.message, 'err'); }
+    try { const r = await api.post(`/api/projects/${id}/run`, options ? { mode, options } : { mode }); setRun(r); setTab('swarm'); toast(mode === 'render' ? 'Rendering all scenes' : options && options.free_pool ? 'Swarm launched on Auteur-Free' : 'Swarm launched', 'ok'); } catch (e) { toast(e.message, 'err'); }
+  };
+  const hasLinked = () => (project.scenes || []).some((s) => (s.cue_ids || []).length);
+  const reflowScenes = async () => {
+    await snap(true);
+    try {
+      const r = await api.post(`/api/projects/${id}/reflow`, {});
+      toast(r.changes.length ? `Re-flowed ${r.changes.length} scene${r.changes.length > 1 ? 's' : ''} to their captions` : 'Every scene already starts with its caption', 'ok');
+      await load();
+      bumpAll();
+    } catch (e) { toast(e.message, 'err'); }
+  };
+  const [freeFilm, setFreeFilm] = useState(null);
+  const [newScene, setNewScene] = useState(null);
+  const generate = (mode) => {
+    if (!(health && health.llm) && health && health.free_allowed) { setFreeFilm({ mode, hasModel: false }); return; }
+    startRun(mode);
+  };
+  const BLANK_SCENE = '<div class="scene"></div><script>AU.scene(() => {});</script>';
+  const createScene = async ({ title, duration, idea }) => {
+    await snap(true);
+    const before = new Set(project.scenes.map((s) => s.id));
+    const p = await api.post(`/api/projects/${id}/scenes`, { at: newScene.at, title, duration, narration: idea, code: idea ? undefined : BLANK_SCENE });
+    const made = (p.scenes || []).find((s) => !before.has(s.id));
+    await load();
+    bumpAll();
+    if (made) {
+      setSelScene(made.id);
+      setTime(made.start + 0.001);
+      if (idea && health && (health.llm || health.free)) { sendChat(made.id, `Build this new scene "${title}" (${duration}s): ${idea}`); setTab('chat'); }
+      else toast(`Scene "${title}" added. Add characters, scenery and text from the library.`, 'ok');
+    }
   };
   const cancel = async () => { await api.post(`/api/projects/${id}/cancel`); toast('Cancelling'); };
   const [ctxMenu, setCtxMenu] = useState(null);
@@ -443,7 +483,7 @@ export function Studio({ id, health }) {
   };
   const tlItems = (m) => {
     const T = r3(m.t != null ? m.t : time);
-    const llmOn = !!(health && health.llm);
+    const llmOn = !!(health && (health.llm || health.free));
     const items = [];
     if (m.kind === 'clip') {
       const c = clipsOf().find((x) => x.id === m.clip.id) || m.clip;
@@ -518,6 +558,9 @@ export function Studio({ id, health }) {
       const move = async (dir) => { const o = order.slice(); const j = i + dir; [o[i], o[j]] = [o[j], o[i]]; await snap(true); await api.post(`/api/projects/${id}/scenes/reorder`, { order: o }); load(); bumpAll(); };
       items.push({ header: `Scene ${i + 1} · ${(s.title || '').slice(0, 30)}` });
       items.push({ label: 'Split at playhead', icon: 'scissors', kbd: 'S', disabled: !inside, onClick: async () => { await snap(true); try { await api.post(`/api/projects/${id}/scenes/${s.id}/split`, { at: r3(T - s.start) }); load(); bumpAll(); } catch (e) { toast(e.message, 'err'); } } });
+      if (hasLinked()) items.push({ label: 'Re-flow scenes to captions', icon: 'align-horizontal-distribute-center', onClick: reflowScenes });
+      items.push({ label: 'New scene before…', icon: 'square-plus', onClick: () => setNewScene({ at: i, label: `before scene ${i + 1}` }) });
+      items.push({ label: 'New scene after…', icon: 'square-plus', onClick: () => setNewScene({ at: i + 1, label: `after scene ${i + 1}` }) });
       items.push({ label: 'Duplicate scene', icon: 'copy', onClick: async () => { await snap(true); await api.post(`/api/projects/${id}/scenes/${s.id}/duplicate`, {}); load(); bumpAll(); } });
       items.push({ label: 'Move left', icon: 'arrow-left', disabled: i === 0, onClick: () => move(-1) });
       items.push({ label: 'Move right', icon: 'arrow-right', disabled: i === project.scenes.length - 1, onClick: () => move(1) });
@@ -547,7 +590,10 @@ export function Studio({ id, health }) {
         items.push({ label: 'Add text here', icon: 'type', onClick: () => { const s = sceneAtTime(T); s && addLayer({ kind: 'text', text: 'Your words', w: 40, start: r3(T - s.start) }, null, s); } });
       } else {
         items.push({ header: 'Scenes' });
+        const after = project.scenes.filter((s) => s.start + s.duration <= T + 0.01).length;
+        items.push({ label: 'New scene here…', icon: 'square-plus', onClick: () => setNewScene({ at: after, label: after >= project.scenes.length ? 'at the end' : `before scene ${after + 1}` }) });
         items.push({ label: 'Add scene at the end', icon: 'plus', onClick: () => addScene(project.scenes.length) });
+        if (hasLinked()) items.push({ label: 'Re-flow scenes to captions', icon: 'align-horizontal-distribute-center', onClick: reflowScenes });
       }
       items.push({ label: 'Move playhead here', icon: 'locate', onClick: () => setTime(T) });
     }
@@ -555,6 +601,56 @@ export function Studio({ id, health }) {
   };
   const [askAgent, setAskAgent] = useState(null);
   const [replicate, setReplicate] = useState(null);
+  const [animate, setAnimate] = useState(null);
+  const selectFromStage = (s, additive) => {
+    if (!s) { if (!additive) { setSelected(null); setMulti([]); } return; }
+    if (additive && s.user) {
+      const base = multi.length ? multi : (selected && selected.user && selected.sceneId === s.sceneId ? [selected.id] : []);
+      const next = base.includes(s.id) ? base.filter((x) => x !== s.id) : [...base, s.id];
+      setMulti(next);
+      setSelected(next.length ? s : null);
+      return;
+    }
+    setSelected(s);
+    setMulti(s.user ? [s.id] : []);
+    setTab('layer');
+  };
+  const animIds = (sc) => {
+    const ids = new Set(multi.filter((x) => (sc.layers || []).some((L) => L.id === x)));
+    if (selected && selected.user && selected.sceneId === sc.id) ids.add(selected.id);
+    return Array.from(ids);
+  };
+  const openAnimate = (sc, ids) => {
+    if (!sc) return;
+    const list = ids && ids.length ? ids : animIds(sc);
+    if (!list.length) { toast('Select one or more layers you added (Shift or Ctrl click to pick several)', 'err'); return; }
+    setPlaying(false);
+    setAnimate({ sid: sc.id, ids: list });
+  };
+  const draftAction = async (sc, action) => {
+    if (action === 'apply') await snap(true);
+    try { await api.post(`/api/projects/${id}/scenes/${sc.id}/draft/${action}`, {}); toast(action === 'apply' ? 'Animation applied' : 'Draft discarded', 'ok'); }
+    catch (e) { toast(e.message, 'err'); }
+    await load();
+    bump(sc.id);
+  };
+  const playScene = (sc) => { setTime(sc.start + 0.001); setTimeout(() => setPlaying(true), 350); };
+  const followLayer = (sc, lid) => {
+    const cam = sc.camera || {};
+    const on = (cam.follow || []).some((f) => f.target === lid);
+    const follow = on ? (cam.follow || []).filter((f) => f.target !== lid) : [{ target: lid, from: 0, to: sc.duration, zoom: 1.6, lag: 0.35, lead: 0.2 }];
+    patchScene(sc.id, { camera: { ...cam, follow } });
+    toast(on ? 'Camera stopped following' : 'Camera follows this layer. Tune zoom, lag and look-ahead in Look, Camera.', 'ok');
+  };
+  const patchLayerMeta = (sc, lid, patch) => patchScene(sc.id, { layers: (sc.layers || []).map((l) => (l.id === lid ? { ...l, ...patch } : l)) });
+  const moveLayer = (sc, lid, dir) => {
+    const list = (sc.layers || []).slice();
+    const i = list.findIndex((l) => l.id === lid);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= list.length) return;
+    [list[i], list[j]] = [list[j], list[i]];
+    patchScene(sc.id, { layers: list });
+  };
   const layerLabel = (sel) => (sel && (sel.text || sel.tag || sel.id) || '').toString().slice(0, 40);
   const reorderLayer = (sid, lid, front) => {
     const s = project.scenes.find((x) => x.id === sid);
@@ -567,7 +663,7 @@ export function Studio({ id, health }) {
     const sel = selected;
     const sc = (sel && project.scenes.find((x) => x.id === sel.sceneId)) || current;
     const ov = sel && sc ? ((sc.overrides || {})[sel.id] || {}) : {};
-    const llmOn = !!(health && health.llm);
+    const llmOn = !!(health && (health.llm || health.free));
     const items = [];
     if (sel && sc) {
       items.push({ header: `${sel.user ? 'Layer' : 'Element'} · ${layerLabel(sel)}` });
@@ -578,6 +674,8 @@ export function Studio({ id, health }) {
       items.push({ label: ov.hidden ? 'Show' : 'Hide', icon: ov.hidden ? 'eye' : 'eye-off', onClick: () => onOverride(sc.id, sel.id, { hidden: !ov.hidden }) });
       if (!sel.user && Object.keys(ov).length) items.push({ label: 'Reset my changes', icon: 'rotate-ccw', onClick: () => clearOverride(sc.id, sel.id) });
       items.push({ label: 'Edit properties', icon: 'sliders-horizontal', onClick: () => setTab('layer') });
+      if (sel.user) items.push({ label: ((sc.camera || {}).follow || []).some((f) => f.target === sel.id) ? 'Stop camera follow' : 'Camera follows this', icon: 'crosshair', onClick: () => followLayer(sc, sel.id) });
+      if (sel.user) items.push({ label: multi.length > 1 ? `Animate ${animIds(sc).length} selected with the agent…` : 'Animate with the agent…', icon: 'wand-sparkles', onClick: () => openAnimate(sc) });
       items.push({ label: 'Ask the agent to change this…', icon: 'sparkles', disabled: !llmOn, onClick: () => setAskAgent({ sid: sc.id, title: `Change “${layerLabel(sel)}”`, prefix: `In this scene, change the element "${layerLabel(sel)}" (data-layer ${sel.id}): ` }) });
       items.push({ sep: true });
     }
@@ -596,8 +694,9 @@ export function Studio({ id, health }) {
     return items;
   };
   const sendChat = async (sid, msg) => {
-    setChat((c) => [...c, { who: 'user', text: msg, scene: sid }, ...(health && health.llm ? [{ who: 'agent', text: 'On it. Rewriting the composition…', scene: sid, pending: true }] : [])]);
-    try { await api.post(`/api/projects/${id}/scenes/${sid}/chat`, { message: msg }); if (!(health && health.llm)) { load(); bump(sid); } } catch (e) { toast(e.message, 'err'); }
+    const agentOn = !!(health && (health.llm || health.free));
+    setChat((c) => [...c, { who: 'user', text: msg, scene: sid }, ...(agentOn ? [{ who: 'agent', text: health.llm ? 'On it. Rewriting the composition…' : 'On it, using Auteur-Free (public no-key models, may take a little longer)…', scene: sid, pending: true }] : [])]);
+    try { await api.post(`/api/projects/${id}/scenes/${sid}/chat`, { message: msg }); if (!agentOn) { load(); bump(sid); } } catch (e) { toast(e.message, 'err'); }
   };
   const addScene = async (at) => { await snap(true); await api.post(`/api/projects/${id}/scenes`, { at }); load(); };
   const delScene = async () => { if (!current) return; await snap(true); await api.del(`/api/projects/${id}/scenes/${current.id}`); setSelScene(null); load(); };
@@ -625,11 +724,12 @@ export function Studio({ id, health }) {
       ${running ? html`<button class="btn" onClick=${cancel}><${Icon} name="square" size=${13} />Stop</button>` : html`
         <button class="btn" title="Re-plan and animate every scene without rendering" onClick=${() => startRun('plan')}><${Icon} name="list-video" size=${14} />Plan</button>
         <button class=${'btn ' + (needsRender && outputs.master ? 'brand render-hot' : '')} title=${stale ? 'You changed the edit since the last render. Render to update the master.' : 'Render the current edit and master it'} disabled=${!project.scenes.length} onClick=${() => startRun('render')}><${Icon} name="cpu" size=${14} />${stale ? 'Render changes' : 'Render'}</button>
-        <button class=${'btn ' + (needsRender && outputs.master ? '' : 'brand')} onClick=${() => startRun(project.edit ? 'edit' : 'full')}><${Icon} name="wand-sparkles" size=${14} />${project.edit ? 'Re-edit with swarm' : 'Generate film'}</button>`}
+        <button class=${'btn ' + (needsRender && outputs.master ? '' : 'brand')} onClick=${() => generate(project.edit ? 'edit' : 'full')}><${Icon} name="wand-sparkles" size=${14} />${project.edit ? 'Re-edit with swarm' : 'Generate film'}</button>
+        ${health && health.llm && health.free_allowed ? html`<button class="btn icon" title="Generate with Auteur-Free (free public models, rate limited)" onClick=${() => setFreeFilm({ mode: project.edit ? 'edit' : 'full', hasModel: true })}><${Icon} name="zap" size=${14} /></button>` : null}`}
       ${outputs.master && !stale && !running ? html`<a class="btn icon" title="Download master" href=${outputs.master} download><${Icon} name="download" size=${15} /></a>`
       : html`<button class="btn icon" disabled title=${running ? 'Rendering…' : stale ? 'Render your changes to enable download' : 'Render the film first'}><${Icon} name="download" size=${15} /></button>`}
     </header>
-    <div class="studio" style=${{ gridTemplateRows: collapsed ? '1fr 34px' : '1fr 248px' }}>
+    <div class="studio" style=${{ gridTemplateRows: collapsed ? '1fr 34px' : `1fr ${tlH}px` }}>
       <nav class="rail">${LEFT.map(([k, icon, tip]) => html`<button class=${left === k ? 'on' : ''} data-tip=${tip} onClick=${() => setLeft(k)}><${Icon} name=${icon} /></button>`)}
         <div class="spacer"></div><button data-tip="Skills library" onClick=${() => navigate('/skills')}><${Icon} name="book-open-text" /></button>
         <button data-tip="Model settings" onClick=${() => navigate('/settings')}><${Icon} name="settings" /></button></nav>
@@ -638,9 +738,13 @@ export function Studio({ id, health }) {
         <div class="panel-body">
           ${left === 'media' ? html`<${MediaPanel} project=${project} scene=${current} onUpload=${upload} onDeleteAsset=${async (aid) => { await api.del(`/api/projects/${id}/assets/${aid}`); load(); }} onAddLayer=${(l) => addLayer(l)} />` : null}
           ${left === 'design' ? html`<${DesignPanel} project=${project} styles=${styles} onPatch=${patchProject} scene=${current} onScenePatch=${(sid, body) => patchScene(sid, body).then(() => bumpAll && bumpAll())} />` : null}
-          ${left === 'captions' ? html`<${CaptionsPanel} project=${project} onPatch=${patchProject} onSubtitles=${setSubtitles} onCueEdit=${async (cid, p) => { await snap(true); await api.patch(`/api/projects/${id}/cues/${cid}`, p); load(); bumpAll(); }} onCheckSync=${checkSync} syncing=${syncing} selectedCue=${selCue} onSeek=${(t) => setTime(t)} />` : null}
+          ${left === 'captions' ? html`<${CaptionsPanel} project=${project} onPatch=${patchProject} onSubtitles=${setSubtitles} onCueEdit=${async (cid, p) => { await snap(true); await api.patch(`/api/projects/${id}/cues/${cid}`, p); load(); bumpAll(); }} onCheckSync=${checkSync} syncing=${syncing} selectedCue=${selCue} onSeek=${(t) => setTime(t)} onReflow=${reflowScenes} />` : null}
           ${left === 'audio' ? html`<${SoundPanel} project=${project} time=${time} onPatch=${patchProject} onUpload=${upload} selectedClip=${selClip} onSelectClip=${setSelClip} onClipPatch=${onClipPatch} onDeleteClip=${deleteClip} onAddClip=${(a) => addAudioClip(a, timeRef.current)} />` : null}
           ${left === 'components' ? html`<${ComponentsPanel} scene=${current} onAdd=${(l) => addLayer({ ...l, start: Math.max(0, Math.round((time - (current ? current.start : 0)) * 10) / 10) })} />` : null}
+          ${left === 'layers' ? html`<${LayersPanel} project=${project} scene=${current} selected=${selected} multi=${multi} onSelect=${(s, add) => selectFromStage(s, add)}
+              onPatch=${(lid, p) => current && patchLayerMeta(current, lid, p)} onMove=${(lid, dir) => current && moveLayer(current, lid, dir)} onAnimate=${(ids) => openAnimate(current, ids)}
+              onDelete=${(lid) => current && deleteLayer(current.id, lid)} onFollow=${(lid) => current && followLayer(current, lid)} />` : null}
+          ${left === 'intros' ? html`<${IntrosPanel} project=${project} scene=${current} onAddLayer=${(l) => addLayer(l)} onChanged=${async () => { await load(); bumpAll(); }} snap=${snap} />` : null}
           ${left === 'text' ? html`<${TextPanel} scene=${current} onAdd=${(l) => addLayer({ ...l, start: Math.max(0, Math.round((time - (current ? current.start : 0)) * 10) / 10) })} />` : null}
           ${left === 'stock' ? html`<${StockPanel} project=${project} scene=${current} onImported=${onImported} />` : null}
           ${left === 'research' ? html`<${ResearchPanel} />` : null}
@@ -653,17 +757,24 @@ export function Studio({ id, health }) {
           <div class="seg"><button class=${!guides ? 'on' : ''} onClick=${() => setGuides(false)}>Clean</button><button class=${guides ? 'on' : ''} onClick=${() => setGuides(true)}><${Icon} name="frame" size=${12} />Safe area</button></div>
           <span class="muted" style=${{ fontSize: '12px' }}>${playing ? 'Playing live HTML composition' : 'Paused: click elements to edit, drag media in'}</span>
           <div class="spacer"></div>
-          ${current ? html`<span class="chip">${current.title}</span>` : null}
-          <button class="btn sm" disabled=${!(health && health.llm) || running} title="Create new scenes from this scene or a reference image or video" onClick=${() => setReplicate({ scene: current, mode: 'extend' })}><${Icon} name="copy-plus" size=${12} />Replicate with agent</button>
+          ${current && current.draft ? html`<${DraftBar} scene=${current} onPlay=${() => playScene(current)} onApply=${() => draftAction(current, 'apply')} onDiscard=${() => draftAction(current, 'discard')} />`
+          : current && animIds(current).length ? html`<button class="btn sm brand" onClick=${() => openAnimate(current)}><${Icon} name="wand-sparkles" size=${12} />Animate ${animIds(current).length > 1 ? animIds(current).length + ' layers' : 'selection'}</button>`
+          : current ? html`<span class="chip">${current.title}</span>` : null}
+          <button class="btn sm" disabled=${!(health && (health.llm || health.free)) || running} title="Create new scenes from this scene or a reference image or video" onClick=${() => setReplicate({ scene: current, mode: 'extend' })}><${Icon} name="copy-plus" size=${12} />Replicate with agent</button>
           <button class="btn sm" disabled=${!current} onClick=${() => current && bump(current.id)}><${Icon} name="refresh-cw" size=${12} />Reload</button>
         </div>
         <div style=${{ display: 'contents' }} onContextMenu=${(e) => { if (view !== 'live') return; e.preventDefault(); setPlaying(false); setCtxMenu({ x: e.clientX, y: e.clientY }); }}>
         <${Stage} project=${project} time=${time} setTime=${setTime} playing=${playing} setPlaying=${setPlaying} versions=${versions} view=${view} guides=${guides}
-          selected=${selected} onSelect=${(s) => { setSelected(s); if (s) setTab('layer'); }} onOverride=${onOverride} onLayerPatch=${onLayerPatch} onDropAsset=${onDropAsset}
+          selected=${selected} multi=${multi} onSelect=${selectFromStage} onOverride=${onOverride} onLayerPatch=${onLayerPatch} onDropAsset=${onDropAsset}
           cursors=${cursors} agents=${agents} browse=${browse} progress=${progress} previews=${previews} agentNames=${agentNames} />
         </div>
         ${ctxMenu ? html`<${ContextMenu} x=${ctxMenu.x} y=${ctxMenu.y} items=${menuItems()} onClose=${() => setCtxMenu(null)} />` : null}
         ${askAgent ? html`<${AskAgentDialog} title=${askAgent.title} placeholder="What should change? For example: make the zombies slower, add rain, push the camera in on her face" onSend=${(t) => { sendChat(askAgent.sid, (askAgent.prefix || '') + t); setTab('chat'); }} onClose=${() => setAskAgent(null)} />` : null}
+        ${freeFilm ? html`<${FreeFilmDialog} hasModel=${freeFilm.hasModel} onClose=${() => setFreeFilm(null)}
+            onStart=${(free) => { const m = freeFilm.mode; setFreeFilm(null); startRun(m, free ? { free_pool: true, free_ack: true } : undefined); }} />` : null}
+        ${newScene ? html`<${NewSceneDialog} at=${newScene} llm=${!!(health && (health.llm || health.free))} onCreate=${createScene} onClose=${() => setNewScene(null)} />` : null}
+        ${animate && project.scenes.find((s) => s.id === animate.sid) ? html`<${AnimateDialog} project=${project} scene=${project.scenes.find((s) => s.id === animate.sid)} ids=${animate.ids} llm=${!!(health && (health.llm || health.free))} freeChoice=${!!(health && health.llm && health.free_allowed)}
+            onClose=${() => setAnimate(null)} onDone=${async () => { await load(); const sc = project.scenes.find((s) => s.id === animate.sid); if (sc) { bump(sc.id); playScene(sc); } }} />` : null}
         ${replicate ? html`<${ReplicateDialog} project=${project} scene=${replicate.scene} initialMode=${replicate.mode} onClose=${() => setReplicate(null)} onStarted=${() => { load(); setTab('swarm'); }} />` : null}
         <div class="transport">
           <button class="btn ghost icon sm" onClick=${() => setTime(0)}><${Icon} name="skip-back" size=${14} /></button>
@@ -691,14 +802,24 @@ export function Studio({ id, health }) {
               localTime=${current ? time - (current.start || 0) : 0} record=${recordKeys} onRecord=${setRecordKeys} />` : null}
           ${tab === 'look' ? html`<${LookTab} project=${project} scene=${current} time=${time} patch=${(b) => current && patchScene(current.id, b)} patchProject=${patchProject} />` : null}
           ${tab === 'code' && current ? html`<${CodeTab} project=${project} scene=${current} patch=${(b) => patchScene(current.id, b)} />` : null}
-          ${tab === 'chat' && current ? html`<${ChatTab} project=${project} scene=${current} messages=${chat} onSend=${sendChat} llm=${health && health.llm} busy=${running && run.mode === 'scene'} />` : null}
+          ${tab === 'chat' && current ? html`<${ChatTab} project=${project} scene=${current} messages=${chat} onSend=${sendChat} llm=${health && (health.llm || health.free)} busy=${running && run.mode === 'scene'} />` : null}
           ${tab === 'qa' && current ? html`<${QATab} scene=${current} />` : null}
           ${!current && tab !== 'swarm' && tab !== 'layer' && tab !== 'look' ? html`<div class="empty"><${Icon} name="clapperboard" />No scene selected.</div>` : null}
         </div>
       </aside>
       <${Timeline} project=${project} time=${time} setTime=${(t) => { setTime(t); }} selectedScene=${current ? current.id : null} onSelectScene=${(sid) => { setSelScene(sid); if (tab === 'swarm') setTab('scene'); }}
-        onSceneDuration=${(sid, d) => patchScene(sid, { duration: d })} onLayerTime=${(sid, lid, p) => onLayerPatch(sid, lid, p)} onSelectLayer=${(s) => { setSelected(s); setSelClip(null); setTab('layer'); }}
-        selectedLayer=${selected} progress=${progress} previews=${previews} agents=${agents} agentNames=${agentNames} collapsed=${collapsed} onCollapse=${() => setCollapsed(!collapsed)}
+        onSceneDuration=${(sid, d) => patchScene(sid, { duration: d })} onLayerTime=${(sid, lid, p) => onLayerPatch(sid, lid, p)}
+        onLayerMove=${(sid, lid, times, index) => {
+          const s = project.scenes.find((x) => x.id === sid);
+          if (!s) return;
+          const list = (s.layers || []).map((l) => (l.id === lid && times ? { ...l, ...times } : l));
+          const from = list.findIndex((l) => l.id === lid);
+          const [L] = list.splice(from, 1);
+          list.splice(Math.max(0, Math.min(list.length, index)), 0, L);
+          patchScene(sid, { layers: list });
+        }}
+        onSelectLayer=${(s, add) => { if (add) { selectFromStage(s, true); return; } setSelected(s); setMulti(s && s.user ? [s.id] : []); setSelClip(null); setTab('layer'); }}
+        selectedLayer=${selected} multi=${multi} height=${tlH} onResize=${resizeTimeline} progress=${progress} previews=${previews} agents=${agents} agentNames=${agentNames} collapsed=${collapsed} onCollapse=${() => setCollapsed(!collapsed)}
         cursors=${cursors} onClipPatch=${onClipPatch} selectedClip=${selClip} onSelectClip=${(cid) => { setSelClip(cid); setSelected(null); setLeft('audio'); }}
         onCuePatch=${onCuePatch} selectedCue=${selCue} onSelectCue=${(c) => { setSelCue(c.id); setSelClip(null); }} onDropTimeline=${onDropTimeline}
         onContext=${(m) => { setPlaying(false); setTlMenu(m); }} />

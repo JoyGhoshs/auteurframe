@@ -45,7 +45,7 @@ export function EditWizard({ health }) {
       const gradeWord = grade === 'auto' ? '' : ` Grade: ${grade}.`;
       const brief = (prompt || 'Make this a fast, engaging short with zooms, captions and b-roll.') + gradeWord;
       const p = await api.post('/api/projects', { title: title || 'Video edit', brief, aspect: finalAspect, style: 'creator-bold', duration: Math.max(5, Math.round((dims && dims.d) || 30)), fps: 30,
-        options: { mode: 'auto', stock: stockOn, cut_silence: cut, language }, captions: { enabled: caps !== 'none', style: caps === 'none' ? null : caps } });
+        options: { mode: 'auto', stock: stockOn, cut_silence: cut, language }, captions: { enabled: caps !== 'none', style: caps === 'none' ? null : caps }, workspace: localStorage.getItem('af.ws') || null });
       setBusy('Uploading video');
       await api.upload(`/api/projects/${p.id}/assets`, video, { role: 'footage' });
       if (subs) { setBusy('Reading subtitles'); await api.upload(`/api/projects/${p.id}/assets`, subs, { role: 'subtitles' }); }

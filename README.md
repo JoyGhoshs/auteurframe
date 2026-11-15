@@ -9,11 +9,15 @@
 </p>
 
 <p align="center">
-  <img alt="version" src="https://img.shields.io/badge/version-1.1.0-4D74FF">
+  <img alt="version" src="https://img.shields.io/badge/version-1.3.0-4D74FF">
   <img alt="python" src="https://img.shields.io/badge/python-3.11%20%7C%203.12-0B0D12">
   <img alt="node" src="https://img.shields.io/badge/node-18%2B-0B0D12">
   <img alt="platforms" src="https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20%7C%20WSL2%20%7C%20Docker-8F7BFF">
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-AGPL--3.0-4D74FF"></a>
+</p>
+
+<p align="center">
+  <a href="https://www.producthunt.com/products/auteurframe?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-auteurframe" target="_blank" rel="noopener noreferrer"><img alt="AuteurFrame - Open-source motion studio, directed by agents | Product Hunt" width="250" height="54" src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1316592&amp;theme=light&amp;t=1794736256967"></a>
 </p>
 
 ---
@@ -26,6 +30,7 @@
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Connect a model](#connect-a-model)
+- [Auteur-Free: small tasks with no key](#auteur-free-small-tasks-with-no-key)
 - [Make your first film](#make-your-first-film)
 - [Working in the studio](#working-in-the-studio)
 - [Templates and the template feed](#templates-and-the-template-feed)
@@ -263,10 +268,56 @@ the version from `release.json` (for example `"version": "1.2.0"`). In the studi
    for the Critic, a fast model for Research.
 
 Keys never leave your machine except to the provider you chose. A built-in rate limiter protects free tiers and can be
-switched off per connection. With no model connected, the house director and all templates still work.
+switched off per connection. With no model connected, the house director and all templates still work, and small
+editing tasks use [Auteur-Free](#auteur-free-small-tasks-with-no-key).
 
 **Voice and images.** Text to speech and image generation are off by default. Turn them on under
 **Models → Voice and generation**. Free neural voices work with no key; ElevenLabs is optional.
+
+## Auteur-Free: small tasks with no key
+
+**Auteur-Free** runs agent tasks on public language models that need no API key or sign-up. It is used in two cases:
+
+1. **No model connected.** Small tasks use it automatically while you build scenes by hand:
+   - animating the layers you select ("the kid runs to the dog and they both jump"),
+   - editing or re-animating one scene from the **Direct** tab or the right-click menu,
+   - creating a new scene from a short description (timeline right-click → **New scene here…**),
+   - replicating, extending or varying a scene (up to two new scenes at a time).
+2. **You choose it.** Even with your own model connected, pick **Auteur-Free** in the **Animate** dialog, or use the
+   ⚡ button next to **Generate film**.
+
+**Whole films** can also run on Auteur-Free: choose **Auteur-Free** under *Who directs* in **New**, or press
+**Generate film** with no model connected. AuteurFrame first asks you to confirm that you understand the limits. Free
+providers allow only a few requests per minute or hour, so a full film is slower, and **if the free limits run out the
+film can be left unfinished**: the remaining scenes keep a simple house design, and you can re-run them later or connect
+your own model to finish them.
+
+Each request goes to one model picked at random from the healthy pool, weighted by quality, and stays inside each
+provider's published limits. If a model is busy, rate limited or out of quota, AuteurFrame moves straight to the next one,
+and respects the provider's `Retry-After` before using it again. Fast, tool-calling models are preferred; models
+without tool support get plain JSON instructions.
+
+| Provider | Used for | Anonymous limits AuteurFrame plans around |
+|---|---|---|
+| [LLM7.io](https://llm7.io) | gpt-oss 20B, GLM 5.3 Flash, Codestral, MiniMax M2.7, DeepSeek V4 Flash, Mistral Nemo | turbo pool, about 30 a minute, a daily token quota per IP (a free token from token.llm7.io raises it) |
+| [OVHcloud AI Endpoints](https://endpoints.ai.cloud.ovh.net) | gpt-oss 120B and 20B, Qwen 3.8 27B, Llama 3.3 70B, Mistral Small 3.2, Qwen 3.5 397B | 2 requests a minute per model per IP, EU hosted |
+| [Kilo Gateway](https://kilo.ai) | kilo-auto/free (preferred), Nemotron 3 Ultra and Lightning, openrouter/free, Cohere North Mini Code; Nemotron Nano Omni and Super VL for images | about 200 requests an hour per IP, free models only |
+| [Pollinations](https://pollinations.ai) | openai-fast | one request at a time with a 30 second gap; used rarely, as a last resort |
+| [BlockRun](https://blockrun.ai) | Nemotron 3.5 Lightning | limits not published; AuteurFrame keeps to a few requests a minute |
+
+**Vision.** When the critic reviews rendered frames, Auteur-Free sends the contact sheet only to models that can read
+images: Qwen2.5-VL 72B on OVHcloud and Nemotron Nano Omni or Super VL on Kilo.
+
+Thank you to LLM7.io, OVHcloud, Kilo, Pollinations and BlockRun for offering these models openly.
+
+> **Please read.** Auteur-Free sends your prompt (the scene description and the layers you selected) to these third-party
+> services. Some of them may log prompts, and Kilo states that prompts may be logged upstream. Do not use Auteur-Free for
+> private or confidential material; connect your own model instead. These services are run by their providers, not by
+> AuteurFrame: the model list, limits and availability are **subject to change by the providers at any time**, and a
+> service may slow down or stop answering without notice.
+
+Turn Auteur-Free off under **Models → Auteur-Free**, or set `AUTEUR_FREE_POOL=0`. Once you connect a model of your own,
+Auteur-Free is only used when you pick it. The same card shows which free models are ready right now.
 
 ## Make your first film
 
@@ -283,17 +334,42 @@ switched off per connection. With no model connected, the house director and all
 The **Swarm** panel streams every agent's status and thinking. Scenes appear on the timeline as they are written, the
 master appears under **Master** when the editor finishes, and the export menu downloads the film, poster and SRT.
 
+**Prefer to build it yourself?** Choose **Blank project** on the start page. Pick a name, format, look, frame rate and
+how many blank scenes you want, and the studio opens empty. Add characters, scenery, text and effects from the library,
+animate them by hand or ask the agent, and add, remove or resize scenes on the timeline.
+
+**Workspaces.** Group projects with **Workspaces** in the start page sidebar: create, rename or delete one (its projects
+are kept), move a project with the folder button on its tile, and new projects go into the workspace you have open.
+
+### When you edit subtitle timing
+
+Scenes planned from a subtitle file remember which captions they cover. If you move, split, merge, add or delete a
+caption afterwards:
+
+- **Captions** always move with your edit, including word-level karaoke timing.
+- **Scenes** stay where they are by default, and the timeline puts a warning on any scene whose first caption no longer
+  lines up with its cut. Right-click a scene and choose **Re-flow scenes to captions** to re-time every cut in one step.
+- Switch on **Scenes follow captions** in the **Captions** panel and the scene cuts move automatically with every caption
+  edit. Each re-flow is one undo step.
+- **Check sync** still renders the first and last frame of every caption and reports anything off by even one frame.
+
 ## Working in the studio
 
 | Area | What you can do |
 |---|---|
-| **Stage** | Pause on any frame, click an element to select it, drag to move, use the corner handles to scale and the top knob to rotate. Drop media straight onto the stage. |
-| **Timeline** | Drag a scene's right edge to retime it, drag captions and layers, split at the playhead with `S`, jump with `J` and `L`, play with `Space`. |
+| **Stage** | Pause on any frame, click an element to select it, drag to move, use the corner handles to scale and the top knob to rotate. `Shift` or `Ctrl` click selects several layers. Drop media straight onto the stage. |
+| **Timeline** | A multi-track editor: every stacking level is its own video track (V1 is the back, where scenery sits), with voice, score and stackable audio tracks below. Drag clips sideways to retime and up or down to change tracks; drag the top edge to make the timeline taller. Right-click a scene or the scene track for **New scene before, after or here…**: give it a name and a duration (and optionally describe it for the agent), then drag its right edge to make it shorter or longer. Split at the playhead with `S`, jump with `J` and `L`, play with `Space`. |
+| **Animate with the agent** | Select one or more layers and describe the motion: "the kid runs to the dog, they both jump". The animator changes only those layers and can set up a follow camera. Quick commands (faster, slower, bouncier, fade in, float, stagger 0.2s) apply instantly without a model. Results arrive as a draft you play, then **Apply** or **Discard**. |
+| **Layers** | Every layer of the scene with its thumbnail: rename, hide, lock, reorder, delete, or make the camera follow it. |
+| **Follow camera** | A game-style camera that locks onto a character or any layer, with zoom, smoothing (lag), look-ahead, framing offset and hand-offs between targets. Set it under **Look → Camera** or from the Layers panel. |
+| **Intros and outros** | 16 title designs (neon flicker, line draw, retro 80s, glitch, countdown, terminal, cinematic, end card and more) added as an opening or closing scene, or laid over a scene. |
 | **Right-click** | On a scene: split, duplicate, reorder, change the transition, lock, render this scene, **Improve with the agent**, **Extend the story from here** or **Replicate with agent**. On audio: split, trim, mute or remove. |
 | **Inspector** | **Swarm** (agents and render farm), **Scene** (title, narration, timing, archetype data), **Layer**, **Look** (film and scene colour grade, scene camera keyframes, audio master), **Code** (edit the composition and apply with `Ctrl+S`), **Direct** (chat with the scene's animator) and **QA** (the critic's notes). |
 | **Agent cursors** | While the swarm works, each agent's pointer animates over the timeline clip it is building, with its name and current task. |
 | **Media** | Search photos, vectors, footage, sound effects and music from open libraries with no keys, then drag results onto the stage or timeline. |
-| **Components** | Add any character, animal, set, prop, 3D model or library component by click or drag. The Layer tab shows a settings form built from the component's own schema. |
+| **Library** | A thumbnail library: 36 cartoon characters, 26 anime characters, stick figures, 13 animals, 55 cartoon sets, 25 anime sets, about 100 props, 3D models and 24 effects (light leak, film grain, VHS, glitch, RGB split, old film, light rays, confetti, rain, lens flare, camera shake, zoom punch, letterbox and more). Click or drag onto the stage. |
+| **Actions** | Characters get an action lane in the Layer tab: walk, run, wave, talk, jump and their other moves are blocks you drag, stretch and edit, with walk targets, directions and facial expressions. |
+| **Text** | 30 text styles and 18 text entrances (stomp, block reveal, bungee, tumble, flicker, scrapbook, count-up and more) with designs such as 3D extrude, retro, chrome, sticker and glitch. |
 | **Keyframes** | Every user layer can move, scale, rotate and fade on keyframes with per-key easing (linear, in, out, in-out, back, bounce, hold). Add a key at the playhead, apply one of 14 motion presets, or switch on **Record** and drag on the stage to keyframe by hand. |
 | **Revisions** | Every change is versioned. Roll back any scene or the whole project. |
 
@@ -620,7 +696,10 @@ Contributions are welcome: templates, skills, components, fixes and documentatio
 AuteurFrame builds on excellent open-source work: GSAP, three.js, d3, PixiJS, p5.js, Matter.js, Lottie, KaTeX, rough.js,
 MapLibre GL, Preact and htm, Lucide icons, Fontsource fonts, Puppeteer, FastAPI, edge-tts, MediaPipe and ffmpeg-skill.
 Open media comes from Openverse, Wikimedia Commons, NASA, the Internet Archive, Freesound and OpenStreetMap; attribution
-is stored with every asset you collect.
+is stored with every asset you collect. Auteur-Free runs on models offered openly by [LLM7.io](https://llm7.io),
+[OVHcloud AI Endpoints](https://endpoints.ai.cloud.ovh.net), [Kilo Gateway](https://kilo.ai),
+[Pollinations](https://pollinations.ai) and [BlockRun](https://blockrun.ai); their services, models and limits belong to
+them and may change.
 
 The stickman rig adapts techniques from [stickman-video-director](https://github.com/kaomei/stickman-video-director) (MIT), and the
 editor data model draws on ideas from [WeftCut](https://github.com/WeftCut/WeftCut) (MIT). See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

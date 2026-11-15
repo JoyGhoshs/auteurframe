@@ -193,7 +193,7 @@ function LensDesigner({ project, scene, onPatch, onScenePatch }) {
   </div>`;
 }
 
-export function CaptionsPanel({ project, onPatch, onSubtitles, onCueEdit, onCheckSync, syncing, selectedCue, onSeek }) {
+export function CaptionsPanel({ project, onPatch, onSubtitles, onCueEdit, onCheckSync, syncing, selectedCue, onSeek, onReflow }) {
   const cap = project.captions || {};
   const [paste, setPaste] = useState('');
   const input = useRef(null);
@@ -204,6 +204,10 @@ export function CaptionsPanel({ project, onPatch, onSubtitles, onCueEdit, onChec
   return html`<div>
     <div class="row"><button class=${'switch ' + (cap.enabled !== false ? 'on' : '')} onClick=${() => set({ enabled: cap.enabled === false })}></button><b>Burned-in captions</b></div>
     <div class="row" style=${{ marginTop: '8px' }}><button class=${'switch ' + (cap.from_narration ? 'on' : '')} onClick=${() => set({ from_narration: !cap.from_narration })}></button><span style=${{ fontSize: '12px' }}>Caption the narration when there is no subtitle file</span></div>
+    ${(project.scenes || []).some((s) => (s.cue_ids || []).length) ? html`<div class="reflow-box">
+      <div class="row"><button class=${'switch ' + (cap.link_scenes ? 'on' : '')} onClick=${() => set({ link_scenes: !cap.link_scenes })}></button><b style=${{ fontSize: '12px' }}>Scenes follow captions</b></div>
+      <div class="muted" style=${{ fontSize: '11.5px', margin: '4px 0 6px' }}>${cap.link_scenes ? 'When you move, split, merge, add or delete a caption, the scene cuts move with it.' : 'Off: moving a caption leaves the scenes where they are, and the timeline flags any scene whose caption moved.'}</div>
+      <button class="btn sm" onClick=${onReflow}><${Icon} name="align-horizontal-distribute-center" size=${12} />Re-flow scenes now</button></div>` : null}
     <div class="section-title" style=${{ margin: '14px 0 6px' }}>Style</div>
     <div class="seg" style=${{ flexWrap: 'wrap' }}>${[['', 'Auto'], ['pop', 'Pop'], ['karaoke', 'Karaoke'], ['boxed', 'Boxed'], ['minimal', 'Minimal'], ['typewriter', 'Type']].map(([v, l]) => html`<button class=${(cap.style || '') === v ? 'on' : ''} onClick=${() => set({ style: v || null })}>${l}</button>`)}</div>
     <div class="kv" style=${{ marginTop: '12px' }}>

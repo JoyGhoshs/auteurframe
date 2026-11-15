@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import contextvars
 import json
+import os
 import random
 import re
 import time
@@ -220,6 +221,8 @@ def write_settings(data: dict[str, Any]) -> dict[str, Any]:
     for key in ("routing", "temperature", "max_tokens", "vision_critic"):
         if key in data:
             current[key] = data[key]
+    if "free_pool" in data and data["free_pool"] is not None:
+        current["free_pool"] = bool(data["free_pool"])
     config.SETTINGS.write_text(json.dumps(current, indent=1), encoding="utf-8")
     return public_settings()
 
@@ -240,6 +243,7 @@ def public_settings() -> dict[str, Any]:
         conns.append(item)
     return {"connections": conns, "routing": data["routing"], "temperature": data["temperature"], "max_tokens": data["max_tokens"],
             "vision_critic": data["vision_critic"], "presets": PRESETS, "roles": ROLES, "enabled": bool(_usable(data)),
+            "free_pool": data.get("free_pool", True) is not False, "free_active": free_enabled(data),
             "stock": {k: mask(v) for k, v in data.get("stock", {}).items()},
             "media": {k: (mask(v) if k in MEDIA_SECRETS else v) for k, v in data["media"].items()} | {f"has_{k}": bool(data["media"].get(k)) for k in MEDIA_SECRETS}}
 
@@ -298,6 +302,128 @@ def _extract_json(text: str) -> Any:
     raise ValueError("no json in model reply")
 
 
+THINK_OPEN = ("<think>", "<thinking>")
+THINK_CLOSE = ("</think>", "</thinking>")
+INLINE_THINKERS: set[str] = set()
+NO_TOOLS: set[str] = set()
+JSON_BUDGET_CAP = 16000
+CALL: contextvars.ContextVar[dict[str, Any] | None] = contextvars.ContextVar("llm_call", default=None)
+WRAPPERS = ("result", "data", "json", "output", "answer", "response", "value", "arguments")
+
+
+THINK_OFF_LADDER = ({"reasoning_effort": "none"}, {"thinking": {"type": "disabled"}}, {"chat_template_kwargs": {"enable_thinking": False}}, {"reasoning": {"effort": "none"}})
+THINK_OFF_WORKS: dict[str, dict[str, Any]] = {}
+TOOL_ERROR = re.compile(r"tool|function", re.I)
+
+
+class ThinkOverrun(Exception):
+    pass
+
+
+class FieldRejected(Exception):
+    pass
+
+
+def conn_key(conn: dict[str, Any]) -> str:
+    return f"{conn.get('id')}:{conn.get('model')}"
+
+
+def tool_args(raw: str) -> Any:
+    raw = (raw or "").strip()
+    if not raw:
+        return None
+    try:
+        value = json.loads(raw)
+    except json.JSONDecodeError:
+        try:
+            value = _extract_json(raw)
+        except ValueError:
+            return None
+    for _ in range(2):
+        if isinstance(value, dict) and len(value) == 1:
+            key, inner = next(iter(value.items()))
+            if isinstance(inner, str) and inner.strip()[:1] in "{[":
+                try:
+                    value = json.loads(inner)
+                    continue
+                except json.JSONDecodeError:
+                    pass
+            if key in WRAPPERS and isinstance(inner, dict):
+                value = inner
+                continue
+        break
+    return value if value not in ({}, [], None) else None
+
+
+def free_objects(schema: Any) -> bool:
+    if isinstance(schema, dict):
+        if schema.get("type") == "object" and not schema.get("properties"):
+            return True
+        return any(free_objects(v) for v in schema.values())
+    if isinstance(schema, list):
+        return any(free_objects(v) for v in schema)
+    return False
+
+
+def gemini_schema(schema: Any) -> Any:
+    if isinstance(schema, dict):
+        out = {}
+        for key, value in schema.items():
+            if key == "additionalProperties":
+                continue
+            out[key] = value.upper() if key == "type" and isinstance(value, str) else gemini_schema(value)
+        return out
+    if isinstance(schema, list):
+        return [gemini_schema(v) for v in schema]
+    return schema
+
+
+def strip_think(text: str) -> str:
+    text = re.sub(r"(?s)<think(?:ing)?>.*?</think(?:ing)?>", "", text or "")
+    close = max(text.rfind(tag) + len(tag) if tag in text else -1 for tag in THINK_CLOSE)
+    if close >= 0:
+        text = text[close:]
+    opens = [text.find(tag) for tag in THINK_OPEN if tag in text]
+    if opens:
+        text = text[:min(opens)]
+    return text.strip()
+
+
+class ThinkSplit:
+    def __init__(self) -> None:
+        self.thinking = False
+        self.pending = ""
+        self.seen = False
+
+    def feed(self, piece: str) -> list[tuple[str, str]]:
+        text = self.pending + piece
+        self.pending = ""
+        out: list[tuple[str, str]] = []
+        while text:
+            tags = THINK_CLOSE if self.thinking else THINK_OPEN
+            hits = [(text.find(tag), tag) for tag in tags if tag in text]
+            if hits:
+                at, tag = min(hits)
+                if at:
+                    out.append(("think" if self.thinking else "text", text[:at]))
+                self.thinking = not self.thinking
+                self.seen = True
+                text = text[at + len(tag):]
+                continue
+            keep = max((n for tag in tags for n in range(1, len(tag)) if text.endswith(tag[:n])), default=0)
+            if keep:
+                self.pending = text[-keep:]
+                text = text[:-keep]
+            if text:
+                out.append(("think" if self.thinking else "text", text))
+            break
+        return out
+
+    def flush(self) -> list[tuple[str, str]]:
+        text, self.pending = self.pending, ""
+        return [("think" if self.thinking else "text", text)] if text else []
+
+
 def extract_code(text: str, lang: str = "html") -> str:
     text = re.sub(r"(?s)<think>.*?</think>", "", text or "")
     blocks = [b.strip() for b in re.findall(r"```(?:html|HTML|xml)?[ \t]*\n(.*?)```", text, re.S)]
@@ -329,11 +455,17 @@ def thinking_mode(conn: dict[str, Any], force: str | None = None) -> str:
 
 def thinking_fields(conn: dict[str, Any], mode: str) -> dict[str, Any]:
     model = (conn.get("model") or "").lower()
+    if mode == "off" and conn.get("_disable_fields") is not None:
+        return conn["_disable_fields"]
+    if mode == "off" and CALL.get() is not None and conn_key(conn) in THINK_OFF_WORKS and not conn.get("_no_thinking_field"):
+        return THINK_OFF_WORKS[conn_key(conn)]
     if conn.get("_no_thinking_field") or mode == "auto":
         return {}
     base = (conn.get("base_url") or "").lower()
     if conn.get("provider") in ("openrouter", "kilo") or "openrouter.ai" in base or "kilo.ai" in base:
         return {"reasoning": {"effort": "none"}} if mode == "off" else {"reasoning": {"enabled": True}}
+    if "minimax" in model:
+        return {"thinking": {"type": "disabled"}} if mode == "off" else {}
     if any(k in model for k in TEMPLATE_THINKING):
         return {"chat_template_kwargs": {"enable_thinking": mode == "on"}}
     if "deepseek" in model or conn.get("provider") == "deepseek":
@@ -341,11 +473,45 @@ def thinking_fields(conn: dict[str, Any], mode: str) -> dict[str, Any]:
     return {}
 
 
+def think_off_ladder(conn: dict[str, Any]) -> list[dict[str, Any]]:
+    first = thinking_fields(dict(conn, _no_thinking_field=False), "off")
+    return ([first] if first else []) + [f for f in THINK_OFF_LADDER if f != first]
+
+
+FREE_OK: contextvars.ContextVar[bool] = contextvars.ContextVar("llm_free_ok", default=False)
+FREE_FORCE: contextvars.ContextVar[bool] = contextvars.ContextVar("llm_free_force", default=False)
+FREE_PATIENCE: contextvars.ContextVar[float] = contextvars.ContextVar("llm_free_patience", default=3.0)
+CODE_ROLES = ("animator", "writer")
+
+
+def free_allowed(settings: dict[str, Any] | None = None) -> bool:
+    if os.environ.get("AUTEUR_FREE_POOL") == "0":
+        return False
+    data = settings if settings is not None else read_settings()
+    return data.get("free_pool", True) is not False
+
+
+def free_enabled(settings: dict[str, Any] | None = None) -> bool:
+    data = settings if settings is not None else read_settings()
+    return free_allowed(data) and not _usable(data)
+
+
+def free_available() -> bool:
+    return free_enabled()
+
+
 class LLM:
-    def __init__(self, role: str = "director") -> None:
+    def __init__(self, role: str = "director", task: str | None = None) -> None:
         self.role = role
         self.settings = read_settings()
         self.chain = self._chain()
+        self.task = task or ("code" if role in CODE_ROLES else "json")
+        self.free = False
+        forced = FREE_FORCE.get() and free_allowed(self.settings)
+        if forced or (not self.chain and FREE_OK.get() and free_enabled(self.settings)):
+            from . import freepool
+            self.free = True
+            self.chain = freepool.chain(self.task)
         self.calls = 0
         self.tokens_in = 0
         self.tokens_out = 0
@@ -379,12 +545,17 @@ class LLM:
     def label(self) -> str:
         if not self.chain:
             return "house"
+        if self.free:
+            return "Auteur-Free"
         return f"{self.chain[0].get('provider')}:{self.chain[0].get('model')}"
 
     @property
     def vision(self) -> bool:
         if not self.chain:
             return False
+        if self.free:
+            from . import freepool
+            return any("vision" in m["tasks"] for m in freepool.MODELS)
         conn = self.chain[0]
         if "vision" in conn and conn["vision"] is not None:
             return bool(conn["vision"])
@@ -403,6 +574,8 @@ class LLM:
             raise ProviderError("no model connected")
         msgs = [{"role": m.get("role", "user"), "text": str(m.get("text", m.get("content", ""))), "images": list(m.get("images") or [])} for m in messages]
         errors = []
+        if self.free:
+            return await self._chat_free(system, msgs, temperature, max_tokens, on_token)
         for conn in self.chain:
             delays = list(RETRY_DELAYS)
             limited = 0
@@ -448,6 +621,42 @@ class LLM:
                     lim.release(ok)
         raise ProviderError(" | ".join(errors))
 
+    async def _chat_free(self, system: str, msgs: list[dict[str, Any]], temperature: float | None, max_tokens: int | None, on_token) -> str:
+        from . import freepool
+        errors: list[str] = []
+        tried = 0
+        task = "vision" if any(m.get("images") for m in msgs) else self.task
+        deadline = time.time() + max(3.0, FREE_PATIENCE.get())
+        while True:
+            for conn in freepool.chain(task):
+                if tried >= 6:
+                    break
+                if not freepool.begin(conn):
+                    continue
+                tried += 1
+                self.chain = [conn] + [c for c in self.chain if c.get("id") != conn["id"]]
+                started = time.time()
+                try:
+                    text = await self._stream(conn, system, msgs, temperature, max_tokens, on_token)
+                    if not (text or "").strip() and not CALL.get():
+                        raise ProviderError("empty reply")
+                    self.calls += 1
+                    self.last_ms = int((time.time() - started) * 1000)
+                    freepool.end(conn, True, ms=self.last_ms)
+                    return text
+                except (ProviderError, httpx.HTTPError, KeyError, ValueError) as error:
+                    status = getattr(error, "status", None)
+                    freepool.end(conn, False, status=status, retry_after=getattr(error, "retry_after", None))
+                    errors.append(f"{conn['free_provider']}/{conn['model']}: {str(error)[:120]}")
+                    self.retries += 1
+                    self._notify(f"Auteur-Free: {conn['free_provider']}/{conn['model']} {'is busy' if status == 429 else 'failed'}; trying another free model")
+            if tried or time.time() >= deadline:
+                break
+            await asyncio.sleep(min(5.0, max(1.0, deadline - time.time())))
+        if not tried:
+            raise ProviderError("every Auteur-Free model is at its rate limit right now; try again in a minute or connect your own model under Models")
+        raise ProviderError("Auteur-Free could not answer: " + " | ".join(errors[-4:]))
+
     def _notify(self, msg: str) -> None:
         hook = self.on_retry or NOTIFY.get()
         if hook:
@@ -456,38 +665,132 @@ class LLM:
             except Exception:
                 pass
 
-    async def json(self, system: str, user: str, *, retries: int = 2, on_token=None, temperature: float | None = None, max_tokens: int | None = None) -> Any:
+    async def json(self, system: str, user: str, *, retries: int = 2, on_token=None, temperature: float | None = None, max_tokens: int | None = None,
+                   schema: dict[str, Any] | None = None, tool: str = "submit", images: list[str] | None = None) -> Any:
         prompt = user
         last: Exception | None = None
+        budget = max_tokens or self.settings.get("max_tokens", 8000)
+        cap = max(3000, int(budget * 1.5))
+        if self.chain and conn_key(self.chain[0]) in INLINE_THINKERS:
+            budget = max(budget, min(JSON_BUDGET_CAP, budget + 6000))
+        spec = {"name": tool, "description": "Submit your finished answer. Put every field the instructions ask for into the arguments.",
+                "parameters": schema or {"type": "object", "properties": {}}}
+        use_tools = bool(self.chain)
         for attempt in range(retries + 1):
+            call = {"tool": spec if use_tools and conn_key(self.chain[0]) not in NO_TOOLS else None, "cap": cap, "args": None,
+                    "off": conn_key(self.chain[0]) in THINK_OFF_WORKS if self.chain else False}
+            token = CALL.set(call)
             try:
-                raw = await self.complete(system, prompt, on_token=on_token, temperature=temperature, max_tokens=max_tokens)
+                raw = await self.complete(system, prompt, images=images, on_token=on_token, temperature=temperature, max_tokens=budget)
+                if call["args"] is not None:
+                    parsed = tool_args(call["args"])
+                    if parsed is not None:
+                        return parsed
+                if call["tool"]:
+                    use_tools = False
+                if str(self.last_finish).lower() in ("length", "max_tokens"):
+                    try:
+                        whole = json.loads(raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip())
+                        return whole
+                    except json.JSONDecodeError:
+                        pass
+                    budget = max(budget, min(JSON_BUDGET_CAP, int(budget * 2.5)))
+                    prompt = user + "\n\nYour previous reply hit the length limit before the JSON was complete. Keep your reasoning short and reply with ONLY the JSON value."
+                    raise ValueError(f"reply cut off at the token limit ({len(raw)} chars)")
                 return _extract_json(raw)
             except (ProviderError, ValueError) as error:
                 last = error
                 if isinstance(error, ProviderError) and "no model" in str(error):
                     raise
-                prompt = user + "\n\nYour previous reply was not valid JSON. Reply with ONLY one valid JSON value, no prose, no code fences."
+                if call["tool"]:
+                    use_tools = False
+                if "cut off" not in str(error):
+                    prompt = user + "\n\nYour previous reply was not valid JSON. Reply with ONLY one valid JSON value, no prose, no code fences."
                 await asyncio.sleep(0.5 * (attempt + 1))
+            finally:
+                CALL.reset(token)
         raise ProviderError(f"json failed: {last}")
 
     async def _stream(self, conn, system, msgs, temperature, max_tokens, on_token) -> str:
         temp = self.settings.get("temperature", 0.8) if temperature is None else temperature
         limit = max_tokens or self.settings.get("max_tokens", 8000)
-        timeout = httpx.Timeout(300.0, connect=20.0)
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            kind = PRESETS.get(conn.get("provider", "custom"), PRESETS["custom"])["kind"]
-            if kind == "anthropic":
-                return await self._anthropic(client, conn, system, msgs, temp, limit, on_token)
-            if kind == "gemini":
-                return await self._gemini(client, conn, system, msgs, temp, limit, on_token)
-            return await self._openai(client, conn, system, msgs, temp, limit, on_token)
+        timeout = httpx.Timeout(150.0, connect=10.0) if conn.get("free_pool") else httpx.Timeout(300.0, connect=20.0)
+        call = CALL.get()
+        saved = self.force_thinking
+        ladder: list[dict[str, Any]] | None = None
+        step = 0
+        kind = PRESETS.get(conn.get("provider", "custom"), PRESETS["custom"])["kind"]
+        if call and call.get("off") and conn_key(conn) in THINK_OFF_WORKS:
+            self.force_thinking = "off"
+        try:
+            while True:
+                split = ThinkSplit()
+                seen = {"inline": 0, "all": 0}
+                cap = call.get("cap") if call else None
+
+                def route(k0: str, text: str) -> None:
+                    parts = [(k0, text)] if k0 != "text" else split.feed(text)
+                    for k, t in parts:
+                        if k == "think":
+                            seen["all"] += len(t)
+                            if k0 == "text":
+                                seen["inline"] += len(t)
+                        self._emit(on_token, k, t)
+                    if cap and seen["all"] > cap:
+                        raise ThinkOverrun(seen["all"])
+
+                try:
+                    async with httpx.AsyncClient(timeout=timeout) as client:
+                        if kind == "anthropic":
+                            raw = await self._anthropic(client, conn, system, msgs, temp, limit, route)
+                        elif kind == "gemini":
+                            raw = await self._gemini(client, conn, system, msgs, temp, limit, route)
+                        else:
+                            raw = await self._openai(client, conn, system, msgs, temp, limit, route)
+                except ThinkOverrun as overrun:
+                    if thinking_mode(conn, "off") != "off":
+                        raise ProviderError(f"the model kept thinking past {overrun.args[0]} chars without answering")
+                    if ladder is None:
+                        ladder = think_off_ladder(conn) if kind == "openai" else []
+                        self._notify(f"thinking ran past {overrun.args[0]} chars without an answer; asking again with thinking off")
+                        self._emit(on_token, "think", "\n[thinking cut off; asking again with thinking off]\n")
+                    self.force_thinking = "off"
+                    if step < len(ladder):
+                        conn["_disable_fields"] = ladder[step]
+                        step += 1
+                    else:
+                        conn.pop("_disable_fields", None)
+                        call["cap"] = None
+                    continue
+                except FieldRejected:
+                    if ladder is not None and step < len(ladder):
+                        conn["_disable_fields"] = ladder[step]
+                        step += 1
+                    else:
+                        conn.pop("_disable_fields", None)
+                        call["cap"] = None
+                    continue
+                break
+            if conn.get("_disable_fields") is not None:
+                THINK_OFF_WORKS[conn_key(conn)] = conn["_disable_fields"]
+        finally:
+            self.force_thinking = saved
+            conn.pop("_disable_fields", None)
+        for k, t in split.flush():
+            self._emit(on_token, k, t)
+        if split.seen or any(tag in raw for tag in THINK_CLOSE):
+            INLINE_THINKERS.add(conn_key(conn))
+            self.last_reasoning_chars = (self.last_reasoning_chars or 0) + seen["inline"]
+            return strip_think(raw)
+        return raw
 
     @staticmethod
     def _emit(on_token, kind: str, text: str) -> None:
         if on_token and text:
             try:
                 on_token(kind, text)
+            except ThinkOverrun:
+                raise
             except Exception:
                 pass
 
@@ -523,14 +826,32 @@ class LLM:
             body["temperature"] = temp
         extra_fields = thinking_fields(conn, thinking_mode(conn, self.force_thinking))
         body.update(extra_fields)
-        url = conn["base_url"].rstrip("/") + "/chat/completions"
+        call = CALL.get()
+        tool = call.get("tool") if call and conn_key(conn) not in NO_TOOLS and not conn.get("no_tools") else None
+        if tool:
+            body["tools"] = [{"type": "function", "function": tool}]
+            body["tool_choice"] = {"type": "function", "function": {"name": tool["name"]}}
+        if conn.get("free_pool"):
+            headers["User-Agent"] = "AuteurFrame (open-source motion studio; Auteur-Free)"
+            if "max_tokens" in body and conn.get("max_out"):
+                body["max_tokens"] = min(int(body["max_tokens"]), int(conn["max_out"]))
+        url = conn.get("endpoint") or conn["base_url"].rstrip("/") + "/chat/completions"
         out = []
         thoughts = []
+        calls: dict[int, dict[str, str]] = {}
         self.last_finish = ""
         async with client.stream("POST", url, headers=headers, json=body) as response:
             if response.status_code >= 400:
                 detail = (await response.aread()).decode(errors="ignore")[:300]
+                if tool and response.status_code in (400, 404, 422) and TOOL_ERROR.search(detail):
+                    self._notify(f"provider rejected the tool call ({response.status_code}: {detail[:160]}); using plain JSON")
+                    NO_TOOLS.add(conn_key(conn))
+                    call["tool"] = None
+                    return await self._openai(client, conn, system, msgs, temp, limit, on_token)
                 if extra_fields and response.status_code in (400, 422):
+                    if conn.get("_disable_fields") is not None:
+                        raise FieldRejected(detail)
+                    self._notify(f"provider rejected the thinking setting ({response.status_code}: {detail[:160]}); sending without it")
                     conn["_no_thinking_field"] = True
                     return await self._openai(client, conn, system, msgs, temp, limit, on_token)
                 raise self._fail(response, detail)
@@ -558,10 +879,22 @@ class LLM:
                     if piece:
                         out.append(piece)
                         self._emit(on_token, "text", piece)
+                    for tc in delta.get("tool_calls") or []:
+                        slot = calls.setdefault(int(tc.get("index") or 0), {"name": "", "args": ""})
+                        fn = tc.get("function") or {}
+                        slot["name"] += fn.get("name") or ""
+                        piece = fn.get("arguments") or ""
+                        if isinstance(piece, dict):
+                            piece = json.dumps(piece)
+                        slot["args"] += piece
+                        self._emit(on_token, "tool", piece)
                 usage = chunk.get("usage") or {}
                 self.tokens_in += usage.get("prompt_tokens", 0) or 0
                 self.tokens_out += usage.get("completion_tokens", 0) or 0
         self.last_reasoning_chars = sum(len(t) for t in thoughts)
+        if tool and calls:
+            pick = next((c for c in calls.values() if c["name"] == tool["name"]), next(iter(calls.values())))
+            call["args"] = pick["args"]
         return "".join(out)
 
     async def _anthropic(self, client, conn, system, msgs, temp, limit, on_token) -> str:
@@ -573,12 +906,24 @@ class LLM:
                 content = [{"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": img}} for img in m["images"]] + [{"type": "text", "text": m["text"]}]
             messages.append({"role": m["role"], "content": content})
         body = {"model": conn["model"], "system": system, "max_tokens": limit, "temperature": min(1.0, temp), "stream": True, "messages": messages}
+        call = CALL.get()
+        tool = call.get("tool") if call else None
+        if tool:
+            body["tools"] = [{"name": tool["name"], "description": tool["description"], "input_schema": tool["parameters"]}]
+            body["tool_choice"] = {"type": "tool", "name": tool["name"]}
         url = conn["base_url"].rstrip("/") + "/v1/messages"
         out = []
+        args: list[str] = []
         self.last_finish = ""
         async with client.stream("POST", url, headers=headers, json=body) as response:
             if response.status_code >= 400:
-                raise self._fail(response, (await response.aread()).decode(errors="ignore")[:300])
+                detail = (await response.aread()).decode(errors="ignore")[:300]
+                if tool and response.status_code in (400, 404, 422) and TOOL_ERROR.search(detail):
+                    self._notify(f"provider rejected the tool call ({response.status_code}: {detail[:160]}); using plain JSON")
+                    NO_TOOLS.add(conn_key(conn))
+                    call["tool"] = None
+                    return await self._anthropic(client, conn, system, msgs, temp, limit, on_token)
+                raise self._fail(response, detail)
             async for line in response.aiter_lines():
                 if not line.startswith("data:"):
                     continue
@@ -594,6 +939,9 @@ class LLM:
                         self._emit(on_token, "text", delta.get("text", ""))
                     elif delta.get("type") == "thinking_delta":
                         self._emit(on_token, "think", delta.get("thinking", ""))
+                    elif delta.get("type") == "input_json_delta":
+                        args.append(delta.get("partial_json", ""))
+                        self._emit(on_token, "tool", delta.get("partial_json", ""))
                 elif kind == "message_delta":
                     self.tokens_out += (event.get("usage") or {}).get("output_tokens", 0) or 0
                     self.last_finish = (event.get("delta") or {}).get("stop_reason") or self.last_finish
@@ -604,6 +952,8 @@ class LLM:
                     if "overloaded" in str(event.get("error")).lower():
                         err.status = 529
                     raise err
+        if tool and args:
+            call["args"] = "".join(args)
         return "".join(out)
 
     async def _gemini(self, client, conn, system, msgs, temp, limit, on_token) -> str:
@@ -614,11 +964,25 @@ class LLM:
                 parts.append({"inlineData": {"mimeType": "image/jpeg", "data": img}})
             contents.append({"role": "model" if m["role"] == "assistant" else "user", "parts": parts})
         body = {"systemInstruction": {"parts": [{"text": system}]}, "contents": contents, "generationConfig": {"temperature": temp, "maxOutputTokens": limit}}
+        call = CALL.get()
+        tool = call.get("tool") if call else None
+        if tool and free_objects(tool["parameters"]):
+            tool = None
+        if tool:
+            body["tools"] = [{"functionDeclarations": [{"name": tool["name"], "description": tool["description"], "parameters": gemini_schema(tool["parameters"])}]}]
+            body["toolConfig"] = {"functionCallingConfig": {"mode": "ANY", "allowedFunctionNames": [tool["name"]]}}
         url = f"{conn['base_url'].rstrip('/')}/models/{conn['model']}:streamGenerateContent?alt=sse&key={conn.get('api_key', '')}"
         out = []
+        self.last_finish = ""
         async with client.stream("POST", url, json=body) as response:
             if response.status_code >= 400:
-                raise self._fail(response, (await response.aread()).decode(errors="ignore")[:300])
+                detail = (await response.aread()).decode(errors="ignore")[:300]
+                if tool and response.status_code in (400, 404, 422) and TOOL_ERROR.search(detail):
+                    self._notify(f"provider rejected the tool call ({response.status_code}: {detail[:160]}); using plain JSON")
+                    NO_TOOLS.add(conn_key(conn))
+                    call["tool"] = None
+                    return await self._gemini(client, conn, system, msgs, temp, limit, on_token)
+                raise self._fail(response, detail)
             async for line in response.aiter_lines():
                 if not line.startswith("data:"):
                     continue
@@ -627,7 +991,13 @@ class LLM:
                 except json.JSONDecodeError:
                     continue
                 for cand in chunk.get("candidates", []):
+                    if cand.get("finishReason"):
+                        self.last_finish = cand["finishReason"]
                     for part in (cand.get("content") or {}).get("parts", []):
+                        if tool and part.get("functionCall"):
+                            call["args"] = json.dumps(part["functionCall"].get("args") or {})
+                            self._emit(on_token, "tool", call["args"])
+                            continue
                         text = part.get("text", "")
                         if not text:
                             continue

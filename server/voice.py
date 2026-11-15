@@ -12,7 +12,7 @@ from typing import Any
 import httpx
 import numpy as np
 
-from . import audio, config
+from . import audio, config, schemas
 from . import llm as llmmod
 from .store import project_dir, store
 
@@ -148,7 +148,7 @@ async def choose(project: dict[str, Any], role: str = "narrator", brief: str = "
                   "nature and wellness, bright and energetic for tech and shorts, young or old to match a character). The voice must be able to speak the language. "
                   'Return JSON {"voice": "<id from the list>", "why": "short reason"}.')
         try:
-            data = await model.json("You are a casting director for voice-over. Return JSON only.", prompt, max_tokens=600)
+            data = await model.json("You are a casting director for voice-over. Return JSON only.", prompt, max_tokens=600, schema=schemas.VOICE, tool="submit_voice")
             if isinstance(data, dict) and any(v["id"] == data.get("voice") for v in options):
                 choice = {"voice": data["voice"], "why": str(data.get("why", ""))[:160]}
         except Exception:

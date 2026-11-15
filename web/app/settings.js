@@ -3,6 +3,28 @@ import { html, useState, useEffect, useRef, Icon, api, toast, Modal } from './li
 const LOGO = { anthropic: ['#D97757', 'A'], openai: ['#111', 'O'], google: ['#4285F4', 'G'], openrouter: ['#6467F2', 'R'], groq: ['#F55036', 'Q'], deepseek: ['#4D6BFE', 'D'], mistral: ['#FA520F', 'M'], xai: ['#000', 'X'], together: ['#0F6FFF', 'T'], ollama: ['#333', 'L'], lmstudio: ['#7C3AED', 'S'], custom: ['#64748B', 'C'] };
 const ROLE_INFO = { director: 'Plans the screenplay and timing', writer: 'Fits narration to subtitles', art: 'Extends the style bible', animator: 'Writes HTML/GSAP scene code (use your strongest coder)', critic: 'Reviews frames and probe reports (vision helps)', research: 'Plans queries and extracts facts (a fast model is fine)' };
 
+function FreePoolCard({ s, setS }) {
+  const [st, setSt] = useState(null);
+  useEffect(() => { api.get('/api/free/status').then(setSt).catch(() => null); }, [s.free_pool, s.free_active]);
+  const providers = st ? st.providers : {};
+  return html`<div class="card" style=${{ padding: '16px 18px', marginTop: '18px' }}>
+    <div class="row"><b>Auteur-Free</b><span class=${'chip ' + (s.free_active ? 'brand' : '')}>${s.free_active ? 'active' : s.free_pool ? 'standby (your model is connected)' : 'off'}</span><span class="spacer"></span>
+      <button class=${'switch ' + (s.free_pool ? 'on' : '')} title="Use public no-key models when no model is connected" onClick=${() => api.post('/api/settings', { free_pool: !s.free_pool }).then(setS)}></button></div>
+    <div class="muted" style=${{ fontSize: '12px', marginTop: '6px', lineHeight: 1.55 }}>
+      When no model is connected, small tasks (animating a selection, editing or planning one scene, replicating a scene) run on free public models that need no key.
+      Requests are spread across providers and models within each provider's published limits. Full films still need your own model.
+      <b> Your prompts go to these third-party services, and some may log them</b>, so do not use Auteur-Free for private material. Availability and limits are set by the providers and can change at any time.</div>
+    ${st ? html`<div class="free-grid">${Object.entries(providers).map(([k, p]) => {
+      const ms = st.models.filter((m) => m.provider === k);
+      const ready = ms.filter((m) => m.ready).length;
+      return html`<div class="free-prov" key=${k}><div class="row"><b>${p.label}</b><span class="spacer"></span><span class=${'chip ' + (ready ? 'ok' : 'warn')}>${ready}/${ms.length} ready</span></div>
+        <div class="muted" style=${{ fontSize: '11px' }}>${p.note}${p.logged ? ' ' : ''}</div>
+        <div class="muted mono" style=${{ fontSize: '10.5px', marginTop: '4px' }}>${ms.map((m) => m.model).join(' · ')}</div>
+        <a class="muted" style=${{ fontSize: '11px' }} href=${p.site} target="_blank" rel="noopener">${p.site.replace('https://', '')}</a></div>`;
+    })}</div>` : null}
+  </div>`;
+}
+
 function ConnEditor({ initial, presets, onSave, onClose }) {
   const [c, setC] = useState(initial || { provider: 'anthropic', label: '', base_url: '', api_key: '', model: '' });
   const [models, setModels] = useState([]);
@@ -91,6 +113,7 @@ export function Settings({ health }) {
         <span>Render farm</span><span>${health && health.renderer ? `${health.renderer.chrome} · ${health.renderer.max} parallel Chrome nodes` : 'starting'}</span>
       </div>
     </div>
+    <${FreePoolCard} s=${s} setS=${setS} />
     <div class="card" style=${{ padding: '16px 18px', marginTop: '18px' }}>
       <div class="row"><b>Stock media</b><span class="muted" style=${{ fontSize: '12px' }}>Openverse and Wikimedia Commons work without keys. Add keys for more photos and stock video.</span></div>
       <div class="kv" style=${{ gridTemplateColumns: '180px 1fr', marginTop: '10px' }}>

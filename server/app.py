@@ -113,7 +113,7 @@ async def favicon() -> Response:
 @app.get("/api/health")
 async def health() -> dict[str, Any]:
     state = await render.health()
-    return {"ok": True, "renderer": state, "llm": llm.has_llm(), "skills": len(library.all()), "version": updates.version(), "projects": len(store.list())}
+    return {"ok": True, "renderer": state, "llm": llm.has_llm(), "free": llm.free_available(), "free_allowed": llm.free_allowed(), "skills": len(library.all()), "version": updates.version(), "projects": len(store.list())}
 
 
 @app.get("/api/grades")
@@ -150,12 +150,33 @@ async def style_preview(style_id: str, aspect: str = "16:9", archetype: str = "k
     return HTMLResponse(compose.build_document(project, scene, "preview"))
 
 
+@app.get("/api/library/doc", response_class=HTMLResponse)
+async def library_doc(component: str, value: str = "") -> HTMLResponse:
+    from . import library
+    if not library.valid(component, value):
+        raise HTTPException(400, "bad library item")
+    return HTMLResponse(library.thumb_document(component, value), headers={"Cache-Control": "no-store"})
+
+
+@app.get("/api/library/thumb")
+async def library_thumb(component: str, value: str = "") -> FileResponse:
+    from . import library
+    if not library.valid(component, value):
+        raise HTTPException(400, "bad library item")
+    try:
+        path = await library.thumbnail(component, value)
+    except Exception as error:
+        raise HTTPException(502, f"thumbnail failed: {str(error)[:160]}")
+    return FileResponse(path, media_type="image/jpeg", headers={"Cache-Control": "public, max-age=604800"})
+
+
 class SettingsBody(BaseModel):
     connections: list[dict[str, Any]] | None = None
     routing: dict[str, Any] | None = None
     temperature: float | None = None
     max_tokens: int | None = None
     vision_critic: bool | None = None
+    free_pool: bool | None = None
     stock: dict[str, Any] | None = None
     media: dict[str, Any] | None = None
 
@@ -168,6 +189,12 @@ async def get_settings() -> dict[str, Any]:
 @app.post("/api/settings")
 async def post_settings(body: SettingsBody) -> dict[str, Any]:
     return llm.write_settings({k: v for k, v in body.model_dump().items() if v is not None})
+
+
+@app.get("/api/free/status")
+async def free_status() -> dict[str, Any]:
+    from . import freepool
+    return {"enabled": llm.free_available(), "switched_on": llm.read_settings().get("free_pool", True) is not False, **freepool.status()}
 
 
 @app.post("/api/settings/test")
@@ -189,6 +216,7 @@ class ProjectBody(BaseModel):
     fps: int = 30
     options: dict[str, Any] | None = None
     captions: dict[str, Any] | None = None
+    workspace: str | None = None
 
 
 @app.get("/api/projects")
@@ -204,14 +232,82 @@ async def create_project(body: ProjectBody) -> dict[str, Any]:
     style = styles.auto_pack(body.brief, styles.ASPECTS[body.aspect][1] > styles.ASPECTS[body.aspect][0]) if auto else body.style
     project = store.create(title=body.title.strip()[:120] or "Untitled film", brief=body.brief[:12000], aspect=body.aspect, style=style,
                            duration=max(5.0, min(600.0, body.duration)), fps=body.fps if body.fps in (24, 25, 30, 60) else 30)
-    if body.options or body.captions or auto:
+    from . import workspaces
+    ws = body.workspace if workspaces.exists(body.workspace) else None
+    if body.options or body.captions or auto or ws:
         def apply(p: dict[str, Any]) -> None:
             p["options"].update(body.options or {})
             p["captions"].update(body.captions or {})
             if auto:
                 p["options"]["auto_style"] = True
+            if ws:
+                p["workspace"] = ws
         project = store.mutate(project["id"], apply)
     return project
+
+
+@app.get("/api/workspaces")
+async def list_workspaces() -> dict[str, Any]:
+    from . import workspaces
+    counts: dict[str, int] = {}
+    for p in store.list():
+        counts[p.get("workspace") or ""] = counts.get(p.get("workspace") or "", 0) + 1
+    items = workspaces.list_all()
+    known = {w["id"] for w in items}
+    loose = sum(n for k, n in counts.items() if k not in known)
+    return {"workspaces": [dict(w, count=counts.get(w["id"], 0)) for w in items], "unfiled": loose, "total": sum(counts.values())}
+
+
+@app.post("/api/workspaces")
+async def create_workspace(body: dict[str, Any]) -> dict[str, Any]:
+    from . import workspaces
+    try:
+        return workspaces.create(body.get("name"), body.get("color"))
+    except ValueError as error:
+        raise HTTPException(400, str(error))
+
+
+@app.patch("/api/workspaces/{wid}")
+async def update_workspace(wid: str, body: dict[str, Any]) -> dict[str, Any]:
+    from . import workspaces
+    try:
+        return workspaces.update(wid, body.get("name"), body.get("color"))
+    except KeyError:
+        raise HTTPException(404, "workspace not found")
+    except ValueError as error:
+        raise HTTPException(400, str(error))
+
+
+@app.delete("/api/workspaces/{wid}")
+async def delete_workspace(wid: str) -> dict[str, Any]:
+    from . import workspaces
+    try:
+        workspaces.delete(wid)
+    except KeyError:
+        raise HTTPException(404, "workspace not found")
+    moved = 0
+    for p in store.list():
+        if p.get("workspace") == wid:
+            store.mutate(p["id"], lambda doc: doc.pop("workspace", None))
+            moved += 1
+    return {"ok": True, "moved": moved}
+
+
+@app.post("/api/projects/{pid}/workspace")
+async def move_project(pid: str, body: dict[str, Any]) -> dict[str, Any]:
+    from . import workspaces
+    _project(pid)
+    wid = body.get("workspace") or None
+    if wid and not workspaces.exists(wid):
+        raise HTTPException(404, "workspace not found")
+
+    def apply(doc: dict[str, Any]) -> None:
+        if wid:
+            doc["workspace"] = wid
+        else:
+            doc.pop("workspace", None)
+    store.mutate(pid, apply)
+    return {"ok": True, "workspace": wid}
 
 
 @app.get("/api/runs/active")
@@ -444,19 +540,53 @@ async def patch_cue(pid: str, cue_id: int, body: dict[str, Any]) -> dict[str, An
                     cue["words"] = [dict(w, t=round(s1 + (float(w.get("t", s0)) - s0) * k, 4), e=round(s1 + (float(w.get("e", w.get("t", s0))) - s0) * k, 4)) for w in cue["words"]]
         p["cues"].sort(key=lambda c: float(c["start"]))
     store.mutate(pid, apply, revision=True, reason=f"cue {cue_id}")
-    bus.publish(pid, "project.update", {"keys": ["cues"], "by": "user"})
+    keys = ["cues", "scenes"] if _auto_reflow(pid) else ["cues"]
+    bus.publish(pid, "project.update", {"keys": keys, "by": "user"})
     return {"ok": True}
 
 
 @app.delete("/api/projects/{pid}/cues/{cue_id}")
 async def delete_cue(pid: str, cue_id: int) -> dict[str, Any]:
     store.mutate(pid, lambda p: p.__setitem__("cues", [c for c in p["cues"] if c.get("id") != cue_id]), revision=True, reason=f"delete cue {cue_id}")
-    bus.publish(pid, "project.update", {"keys": ["cues"], "by": "user"})
+    keys = ["cues", "scenes"] if _auto_reflow(pid) else ["cues"]
+    bus.publish(pid, "project.update", {"keys": keys, "by": "user"})
     return {"ok": True}
 
 
 def _next_cue_id(p: dict[str, Any]) -> int:
     return max([int(c.get("id", 0)) for c in p.get("cues") or []] + [-1]) + 1
+
+
+def _apply_reflow(pid: str, reason: str) -> dict[str, Any]:
+    from . import sync
+    plan = sync.reflow_plan(_project(pid))
+    if plan["changes"]:
+        def apply(p: dict[str, Any]) -> None:
+            for scene, d in zip(p["scenes"], plan["durations"]):
+                scene["duration"] = max(0.5, float(d))
+                if scene.get("status") in ("rendered", "written"):
+                    scene["status"] = "edited"
+            _retime(p)
+        store.mutate(pid, apply, revision=True, reason=reason)
+    return plan
+
+
+def _auto_reflow(pid: str) -> bool:
+    project = _project(pid)
+    if not (project.get("captions") or {}).get("link_scenes"):
+        return False
+    return bool(_apply_reflow(pid, "scenes follow captions")["changes"])
+
+
+@app.post("/api/projects/{pid}/reflow")
+async def reflow_scenes(pid: str, body: dict[str, Any] | None = None) -> dict[str, Any]:
+    from . import sync
+    if (body or {}).get("dry"):
+        return sync.reflow_plan(_project(pid))
+    plan = _apply_reflow(pid, "re-flow scenes to captions")
+    if plan["changes"]:
+        bus.publish(pid, "project.update", {"keys": ["scenes"], "by": "user"})
+    return plan
 
 
 @app.post("/api/projects/{pid}/cues/{cue_id}/split")
@@ -486,7 +616,8 @@ async def split_cue(pid: str, cue_id: int, body: dict[str, Any]) -> dict[str, An
         p["cues"].append(new)
         p["cues"].sort(key=lambda c: float(c["start"]))
     store.mutate(pid, apply, revision=True, reason=f"split cue {cue_id}")
-    bus.publish(pid, "project.update", {"keys": ["cues"], "by": "user"})
+    keys = ["cues", "scenes"] if _auto_reflow(pid) else ["cues"]
+    bus.publish(pid, "project.update", {"keys": keys, "by": "user"})
     return {"ok": True}
 
 
@@ -504,7 +635,8 @@ async def merge_cue(pid: str, cue_id: int) -> dict[str, Any]:
             a["words"] = (a.get("words") or []) + (b.get("words") or [])
         p["cues"] = [c for c in cues if c is not b]
     store.mutate(pid, apply, revision=True, reason=f"merge cue {cue_id}")
-    bus.publish(pid, "project.update", {"keys": ["cues"], "by": "user"})
+    keys = ["cues", "scenes"] if _auto_reflow(pid) else ["cues"]
+    bus.publish(pid, "project.update", {"keys": keys, "by": "user"})
     return {"ok": True}
 
 
@@ -519,7 +651,8 @@ async def add_cue(pid: str, body: dict[str, Any]) -> dict[str, Any]:
         p.setdefault("cues", []).append({"id": _next_cue_id(p), "start": round(t, 4), "end": round(min(nxt, t + float(body.get("duration", 2.0))), 4), "text": str(body.get("text") or "New caption")[:300]})
         p["cues"].sort(key=lambda c: float(c["start"]))
     store.mutate(pid, apply, revision=True, reason="add cue")
-    bus.publish(pid, "project.update", {"keys": ["cues"], "by": "user"})
+    keys = ["cues", "scenes"] if _auto_reflow(pid) else ["cues"]
+    bus.publish(pid, "project.update", {"keys": keys, "by": "user"})
     return {"ok": True}
 
 
@@ -600,6 +733,8 @@ async def patch_scene(pid: str, sid: str, body: dict[str, Any]) -> dict[str, Any
                 scene[key] = value
         if "code" in body:
             scene["source"] = "user" if body["code"] else "house"
+        if "layers" in body:
+            scene.pop("draft", None)
         if "duration" in body:
             scene["duration"] = max(0.5, min(120.0, float(body["duration"])))
         scene["status"] = "edited" if scene.get("status") in ("rendered", "written", "edited") else scene.get("status", "planned")
@@ -620,7 +755,12 @@ async def add_scene(pid: str, body: dict[str, Any]) -> dict[str, Any]:
         scene = {"id": f"sc_{uuid.uuid4().hex[:8]}", "index": at, "title": body.get("title", "New scene"), "purpose": "", "start": 0, "duration": float(body.get("duration", 4.0)),
                  "narration": body.get("narration", ""), "onscreen": "", "visual": "", "archetype": arch, "data": body.get("data") or house.build_data(arch, text, {"index": at}),
                  "variant": 0, "code": None, "source": "user", "status": "planned", "layers": [], "overrides": {}, "transition": {"type": "fade", "duration": 0.5}}
-        p["scenes"].insert(at, scene)
+        if isinstance(body.get("layers"), list):
+            scene["layers"] = [L for L in body["layers"] if isinstance(L, dict)][:40]
+        if isinstance(body.get("code"), str) and body["code"].strip():
+            scene["code"] = body["code"][:200000]
+        scene["duration"] = max(0.5, min(120.0, scene["duration"]))
+        p["scenes"].insert(max(0, min(at, len(p["scenes"]))), scene)
         _retime(p)
     return store.mutate(pid, apply, revision=True, reason="add scene")
 
@@ -645,11 +785,74 @@ async def reorder(pid: str, body: dict[str, Any]) -> dict[str, Any]:
 
 
 @app.get("/api/projects/{pid}/scenes/{sid}/doc", response_class=HTMLResponse)
-async def scene_doc(pid: str, sid: str, mode: str = "preview") -> HTMLResponse:
+async def scene_doc(pid: str, sid: str, mode: str = "preview", draft: int = 0) -> HTMLResponse:
     project = _project(pid)
     scene = _scene(project, sid)
+    if draft and isinstance(scene.get("draft"), dict):
+        scene = dict(scene, layers=scene["draft"].get("layers") or [])
+        if "camera" in scene["draft"]:
+            scene["camera"] = scene["draft"]["camera"]
     doc = compose.build_document(project, scene, mode if mode in ("preview", "edit", "render") else "preview", handle=0.0)
     return HTMLResponse(doc, headers={"Cache-Control": "no-store"})
+
+
+@app.post("/api/projects/{pid}/scenes/{sid}/animate")
+async def animate_layers(pid: str, sid: str, body: dict[str, Any]) -> dict[str, Any]:
+    from . import layerai
+    project = _project(pid)
+    scene = _scene(project, sid)
+    ids = [str(i) for i in (body.get("ids") or []) if i][:12]
+    instruction = str(body.get("instruction") or "").strip()[:1500]
+    if not instruction:
+        raise HTTPException(400, "say how to animate the selection")
+    bus.publish(pid, "agent.status", {"agent": "animator", "state": "working", "detail": instruction[:120]})
+    buffer: list[str] = []
+
+    def on_token(kind: str, text: str) -> None:
+        buffer.append(text)
+        if sum(len(b) for b in buffer) > 80:
+            bus.publish(pid, "agent.token", {"agent": "animator", "kind": kind, "text": "".join(buffer)})
+            buffer.clear()
+
+    try:
+        result = await layerai.animate(project, scene, ids, instruction, on_token=on_token, use_free=bool(body.get("use_free")))
+    except ValueError as error:
+        bus.publish(pid, "agent.status", {"agent": "animator", "state": "idle", "detail": str(error)[:120]})
+        raise HTTPException(400, str(error))
+    except llm.ProviderError as error:
+        bus.publish(pid, "agent.status", {"agent": "animator", "state": "idle", "detail": "model failed"})
+        raise HTTPException(502, f"the model could not animate this: {str(error)[:200]}")
+    draft = {"layers": result["layers"], "ids": ids, "instruction": instruction, "note": result["note"], "by": result["by"], "at": time.time()}
+    if result.get("camera"):
+        draft["camera"] = result["camera"]
+    store.update_scene(pid, sid, {"draft": draft})
+    bus.publish(pid, "agent.status", {"agent": "animator", "state": "idle", "detail": result["note"]})
+    bus.publish(pid, "project.update", {"keys": ["scenes"], "by": "animator"})
+    return {"draft": {k: v for k, v in draft.items() if k != "layers"}}
+
+
+@app.post("/api/projects/{pid}/scenes/{sid}/draft/{action}")
+async def scene_draft(pid: str, sid: str, action: str) -> dict[str, Any]:
+    if action not in ("apply", "discard"):
+        raise HTTPException(404, "unknown draft action")
+    project = _project(pid)
+    scene = _scene(project, sid)
+    draft = scene.get("draft")
+    if not isinstance(draft, dict):
+        raise HTTPException(409, "no draft on this scene")
+
+    def apply(p: dict[str, Any]) -> None:
+        for s in p["scenes"]:
+            if s["id"] == sid:
+                if action == "apply":
+                    s["layers"] = draft.get("layers") or []
+                    if draft.get("camera"):
+                        s["camera"] = draft["camera"]
+                s.pop("draft", None)
+
+    store.mutate(pid, apply, revision=action == "apply", reason=f"animator: {str(draft.get('instruction', ''))[:60]}")
+    bus.publish(pid, "project.update", {"keys": ["scenes"], "by": "user"})
+    return {"ok": True}
 
 
 @app.get("/api/projects/{pid}/scenes/{sid}/code")
@@ -668,8 +871,15 @@ async def run_project(pid: str, body: dict[str, Any]) -> dict[str, Any]:
         raise HTTPException(400, "unknown mode")
     if mode == "render" and not project["scenes"]:
         mode = "full"
-    if body.get("options"):
-        store.mutate(pid, lambda p: p["options"].update(body["options"]))
+    opts = body.get("options") or {}
+    if opts.get("free_pool"):
+        if not llm.free_allowed():
+            raise HTTPException(400, "Auteur-Free is switched off under Models")
+        if not opts.get("free_ack"):
+            raise HTTPException(400, "confirm that you understand the Auteur-Free limits first")
+    keep = {k: v for k, v in opts.items() if k not in ("free_pool", "free_ack")}
+    if keep:
+        store.mutate(pid, lambda p: p["options"].update(keep))
     try:
         run = swarm.start(pid, mode, body.get("options"))
     except RuntimeError as error:
@@ -696,7 +906,7 @@ async def scene_chat(pid: str, sid: str, body: dict[str, Any]) -> dict[str, Any]
     if not instruction:
         raise HTTPException(400, "empty message")
     bus.publish(pid, "chat.user", {"scene": sid, "message": instruction})
-    if not llm.has_llm():
+    if not llm.has_llm() and not llm.free_available():
         scene = _scene(project, sid)
         arch = scene.get("archetype")
         low = instruction.lower()
@@ -721,10 +931,10 @@ async def scene_chat(pid: str, sid: str, body: dict[str, Any]) -> dict[str, Any]
 @app.post("/api/projects/{pid}/replicate")
 async def replicate(pid: str, body: dict[str, Any]) -> dict[str, Any]:
     project = _project(pid)
-    if not llm.has_llm():
+    if not llm.has_llm() and not llm.free_available():
         raise HTTPException(400, "connect a model in Settings to replicate with agents")
     mode = body.get("mode") if body.get("mode") in ("replicate", "extend", "variation") else "replicate"
-    count = max(1, min(4, int(body.get("count") or 1)))
+    count = max(1, min(4 if llm.has_llm() else 2, int(body.get("count") or 1)))
     instruction = str(body.get("instruction") or "").strip()[:1500]
     lines = [x.strip() for x in str(body.get("narration") or "").split("\n") if x.strip()]
     source = next((s for s in project["scenes"] if s["id"] == body.get("scene_id")), None)

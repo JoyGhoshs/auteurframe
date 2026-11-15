@@ -48,8 +48,9 @@ function Topbar({ route, health, updates, children }) {
     <div class="row" title="Render service and model status">
       <${UpdateChips} updates=${updates} />
       <span class=${'chip ' + (health && health.renderer ? 'ok' : 'warn')}><span class=${'dot ' + (health && health.renderer ? 'live' : '')}></span>${health && health.renderer ? `Render farm · ${health.renderer.max} nodes` : 'Render farm starting'}</span>
-      <span class=${'chip ' + (health && health.llm ? 'brand' : '')} style=${{ cursor: 'pointer' }} onClick=${() => navigate('/settings')}>
-        <${Icon} name=${health && health.llm ? 'brain-circuit' : 'brain'} size=${12} />${health && health.llm ? 'Agent swarm online' : 'House director (no model)'}</span>
+      <span class=${'chip ' + (health && (health.llm || health.free) ? 'brand' : '')} style=${{ cursor: 'pointer' }} onClick=${() => navigate('/settings')}
+        title=${health && !health.llm && health.free ? 'No model connected. Small tasks (animate a selection, edit or plan one scene) use Auteur-Free: public no-key models. Connect your own model for full films.' : ''}>
+        <${Icon} name=${health && health.llm ? 'brain-circuit' : 'brain'} size=${12} />${health && health.llm ? 'Agent swarm online' : health && health.free ? 'Auteur-Free (no key)' : 'House director (no model)'}</span>
     </div>
   </header>`;
 }

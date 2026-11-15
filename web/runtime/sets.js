@@ -270,7 +270,31 @@
     launchpad: { time: 'dusk', far: 'mountains', props: [['radio-tower', 14, 60], ['rocket', 52, 56], ['satellite-dish', 84, 22]], ground: '#6b6f78' },
     'winter-village': { time: 'day', far: 'mountains', weather: 'snow', props: [['cabin', 16, 30], ['pine', 36, 40], ['snowman', 54, 22], ['house', 76, 30, { roof: '#7a4a2e' }], ['pine', 94, 36]], ground: '#eef3f7' },
     'fairy-forest': { time: 'dusk', far: 'hills', props: [['pine', 8, 46], ['mushroom', 26, 12], ['tree', 44, 46], ['mushroom', 62, 16, { color: '#7a4fc4' }], ['flower-bed', 80, 8], ['pine', 94, 40]], ground: '#4f7a4a' },
-    'train-station': { time: 'day', far: 'skyline', props: [['train', 50, 26], ['clock', 12, 10, { lift: 50 }], ['bench', 88, 12]], ground: '#9a958a' }
+    'train-station': { time: 'day', far: 'skyline', props: [['train', 50, 26], ['clock', 12, 10, { lift: 50 }], ['bench', 88, 12]], ground: '#9a958a' },
+    'hospital-front': { time: 'day', far: 'skyline', props: [['hospital', 40, 48], ['tree', 12, 34], ['bench', 66, 12], ['lamp', 76, 34], ['car', 90, 14]], ground: '#9aa0a8' },
+    'school-yard': { time: 'day', far: 'hills', props: [['school', 44, 46], ['tree', 10, 36], ['flower-bed', 70, 8], ['bus', 86, 18], ['bench', 24, 12]], ground: '#8fc46a' },
+    'church-square': { time: 'sunset', far: 'skyline', props: [['church', 30, 54], ['fountain', 60, 22], ['lamp', 74, 34], ['bench', 86, 12], ['tree', 96, 36]], ground: '#b5a890' },
+    factory: { time: 'dusk', far: 'skyline', props: [['factory', 30, 46], ['water-tower', 56, 44], ['truck', 74, 18], ['crate', 88, 12], ['barrel', 95, 12]], ground: '#7a7466' },
+    airport: { time: 'day', far: 'hills', props: [['radio-tower', 10, 56], ['plane', 50, 26], ['truck', 82, 16], ['lamp', 94, 30]], ground: '#9aa0a8' },
+    'downtown-night': { time: 'night', far: 'skyline', props: [['tower', 12, 64], ['billboard', 34, 30, { lift: 30 }], ['apartment', 52, 50], ['police-car', 70, 14], ['traffic-light', 84, 30], ['lamp', 96, 34]], ground: '#34343e' },
+    'rainy-street': { time: 'dusk', far: 'skyline', weather: 'rain', props: [['shop', 16, 28, { label: 'BOOKS' }], ['lamp', 34, 34], ['apartment', 54, 46], ['bus-stop', 76, 30], ['trash-can', 92, 10]], ground: '#5a5a66' },
+    'countryside-road': { time: 'day', far: 'hills', props: [['house', 14, 30, { roof: '#d94b3d' }], ['fence', 30, 10], ['tree', 46, 34], ['bicycle', 64, 12], ['sign', 80, 18], ['tree', 94, 30]], ground: '#a6c96a' },
+    lakeside: { time: 'sunset', far: 'sea', props: [['cabin', 18, 30], ['pine', 34, 40], ['boat', 62, 14], ['rock', 80, 10], ['pine', 94, 36]], ground: '#7a9a5a' },
+    island: { time: 'day', far: 'sea', props: [['palm', 20, 46], ['rock', 40, 10], ['palm', 58, 40], ['boat', 84, 14]], ground: '#f0dca0' },
+    'snowy-forest': { time: 'day', far: 'mountains', weather: 'snow', props: [['pine', 8, 44], ['pine', 24, 52], ['snowman', 44, 20], ['pine', 64, 48], ['pine', 82, 40], ['rock', 94, 8]], ground: '#f2f6fa' },
+    'night-forest': { time: 'night', far: 'mountains', props: [['pine', 10, 48], ['tree', 28, 40], ['campfire', 48, 12], ['tent', 66, 20], ['pine', 86, 50]], ground: '#2f4a32' },
+    garden: { time: 'day', far: 'hills', props: [['flower-bed', 10, 8], ['statue', 28, 30], ['fountain', 50, 24], ['bench', 70, 12], ['potted-plant', 84, 14], ['tree', 96, 40]], ground: '#7ec06a' },
+    museum: { time: 'day', interior: '#efe9dc', props: [['painting', 20, 20, { lift: 36 }], ['statue', 40, 34], ['painting', 62, 22, { lift: 34 }], ['bench', 62, 10], ['potted-plant', 90, 24]], ground: '#b9a88c' },
+    library: { time: 'day', interior: '#eadfc8', props: [['bookshelf', 8, 46], ['bookshelf', 22, 46], ['desk', 50, 22], ['desk-lamp', 50, 10, { lift: 22 }], ['armchair', 74, 22], ['bookshelf', 94, 46]], ground: '#8a6a4a' },
+    restaurant: { time: 'night', interior: '#f2e3cf', props: [['window-frame', 24, 24, { lift: 32, night: true }], ['painting', 70, 16, { lift: 40 }], ['dining-table', 36, 14], ['chair', 24, 18], ['chair', 48, 18], ['potted-plant', 88, 24]], ground: '#9a6a44' },
+    cafe: { time: 'day', interior: '#f6ead8', props: [['counter', 20, 22], ['coffee-table', 54, 10], ['armchair', 66, 22], ['clock', 46, 10, { lift: 48 }], ['window-frame', 82, 24, { lift: 32 }], ['potted-plant', 96, 22]], ground: '#a87a52' },
+    'studio-apartment': { time: 'night', interior: '#d6deea', props: [['window-frame', 72, 26, { lift: 30, night: true }], ['bed', 22, 22], ['desk', 64, 22], ['laptop', 64, 10, { lift: 22 }], ['bookshelf', 92, 42], ['rug', 30, 5]], ground: '#7a6a5a' },
+    'science-lab': { time: 'day', interior: '#e4ecf2', props: [['whiteboard', 30, 30, { lift: 30 }], ['desk', 56, 24], ['computer', 52, 16, { lift: 22 }], ['filing-cabinet', 80, 30], ['clock', 92, 10, { lift: 52 }]], ground: '#7d8898' },
+    'police-station': { time: 'day', far: 'skyline', props: [['apartment', 30, 46], ['gate', 54, 28], ['police-car', 74, 14], ['police-car', 90, 14], ['lamp', 12, 34]], ground: '#8a8a92' },
+    'construction-site': { time: 'day', far: 'skyline', props: [['barricade', 12, 12], ['truck', 32, 18], ['crate', 52, 12], ['barrel', 60, 12], ['wall', 78, 24], ['lamp', 94, 30]], ground: '#a08a66' },
+    'sunset-beach': { time: 'sunset', far: 'sea', props: [['palm', 14, 44], ['campfire', 46, 12], ['tent', 66, 18], ['palm', 90, 40]], ground: '#e8c98c' },
+    'desert-night': { time: 'night', far: 'dunes', props: [['tent', 30, 20], ['campfire', 50, 12], ['rock', 72, 10], ['palm', 88, 36]], ground: '#a88a5a' },
+    'space-center': { time: 'night', far: 'mountains', props: [['rocket', 30, 60], ['radio-tower', 56, 50], ['satellite-dish', 76, 22], ['truck', 92, 16]], ground: '#4a4e58' }
   };
 
   function farLayer(kind, W, H, night, seed, burning) {

@@ -1155,6 +1155,13 @@ async def stage_edit(run: Run) -> None:
 
 async def execute(run: Run, scene_id: str | None = None, instruction: str = "", scene_ids: list[str] | None = None) -> None:
     llmmod.NOTIFY.set(lambda msg: run.emit("run.warning", {"message": msg}))
+    if run.mode in ("scene", "scenes"):
+        llmmod.FREE_OK.set(True)
+    if (run.options or {}).get("free_pool"):
+        llmmod.FREE_OK.set(True)
+        llmmod.FREE_FORCE.set(True)
+        llmmod.FREE_PATIENCE.set(90.0)
+        run.emit("run.warning", {"message": "Running on Auteur-Free: public no-key models with rate limits. If the limits run out, unfinished scenes keep the house design and the film may be incomplete."})
     try:
         run.emit("run.start", {"mode": run.mode, "llm": llmmod.LLM("director").label, "roster": ROSTER})
         if run.mode in ("full", "plan", "house"):
@@ -1202,6 +1209,8 @@ async def execute(run: Run, scene_id: str | None = None, instruction: str = "", 
             await stage_assemble(run, segments)
         run.status = "done"
         run.persist_memory()
+        if (run.options or {}).get("free_pool") and run.stats.get("fallbacks"):
+            run.emit("run.warning", {"message": f"Auteur-Free ran out of free capacity for {run.stats['fallbacks']} scene(s); they kept the house design. Re-run those scenes later or connect your own model to finish them."})
         run.emit("run.done", {"stats": run.stats, "elapsed": round(time.time() - run.started, 1)})
     except asyncio.CancelledError:
         run.status = "cancelled"

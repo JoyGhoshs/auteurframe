@@ -8,8 +8,8 @@ export function sceneAt(project, t) {
   return t <= 0 ? scenes[0] : scenes[scenes.length - 1];
 }
 
-function docUrl(pid, sid, ver, mode) {
-  return `/api/projects/${pid}/scenes/${sid}/doc?mode=${mode}&v=${ver || 0}`;
+function docUrl(pid, sid, ver, mode, dv) {
+  return `/api/projects/${pid}/scenes/${sid}/doc?mode=${mode}&v=${ver || 0}${dv ? '&draft=1&d=' + dv : ''}`;
 }
 
 function waitReady(frame, cb) {
@@ -22,7 +22,7 @@ function waitReady(frame, cb) {
   tick();
 }
 
-export function Stage({ project, time, setTime, playing, setPlaying, versions, view, guides, selected, onSelect, onOverride, onLayerPatch, onDropAsset, cursors, agents, browse, progress, previews, agentNames }) {
+export function Stage({ project, time, setTime, playing, setPlaying, versions, view, guides, selected, multi, onSelect, onOverride, onLayerPatch, onDropAsset, cursors, agents, browse, progress, previews, agentNames }) {
   const wrap = useRef(null);
   const frames = [useRef(null), useRef(null)];
   const [slots, setSlots] = useState([{ sid: null, ver: 0 }, { sid: null, ver: 0 }]);
@@ -41,7 +41,8 @@ export function Stage({ project, time, setTime, playing, setPlaying, versions, v
   const W = project.width, H = project.height;
   const scene = sceneAt(project, time);
   const sid = scene ? scene.id : null;
-  const ver = sid ? (versions[sid] || 0) : 0;
+  const draftOf = (id) => { const s = (project.scenes || []).find((x) => x.id === id); return s && s.draft ? Math.round((s.draft.at || 1) * 1000) : 0; };
+  const ver = sid ? (versions[sid] || 0) + ':' + draftOf(sid) : 0;
   const mode = guides ? 'edit' : 'preview';
   const sceneIds = new Set((project.scenes || []).map((s) => s.id));
   const sceneKey = (project.scenes || []).map((s) => s.id).join(',');
@@ -142,7 +143,7 @@ export function Stage({ project, time, setTime, playing, setPlaying, versions, v
     const nxt = project.scenes[idx + 1];
     if (!nxt) return;
     const back = 1 - active;
-    const nv = versions[nxt.id] || 0;
+    const nv = (versions[nxt.id] || 0) + ':' + draftOf(nxt.id);
     setSlots((cur) => (cur[back].sid === nxt.id && cur[back].ver === nv ? cur : cur.map((x, i) => (i === back ? { sid: nxt.id, ver: nv, mode } : x))));
   };
 
@@ -183,8 +184,9 @@ export function Stage({ project, time, setTime, playing, setPlaying, versions, v
     const r = e.currentTarget.getBoundingClientRect();
     return { x: (e.clientX - r.left) / fit.k, y: (e.clientY - r.top) / fit.k };
   };
+  const locked = (id) => ((scene && scene.layers) || []).some((x) => x.id === id && x.locked);
   const pick = (pt) => {
-    const hits = layers.filter((l) => l.visible && !l.caption && pt.x >= l.x && pt.x <= l.x + l.w && pt.y >= l.y && pt.y <= l.y + l.h && l.w * l.h < W * H * 0.85);
+    const hits = layers.filter((l) => l.visible && !l.caption && !locked(l.id) && pt.x >= l.x && pt.x <= l.x + l.w && pt.y >= l.y && pt.y <= l.y + l.h && l.w * l.h < W * H * 0.85);
     hits.sort((a, b) => (b.user - a.user) || (a.w * a.h - b.w * b.h));
     return hits[0] || null;
   };
@@ -230,8 +232,9 @@ export function Stage({ project, time, setTime, playing, setPlaying, versions, v
     if (!editable) return;
     const pt = toStage(e);
     const layer = pick(pt);
-    onSelect(layer ? { sceneId: scene.id, id: layer.id, user: layer.user, tag: layer.tag, text: layer.text } : null);
-    if (layer) {
+    const additive = e.shiftKey || e.ctrlKey || e.metaKey;
+    onSelect(layer ? { sceneId: scene.id, id: layer.id, user: layer.user, tag: layer.tag, text: layer.text } : null, additive);
+    if (layer && !additive && !scene.draft) {
       const ov = (scene.overrides || {})[layer.id] || {};
       const ul = layer.user ? userLayer(layer.id) : null;
       drag.current = { kind: 'move', layer, start: pt, base: ul ? { x: ul.x ?? 10, y: ul.y ?? 10, w: ul.w ?? 30, h: ul.h } : { dx: ov.dx || 0, dy: ov.dy || 0, scale: ov.scale || 1 } };
@@ -286,11 +289,12 @@ export function Stage({ project, time, setTime, playing, setPlaying, versions, v
       ${view === 'master' ? (master ? html`<video ref=${video} src=${master + '?v=' + Math.round(project.outputs.updated || 0)} playsinline
           onTimeUpdate=${(e) => playing && setTime(e.target.currentTime)} onEnded=${() => setPlaying(false)}></video>` : html`<div class="empty" style=${{ position: 'absolute', inset: 0, background: '#fff' }}><${Icon} name="film" />No master yet. Generate or render the film.</div>`) :
       slots.map((slot, i) => slot.sid && sceneIds.has(slot.sid) ? html`<iframe key=${slot.sid + ':' + slot.ver + ':' + slot.mode} ref=${frames[i]} class=${i === active ? '' : 'back'} style=${sceneScale}
-          src=${docUrl(project.id, slot.sid, slot.ver, slot.mode)} onLoad=${onFrameLoad(i)}></iframe>` : null)}
+          src=${docUrl(project.id, slot.sid, slot.ver, slot.mode, draftOf(slot.sid))} onLoad=${onFrameLoad(i)}></iframe>` : null)}
       ${view === 'live' ? html`<div class=${'stage-overlay ' + (editable ? 'edit' : '')} onMouseMove=${onMove} onMouseDown=${onDown} onMouseUp=${onUp} onMouseLeave=${() => { setHover(null); onUp(); }}
           onDragOver=${(e) => e.preventDefault()} onDrop=${onDrop}>
         ${editable && hover && (!sel || hover.id !== sel.id) ? box(hover, 'hover', false) : null}
-        ${editable && sel ? box(sel, '', true) : null}
+        ${editable ? layers.filter((l) => (multi || []).includes(l.id) && (!sel || l.id !== sel.id)).map((l) => box(l, 'multi', false)) : null}
+        ${editable && sel ? box(sel, '', !scene.draft) : null}
       </div>` : null}
       ${view !== 'master' && look.tint ? html`<div class="grade-tint" style=${{ background: look.tint }}></div>` : null}
       ${view !== 'master' && look.vignette ? html`<div class="grade-vig" style=${{ opacity: Math.min(1, look.vignette / 70) }}></div>` : null}

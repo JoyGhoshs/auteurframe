@@ -77,18 +77,21 @@ export function Wizard({ preset, health }) {
   const cats = ['All', ...new Set(styles.map((s) => s.category))];
   const addFiles = (list) => setFiles((f) => [...f, ...Array.from(list).map((file) => ({ file, role: guessRole(file) }))]);
   const hasSubs = files.some((f) => f.role === 'subtitles');
+  const [freeAck, setFreeAck] = useState(false);
   const create = async () => {
     if (!brief.trim() && !hasSubs) { toast('Write a brief or add a subtitle file', 'err'); return; }
+    if (mode === 'free' && !freeAck) { toast('Tick the box to confirm you understand the Auteur-Free limits', 'err'); return; }
     setBusy(true);
     try {
       const p = await api.post('/api/projects', {
         title: title || (brief.split(/[.!?]/)[0] || 'Untitled film').slice(0, 70), brief, aspect, style, duration: Number(duration), fps: Number(fps),
-        options: { research, mode, quality, audience, tone, language, narration, medium, scout: scoutOn, library_music: libMusic }, captions: { enabled: capOn, style: caption || null, from_narration: fromNarr || narration === 'ai' }
+        options: { research, mode: mode === 'free' ? 'auto' : mode, quality, audience, tone, language, narration, medium, scout: scoutOn, library_music: libMusic }, captions: { enabled: capOn, style: caption || null, from_narration: fromNarr || narration === 'ai' },
+        workspace: (() => { try { return localStorage.getItem('af.ws') || null; } catch (e) { return null; } })()
       });
       for (const f of files) {
         await api.upload(`/api/projects/${p.id}/assets`, f.file, { role: f.role === 'subtitles' ? 'subtitles' : f.role });
       }
-      await api.post(`/api/projects/${p.id}/run`, { mode: runMode === 'house' ? 'house' : runMode });
+      await api.post(`/api/projects/${p.id}/run`, mode === 'free' ? { mode: runMode, options: { free_pool: true, free_ack: true } } : { mode: runMode === 'house' ? 'house' : runMode });
       navigate('/p/' + p.id);
     } catch (e) {
       toast(e.message, 'err');
@@ -183,8 +186,10 @@ export function Wizard({ preset, health }) {
           <div><b>Asset scout</b><div class="muted" style=${{ fontSize: '12px' }}>Collects real photos, archival footage, icons, flags and sound effects from free libraries before the animators start.</div></div></div>
         <div class="row" style=${{ alignItems: 'flex-start' }}><button class=${'switch ' + (libMusic ? 'on' : '')} onClick=${() => setLibMusic(!libMusic)}></button>
           <div><b>Library music</b><div class="muted" style=${{ fontSize: '12px' }}>Picks a free licensed music track that fits the mood instead of the generated score.</div></div></div>
-        <div><label class="label">Who directs</label><div class="seg">${[['auto', 'Agent swarm'], ['house', 'House director']].map(([v, l]) => html`<button class=${mode === v ? 'on' : ''} onClick=${() => setMode(v)}>${l}</button>`)}</div>
-          <div class="muted" style=${{ fontSize: '11.5px', marginTop: '6px' }}>${health && health.llm ? 'Your connected model writes original compositions per scene.' : 'No model connected: the deterministic house director builds the film.'}</div></div>
+        <div><label class="label">Who directs</label><div class="seg">${[['auto', 'Agent swarm'], ...(health && health.free_allowed ? [['free', 'Auteur-Free']] : []), ['house', 'House director']].map(([v, l]) => html`<button class=${mode === v ? 'on' : ''} onClick=${() => setMode(v)}>${l}</button>`)}</div>
+          <div class="muted" style=${{ fontSize: '11.5px', marginTop: '6px' }}>${mode === 'free' ? 'Free public models with no key. Slower, rate limited, and your brief goes to third-party services.' : health && health.llm ? 'Your connected model writes original compositions per scene.' : 'No model connected: the deterministic house director builds the film, or choose Auteur-Free.'}</div>
+          ${mode === 'free' ? html`<label class="row" style=${{ gap: '8px', marginTop: '8px', fontSize: '12px', cursor: 'pointer' }}><input type="checkbox" checked=${freeAck} onChange=${(e) => setFreeAck(e.target.checked)} />
+            <span>I understand Auteur-Free has limits: if they run out, the film may be left unfinished.</span></label>` : null}</div>
         <div><label class="label">After planning</label><div class="seg">${[['full', 'Render the film'], ['plan', 'Stop for review']].map(([v, l]) => html`<button class=${runMode === v ? 'on' : ''} onClick=${() => setRunMode(v)}>${l}</button>`)}</div>
           <div class="muted" style=${{ fontSize: '11.5px', marginTop: '6px' }}>Review lets you edit live previews before spending render time.</div></div>
       </div>

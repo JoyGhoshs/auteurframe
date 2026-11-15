@@ -6,7 +6,7 @@ import json
 import re
 from typing import Any, Callable
 
-from . import house, llm as llmmod, qa, research, styles
+from . import house, llm as llmmod, qa, research, schemas, styles
 from .memory import Brain
 from .skills import library
 
@@ -177,7 +177,7 @@ Return JSON only:
 "technique": "code|archetype", "skills": ["skill names from the technique list"],
 "instruments": ["any of: components, character, 3d, media, manim, libraries, code, web, map, sound, data, dialogue, lens"]}}]}}"""
     on_token, flush = _tokens(emit, "director")
-    plan = await model.json(system, user, on_token=on_token, max_tokens=8000)
+    plan = await model.json(system, user, on_token=on_token, max_tokens=8000, schema=schemas.DIRECTOR, tool="submit_plan")
     flush()
     plan = find_plan(plan)
     if not plan:
@@ -240,7 +240,7 @@ Return JSON only: {{"pack": id, "reason": short, "palette": {{"bg": hex, "bg-2":
 Keep ink and bg at contrast 7:1 or more and the accent readable on bg."""
     on_token, flush = _tokens(emit, "art")
     try:
-        data = await model.json("You are an art director choosing a visual system for a motion film. Return JSON only.", user, on_token=on_token, max_tokens=1500)
+        data = await model.json("You are an art director choosing a visual system for a motion film. Return JSON only.", user, on_token=on_token, max_tokens=1500, schema=schemas.STYLE, tool="submit_style")
     finally:
         flush()
     return data if isinstance(data, dict) else {}
@@ -268,7 +268,7 @@ Reference notes: {brain.read('references', 'none')}
 Return JSON only: {{"motif": "one recurring visual device (shape, line, texture, framing) used across scenes", "notes": "3-5 short rules for this film's look",
 "accent": optional hex colour if the brief or references demand a different accent, "caption": optional caption style pop|karaoke|boxed|minimal|typewriter}}"""
     on_token, flush = _tokens(emit, "art")
-    patch = await model.json(system, user, on_token=on_token, max_tokens=1500)
+    patch = await model.json(system, user, on_token=on_token, max_tokens=1500, schema=schemas.ART, tool="submit_art_notes")
     flush()
     return patch if isinstance(patch, dict) else {}
 
@@ -506,13 +506,8 @@ Return JSON only: {{"frames": [str], "stranger": str, "reads_clearly": 1-5, "on_
     on_token, flush = _tokens(emit, "critic", scene["index"])
     images = [sheet_b64] if sheet_b64 and model.vision and llmmod.read_settings().get("vision_critic", True) else []
     try:
-        if images:
-            model.force_thinking = "off"
-            raw = await model.complete(system, user, images=images, on_token=on_token, max_tokens=3000, temperature=0.2)
-            verdict = llmmod._extract_json(raw)
-        else:
-            model.force_thinking = "off"
-            verdict = await model.json(system, user, on_token=on_token, max_tokens=3000, temperature=0.2)
+        model.force_thinking = "off"
+        verdict = await model.json(system, user, images=images, on_token=on_token, max_tokens=3000, temperature=0.2, schema=schemas.CRITIC, tool="submit_verdict")
     finally:
         flush()
     return verdict if isinstance(verdict, dict) else {}
@@ -525,7 +520,7 @@ async def scout(project: dict[str, Any], brain: Brain, emit: Emit) -> list[dict[
         on_token, flush = _tokens(emit, "research")
         try:
             q = await model.json("You plan web research for a factual explainer film. Return JSON only.",
-                                 f"Brief: {brief}\nReturn {{\"queries\": [3 precise search queries that would find numbers, dates and quotes]}}", on_token=on_token, max_tokens=500)
+                                 f"Brief: {brief}\nReturn {{\"queries\": [3 precise search queries that would find numbers, dates and quotes]}}", on_token=on_token, max_tokens=500, schema=schemas.QUERIES, tool="submit_queries")
         finally:
             flush()
         queries = [s for s in (q.get("queries") if isinstance(q, dict) else []) or [] if isinstance(s, str)][:3]
@@ -560,7 +555,7 @@ async def scout(project: dict[str, Any], brain: Brain, emit: Emit) -> list[dict[
         try:
             data = await model.json("You extract verifiable facts for a film. Only use the sources given. Never invent numbers. Return JSON only.",
                                     f"Brief: {brief}\n\n{corpus[:14000]}\n\nReturn {{\"facts\": [{{\"claim\": short factual sentence with the number or date, \"source\": source title, \"url\": url}}]}} with 4 to 10 facts.",
-                                    on_token=on_token, max_tokens=1800)
+                                    on_token=on_token, max_tokens=1800, schema=schemas.FACTS, tool="submit_facts")
         finally:
             flush()
         facts = [f for f in (data.get("facts") if isinstance(data, dict) else []) or [] if isinstance(f, dict) and f.get("claim")]

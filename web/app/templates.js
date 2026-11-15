@@ -88,7 +88,7 @@ function TemplateForm({ id, list }) {
     if (missing.length) { toast(`Please fill: ${missing.map((m) => m.label).join(', ')}`, 'err'); return; }
     try {
       setBusy('Creating production');
-      const p = await api.post('/api/projects', { title: title || t.name, brief: `${t.name} template`, aspect, style, duration: 30, fps: 30, options: { mode: 'house', stock: false, template: t.id }, captions: { enabled: captions } });
+      const p = await api.post('/api/projects', { title: title || t.name, brief: `${t.name} template`, aspect, style, duration: 30, fps: 30, options: { mode: 'house', stock: false, template: t.id }, captions: { enabled: captions }, workspace: localStorage.getItem('af.ws') || null });
       let n = 0;
       const all = Object.entries(files).flatMap(([k, arr]) => arr.map((f) => [k, f]));
       for (const [k, f] of all) { n++; setBusy(`Uploading ${n}/${all.length}`); await api.upload(`/api/projects/${p.id}/assets`, f, { role: 'slot:' + k }); }

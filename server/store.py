@@ -86,7 +86,7 @@ class ProjectStore:
                 "style": data.get("style"), "status": data.get("status"), "updated": data.get("updated"), "created": data.get("created"),
                 "scenes": len(data.get("scenes", [])), "duration": round(sum(s.get("duration", 0) for s in data.get("scenes", [])), 2),
                 "poster": data.get("outputs", {}).get("poster"), "master": data.get("outputs", {}).get("master"),
-                "palette": (data.get("bible") or {}).get("palette", {}),
+                "palette": (data.get("bible") or {}).get("palette", {}), "workspace": data.get("workspace"),
             })
         return out
 

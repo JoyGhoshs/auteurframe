@@ -1820,7 +1820,7 @@
   {
    "name": "toon-set",
    "category": "set",
-   "description": "A complete animated environment behind toon characters: sky by time of day (stars and moon at night, sun by day), a far parallax layer (skyline with lit windows, mountains, hills, dunes, sea), living mid-ground objects and buildings, and a ground line. Presets: city-night, city-day, burning-city, street, suburb, rooftop, forest, desert, beach, mountains, farm, interior, office, bridge, checkpoint, campsite, kitchen, bedroom, living-room, bathroom, classroom, office-open, park, playground, market, bus-station, harbor, launchpad, winter-village, fairy-forest, train-station. Add weather (rain, snow, fog), burning, a slow camera pan, extra props.",
+   "description": "A complete animated environment behind toon characters: sky by time of day (stars and moon at night, sun by day), a far parallax layer (skyline with lit windows, mountains, hills, dunes, sea), living mid-ground objects and buildings, and a ground line. Presets: city-night, city-day, burning-city, street, suburb, rooftop, forest, desert, beach, mountains, farm, interior, office, bridge, checkpoint, campsite, kitchen, bedroom, living-room, bathroom, classroom, office-open, park, playground, market, bus-station, harbor, launchpad, winter-village, fairy-forest, train-station, hospital-front, school-yard, church-square, factory, airport, downtown-night, rainy-street, countryside-road, lakeside, island, snowy-forest, night-forest, garden, museum, library, restaurant, cafe, studio-apartment, science-lab, police-station, construction-site, sunset-beach, desert-night, space-center. Add weather (rain, snow, fog), burning, a slow camera pan, extra props.",
    "params": {
     "preset": {
      "type": "enum",
@@ -1856,7 +1856,31 @@
       "launchpad",
       "winter-village",
       "fairy-forest",
-      "train-station"
+      "train-station",
+      "hospital-front",
+      "school-yard",
+      "church-square",
+      "factory",
+      "airport",
+      "downtown-night",
+      "rainy-street",
+      "countryside-road",
+      "lakeside",
+      "island",
+      "snowy-forest",
+      "night-forest",
+      "garden",
+      "museum",
+      "library",
+      "restaurant",
+      "cafe",
+      "studio-apartment",
+      "science-lab",
+      "police-station",
+      "construction-site",
+      "sunset-beach",
+      "desert-night",
+      "space-center"
      ]
     },
     "time": {
@@ -2547,6 +2571,40 @@
    "category": "character",
    "description": "Anime full-body character in limited animation: discrete key drawings held on twos (walk and run cycles, crouch, leap, land, windup, strike with a one-frame smear, follow-through, wave, reach, point, kneel, hit, sit), never tweened between poses. Same hair, colours and outfit as anime-face so the character matches across shot sizes. Wide shots draw it as a flat silhouette with a rim line.",
    "params": {
+    "preset": {
+     "type": "enum",
+     "default": "",
+     "options": [
+      "",
+      "schoolgirl",
+      "schoolboy",
+      "delinquent",
+      "idol",
+      "shrine-maiden",
+      "samurai",
+      "ninja",
+      "ronin",
+      "knight",
+      "mage",
+      "witch",
+      "detective",
+      "office-worker",
+      "hacker",
+      "athlete",
+      "rocker",
+      "chef",
+      "doctor",
+      "soldier",
+      "pilot",
+      "princess",
+      "butler",
+      "sensei",
+      "cyberpunk",
+      "street-fighter",
+      "sakura-girl"
+     ],
+     "doc": "ready-made character look; any hair, outfit or colour you set overrides it"
+    },
     "script": {
      "type": "enum",
      "default": "indigo",
@@ -2767,6 +2825,19 @@
       "sakura-path",
       "ruins",
       "sky",
+      "city-day",
+      "train-platform",
+      "convenience-store",
+      "forest-path",
+      "mountain-pass",
+      "beach-day",
+      "school-roof",
+      "temple-stairs",
+      "snow-field",
+      "festival-street",
+      "space",
+      "desert-dunes",
+      "hallway",
       "void"
      ]
     },
@@ -2863,6 +2934,102 @@
     }
    },
    "example": "component('anime-fx', { type: 'slash', x: 62, y: 46, angle: -20, at: 1.9, duration: 0.3 })"
+  },
+  {
+   "name": "fx",
+   "category": "effects",
+   "description": "Overlay effects for the whole frame: light leaks, film grain, VHS, glitch, old film, CRT scanlines, vignette, flash, light rays, sparkles, confetti, rain, snow, embers, bokeh, stars, dust, lens flare, camera shake, zoom punch, HUD frame, halftone, letterbox bars and RGB split. Deterministic per frame.",
+   "params": {
+    "kind": {
+     "type": "enum",
+     "default": "light-leak",
+     "options": [
+      "light-leak",
+      "film-grain",
+      "vhs",
+      "glitch",
+      "old-film",
+      "scanlines",
+      "vignette",
+      "flash",
+      "light-rays",
+      "sparkles",
+      "confetti",
+      "rain",
+      "snow",
+      "embers",
+      "bokeh",
+      "stars",
+      "dust",
+      "lens-flare",
+      "camera-shake",
+      "zoom-punch",
+      "hud",
+      "halftone",
+      "letterbox",
+      "rgb-split"
+     ]
+    },
+    "intensity": {
+     "type": "number",
+     "default": 1,
+     "doc": "0.2 subtle to 2 strong"
+    },
+    "color": {
+     "type": "string",
+     "default": "",
+     "doc": "tint colour for light leak, flash, rays, sparkles, HUD (hex or --var)"
+    }
+   },
+   "example": "component('fx', { kind: 'light-leak', at: 0, intensity: 1 })"
+  },
+  {
+   "name": "intro",
+   "category": "intro",
+   "description": "Full-frame intro, outro and title card designs: neon flicker, line draw, minimal slide, shapes assemble, colour burst, iridescent, retro 80s, glitch reveal, split reveal, countdown, terminal, cinematic, ink reveal, kinetic stack, light sweep, end card. Uses the film palette and fonts.",
+   "params": {
+    "style": {
+     "type": "enum",
+     "default": "neon-flicker",
+     "options": [
+      "neon-flicker",
+      "line-draw",
+      "minimal-slide",
+      "shapes-assemble",
+      "color-burst",
+      "iridescent",
+      "retro-80s",
+      "glitch-reveal",
+      "split-reveal",
+      "countdown",
+      "terminal",
+      "cinematic",
+      "ink-reveal",
+      "kinetic-stack",
+      "light-sweep",
+      "end-card"
+     ]
+    },
+    "title": {
+     "type": "string",
+     "default": "Your Title"
+    },
+    "subtitle": {
+     "type": "string",
+     "default": ""
+    },
+    "logo": {
+     "type": "string",
+     "default": "",
+     "doc": "optional image asset id shown above the title"
+    },
+    "dark": {
+     "type": "boolean",
+     "default": true,
+     "doc": "dark backdrop (false uses the film background colour)"
+    }
+   },
+   "example": "component('intro', { style: 'neon-flicker', title: 'Night Shift', subtitle: 'A short film', at: 0 })"
   }
  ]
 }

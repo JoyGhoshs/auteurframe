@@ -32,6 +32,10 @@ export function starter(name, value) {
     case 'stickman': return { params: { x: 50, y: 86, h: 46, actions: [] }, label: 'stick figure' };
     case 'speech': return { params: { target: '', text: 'Hello!' }, label: 'speech' };
     case 'world3d': return { params: { set: value || 'studio', cast: [] }, label: '3D world', back: true };
+    case 'anime-figure': return { params: { preset: value || 'schoolgirl', x: 50, y: 92, h: 60, actions: [] }, label: (value || 'anime').replace(/-/g, ' ') };
+    case 'anime-set': return { params: { preset: value || 'rooftop' }, label: value || 'anime set', back: true };
+    case 'fx': return { params: { kind: value || 'light-leak', at: 0 }, label: (value || 'effect').replace(/-/g, ' ') };
+    case 'intro': return { params: { style: value || 'neon-flicker', title: 'Your Title', subtitle: '', at: 0 }, label: (value || 'intro').replace(/-/g, ' ') + ' intro' };
     default: return { params: {}, label: name, back: BACKGROUND.has(name) };
   }
 }
@@ -49,6 +53,7 @@ export function componentPatch(l, patch) {
     if ('x' in patch.params) out.x = patch.params.x;
     if ('y' in patch.params) out.y = patch.params.y;
   }
+  if (patch.name || patch.hidden !== undefined || patch.locked !== undefined) return { ...out, params: { ...(l.params || {}), ...(patch.params || {}) } };
   if ('x' in patch && 'x' in params) params.x = r2(patch.x);
   if ('y' in patch && 'y' in params) params.y = r2(patch.y);
   if ('w' in patch && l.w) {
@@ -160,6 +165,83 @@ export function MotionSection({ layer, sceneDuration, localTime, onPatch, record
   </div>`;
 }
 
+const ACTION_SKIP = new Set(['do', 'with', 'to', 'dir', 'up', 'left', 'right', 'height', 'anticipation', 'frames', 'smear', 'true', 'amount', 'x']);
+const TRAVEL = new Set(['walk', 'run', 'shamble', 'sniff', 'jump']);
+const DIRECTED = new Set(['look', 'point', 'turn']);
+
+export function actionVocab(meta) {
+  const doc = String(((meta && meta.params && meta.params.actions) || {}).doc || '');
+  const head = doc.includes('at,') ? doc.split('at,')[0] : doc;
+  return Array.from(new Set((head.toLowerCase().match(/[a-z][a-z-]*/g) || []).filter((w) => !ACTION_SKIP.has(w))));
+}
+
+export function ActionLane({ layer, sceneDuration, localTime, onPatch, Num }) {
+  const m = useManifest();
+  const [sel, setSel] = useState(-1);
+  const [ghost, setGhost] = useState(null);
+  const meta = m && m[layer.component];
+  if (!meta || !meta.params || !meta.params.actions) return null;
+  const vocab = actionVocab(meta);
+  const faces = ((meta.params.expression || {}).options || []).filter(Boolean);
+  const D = Math.max(0.5, sceneDuration);
+  const acts = ((layer.params || {}).actions || []).map((a, i) => ({ ...a, _i: i }));
+  const put = (list) => onPatch({ params: { ...(layer.params || {}), actions: list.map(({ _i, ...a }) => a).sort((a, b) => (a.at || 0) - (b.at || 0)) } });
+  const edit = (i, patch) => {
+    const list = acts.map((a) => (a._i === i ? { ...a, ...patch } : a));
+    put(list);
+    if ('at' in patch) { const target = list.find((a) => a._i === i); setSel(list.slice().sort((p, q) => (p.at || 0) - (q.at || 0)).indexOf(target)); }
+  };
+  const t0 = Math.max(0, Math.min(D - 0.2, localTime || 0));
+  const add = (name) => {
+    if (!name) return;
+    const x = +((layer.params || {}).x ?? 50);
+    const a = { do: name, at: r2(t0), duration: TRAVEL.has(name) ? 2 : 1.2 };
+    if (TRAVEL.has(name) && name !== 'jump') a.to = Math.max(5, Math.min(95, x + (x > 60 ? -30 : 30)));
+    if (DIRECTED.has(name)) a.dir = 'right';
+    const list = [...acts, { ...a, _i: acts.length }];
+    put(list);
+    setSel(list.slice().sort((p, q) => (p.at || 0) - (q.at || 0)).findIndex((z) => z === list[list.length - 1]));
+  };
+  const drag = (e, a, kind) => {
+    e.preventDefault(); e.stopPropagation();
+    setSel(a._i);
+    const lane = e.currentTarget.closest('.act-lane');
+    const w = lane.getBoundingClientRect().width;
+    const x0 = e.clientX;
+    const calc = (ev) => {
+      const dt = (ev.clientX - x0) / w * D;
+      if (kind === 'move') return { at: r2(Math.max(0, Math.min(D - 0.1, (a.at || 0) + dt))), duration: a.duration };
+      return { at: a.at, duration: r2(Math.max(0.1, Math.min(D - (a.at || 0), (a.duration || 1) + dt))) };
+    };
+    const move = (ev) => setGhost({ i: a._i, ...calc(ev) });
+    const up = (ev) => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); setGhost(null); if (Math.abs(ev.clientX - x0) > 2) edit(a._i, calc(ev)); };
+    window.addEventListener('mousemove', move); window.addEventListener('mouseup', up);
+  };
+  const cur = acts.find((a) => a._i === sel);
+  return html`<div class="insp-sec"><div class="row"><div class="section-title" style=${{ margin: 0 }}>Actions · ${layer.name || layer.component}</div><span class="spacer"></span>
+      <select class="select sm" value="" onChange=${(e) => { add(e.target.value); e.target.value = ''; }}><option value="">+ Action at ${t0.toFixed(1)}s</option>${vocab.map((v) => html`<option value=${v}>${v}</option>`)}</select></div>
+    <div class="act-lane">
+      ${acts.map((a) => {
+        const g = ghost && ghost.i === a._i ? ghost : a;
+        return html`<div key=${a._i} class=${'act-block ' + (sel === a._i ? 'on' : '')} style=${{ left: ((g.at || 0) / D * 100) + '%', width: Math.max(2, (g.duration || 1) / D * 100) + '%' }}
+          title=${`${a.do} at ${(+g.at || 0).toFixed(2)}s for ${(+g.duration || 1).toFixed(2)}s${a.to != null ? ' to x ' + a.to + '%' : ''}`} onMouseDown=${(e) => drag(e, a, 'move')}>
+          <span class="ellipsis">${a.do}${a.to != null ? ' →' + Math.round(a.to) : ''}</span><span class="act-edge" onMouseDown=${(e) => drag(e, a, 'resize')}></span></div>`;
+      })}
+      <div class="act-head" style=${{ left: (t0 / D * 100) + '%' }}></div>
+    </div>
+    ${!acts.length ? html`<div class="muted" style=${{ fontSize: '12px', marginTop: '6px' }}>No actions yet. Add one at the playhead, or select the character and tell the agent what to do.</div>` : null}
+    ${cur ? html`<div class="keyrow" style=${{ marginTop: '8px', flexWrap: 'wrap' }}>
+      <select class="select sm" value=${cur.do} onChange=${(e) => edit(cur._i, { do: e.target.value })}>${vocab.concat(vocab.includes(cur.do) ? [] : [cur.do]).map((v) => html`<option value=${v}>${v}</option>`)}</select>
+      <${Num} label="AT" value=${cur.at || 0} step=${0.1} min=${0} max=${D} onChange=${(v) => edit(cur._i, { at: r2(v) })} />
+      <${Num} label="DUR" value=${cur.duration || 1} step=${0.1} min=${0.1} max=${D} onChange=${(v) => edit(cur._i, { duration: r2(v) })} />
+      ${TRAVEL.has(cur.do) && cur.do !== 'jump' || cur.to != null ? html`<${Num} label="TO X" unit="%" value=${cur.to ?? 50} onChange=${(v) => edit(cur._i, { to: r2(v) })} />` : null}
+      ${DIRECTED.has(cur.do) ? html`<select class="select sm" value=${cur.dir || 'right'} onChange=${(e) => edit(cur._i, { dir: e.target.value })}>${['left', 'right', 'up', 'down'].map((d) => html`<option value=${d}>${d}</option>`)}</select>` : null}
+      ${faces.length ? html`<select class="select sm" value=${cur.expression || ''} onChange=${(e) => edit(cur._i, { expression: e.target.value || undefined })}><option value="">face: auto</option>${faces.map((f) => html`<option value=${f}>face: ${f}</option>`)}</select>` : null}
+      <button class="btn icon sm" title="Delete action" onClick=${() => { put(acts.filter((a) => a._i !== cur._i)); setSel(-1); }}><${Icon} name="x" size=${12} /></button>
+    </div>` : null}
+  </div>`;
+}
+
 function ParamField({ name, spec, value, onChange }) {
   const [raw, setRaw] = useState('');
   const [err, setErr] = useState('');
@@ -200,32 +282,52 @@ export function ComponentParams({ layer, onPatch }) {
   </div>`;
 }
 
+export const thumbUrl = (name, value) => `/api/library/thumb?component=${encodeURIComponent(name)}&value=${encodeURIComponent(value || '')}`;
+
+export function libraryGroups(m) {
+  const opts = (name, key) => (((m[name] || {}).params || {})[key] || {}).options || [];
+  return [
+    ['Characters', 'toon', opts('toon', 'preset').filter(Boolean)],
+    ['Anime characters', 'anime-figure', opts('anime-figure', 'preset').filter(Boolean)],
+    ['Stick figures', 'stickman', opts('stickman', 'style')],
+    ['Animals', 'toon-animal', opts('toon-animal', 'species')],
+    ['Scenery', 'toon-set', opts('toon-set', 'preset')],
+    ['Anime scenery', 'anime-set', opts('anime-set', 'preset')],
+    ['Props, buildings, furniture', 'toon-prop', opts('toon-prop', 'name')],
+    ['3D models', 'model-spec', MODELS3D],
+    ['Effects and overlays', 'fx', opts('fx', 'kind')]
+  ].filter((g) => m[g[1]] && g[2].length);
+}
+
+function LibraryGroup({ title, name, values, onAdd, open, onToggle }) {
+  const shown = open ? values : values.slice(0, 9);
+  const drag = (v) => (e) => { e.dataTransfer.setData('application/x-auteur', JSON.stringify({ layer: componentLayer(name, v) })); };
+  return html`<div class="comp-group"><div class="section-title row" style=${{ margin: '0 0 6px' }}>${title} <span class="muted">${values.length}</span><span class="spacer"></span>
+      ${values.length > 9 ? html`<button class="btn ghost sm" onClick=${onToggle}>${open ? 'Less' : 'All'}</button>` : null}</div>
+    <div class="lib-grid">${shown.map((v) => html`<button class="lib-card" key=${v} draggable onDragStart=${drag(v)} onClick=${() => onAdd(componentLayer(name, v))} title=${`Add ${v}. Drag onto the stage to place it.`}>
+      <img src=${thumbUrl(name, v)} loading="lazy" alt="" onError=${(e) => { e.target.style.visibility = 'hidden'; }} />
+      <span>${String(v).replace(/-/g, ' ')}</span></button>`)}</div></div>`;
+}
+
 export function ComponentsPanel({ scene, onAdd }) {
   const m = useManifest();
   const [q, setQ] = useState('');
-  if (!m) return html`<div class="muted">Loading the component library…</div>`;
-  const opts = (name, key) => (((m[name] || {}).params || {})[key] || {}).options || [];
-  const groups = [
-    ['Characters', 'toon', opts('toon', 'preset').filter(Boolean)],
-    ['Animals', 'toon-animal', opts('toon-animal', 'species')],
-    ['Scenery and sets', 'toon-set', opts('toon-set', 'preset')],
-    ['Props, buildings, furniture', 'toon-prop', opts('toon-prop', 'name')],
-    ['3D models', 'model-spec', MODELS3D]
-  ];
+  const [open, setOpen] = useState({});
+  if (!m) return html`<div class="muted">Loading the library…</div>`;
+  const groups = libraryGroups(m);
   const term = q.trim().toLowerCase();
   const match = (s) => !term || s.toLowerCase().includes(term);
   const others = Object.values(m).filter((c) => match(c.name + ' ' + c.category + ' ' + c.description)).sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name));
   const drag = (name, value) => (e) => { e.dataTransfer.setData('application/x-auteur', JSON.stringify({ layer: componentLayer(name, value) })); };
   return html`<div>
-    <div class="muted" style=${{ fontSize: '12px', marginBottom: '8px' }}>Click to add to scene ${scene ? scene.index + 1 : ''} at the playhead, or drag onto the stage. Then set details and keyframes in the Layer tab.</div>
-    <input class="input sm" placeholder="Search characters, props, sets, components" value=${q} onInput=${(e) => setQ(e.target.value)} style=${{ width: '100%', marginBottom: '10px' }} />
+    <div class="muted" style=${{ fontSize: '12px', marginBottom: '8px' }}>Click to add to scene ${scene ? scene.index + 1 : ''} at the playhead, or drag onto the stage. Select it, then animate it by hand or tell the agent what it should do.</div>
+    <input class="input sm" placeholder="Search characters, scenery, props, effects" value=${q} onInput=${(e) => setQ(e.target.value)} style=${{ width: '100%', marginBottom: '10px' }} />
     ${groups.map(([title, name, values]) => {
-      const vs = values.filter(match);
+      const vs = values.filter((v) => match(v + ' ' + title));
       if (!vs.length) return null;
-      return html`<div class="comp-group"><div class="section-title">${title} <span class="muted">${vs.length}</span></div>
-        <div class="chip-cloud">${vs.map((v) => html`<button class="chip btnchip" draggable onDragStart=${drag(name, v)} onClick=${() => onAdd(componentLayer(name, v))}>${v}</button>`)}</div></div>`;
+      return html`<${LibraryGroup} key=${name} title=${title} name=${name} values=${vs} onAdd=${onAdd} open=${!!open[name] || !!term} onToggle=${() => setOpen({ ...open, [name]: !open[name] })} />`;
     })}
-    ${others.length ? html`<div class="comp-group"><div class="section-title">All components <span class="muted">${others.length}</span></div>
+    ${others.length ? html`<div class="comp-group"><div class="section-title">All components (advanced) <span class="muted">${others.length}</span></div>
       ${others.map((c) => html`<button class="comp-row" draggable onDragStart=${drag(c.name)} onClick=${() => onAdd(componentLayer(c.name))} title=${c.description}>
         <b>${c.name}</b><span class="chip">${c.category}</span><span class="muted ellipsis">${c.description.slice(0, 90)}</span></button>`)}</div>` : null}
   </div>`;

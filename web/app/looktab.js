@@ -78,7 +78,18 @@ function CameraEditor({ scene, time, patch }) {
   const cam = scene.camera || {};
   const keys = Array.isArray(cam.keys) ? cam.keys : [];
   const local = Math.max(0, Math.min(scene.duration, +(time - scene.start).toFixed(2)));
-  const setCam = (c) => patch({ camera: c && (c.preset || (c.keys && c.keys.length) || c.shake) ? c : null });
+  const setCam = (c) => patch({ camera: c && (c.preset || (c.keys && c.keys.length) || c.shake || (c.follow && c.follow.length)) ? c : null });
+  const follow = Array.isArray(cam.follow) ? cam.follow : [];
+  const targets = (scene.layers || []).filter((L) => !L.back);
+  const tname = (L) => (L.name || L.text || (L.params && (L.params.preset || L.params.species || L.params.name)) || L.component || L.kind || L.id).toString().slice(0, 28);
+  const setFollow = (list) => setCam({ ...cam, follow: list });
+  const addFollow = () => {
+    const actor = targets.find((L) => L.kind === 'component' && /toon|stickman|anime-figure|character|mascot|model-spec/.test(L.component || '')) || targets[0];
+    if (!actor) return;
+    const from = follow.length ? Math.min(scene.duration - 0.5, local) : 0;
+    setFollow(follow.concat([{ target: actor.id, from: +from.toFixed(2), to: scene.duration, zoom: 1.6, lag: 0.35, lead: 0.2, offsetX: 0, offsetY: 0 }]));
+  };
+  const setF = (i, k, v) => setFollow(follow.map((f, j) => (j === i ? { ...f, [k]: v } : f)));
   const addKey = () => {
     const prev = keys.length ? keys.reduce((a, k) => (Math.abs(k.t - local) < Math.abs(a.t - local) ? k : a), keys[0]) : { zoom: 1.15, x: 50, y: 50 };
     const next = keys.filter((k) => Math.abs(k.t - local) > 0.02).concat([{ t: local, zoom: prev.zoom ?? 1.15, x: prev.x ?? 50, y: prev.y ?? 50, rotate: prev.rotate || 0, ease: prev.ease || 'power2.inOut' }]).sort((a, b) => a.t - b.t);
@@ -105,6 +116,23 @@ function CameraEditor({ scene, time, patch }) {
       <button class="btn icon sm" title="Delete keyframe" onClick=${() => setCam({ ...cam, keys: keys.filter((_, j) => j !== i) })}><${Icon} name="x" size=${12} /></button>
     </div>`)}
     <div class="muted" style=${{ fontSize: '11px' }}>Zoom pushes in around the focus point; the frame edge never shows. Keyframes replace the preset.</div>
+    <div class="row" style=${{ marginTop: '10px' }}><b style=${{ fontSize: '12px' }}>Follow camera</b><span class="spacer"></span>
+      <button class="btn sm" disabled=${!targets.length} title=${targets.length ? 'Lock the camera onto a layer, like a game camera' : 'Add a character or layer first'} onClick=${addFollow}><${Icon} name="crosshair" size=${12} />Follow a layer</button></div>
+    ${follow.map((f, i) => html`<div class="follow-row" key=${i}>
+      <div class="row" style=${{ gap: '6px' }}><select class="select sm" style=${{ flex: 1 }} value=${f.target} onChange=${(e) => setF(i, 'target', e.target.value)}>
+        ${targets.map((L) => html`<option value=${L.id}>${tname(L)}</option>`)}${targets.some((L) => L.id === f.target) ? null : html`<option value=${f.target}>missing layer</option>`}</select>
+        <button class="btn icon sm" title="Remove" onClick=${() => setFollow(follow.filter((_, j) => j !== i))}><${Icon} name="x" size=${12} /></button></div>
+      <div class="follow-grid">
+        <label title="Start (s)">FROM<input type="number" step="0.1" min="0" max=${scene.duration} value=${f.from ?? 0} onChange=${(e) => setF(i, 'from', Math.max(0, +e.target.value))} /></label>
+        <label title="End (s)">TO<input type="number" step="0.1" min="0" max=${scene.duration} value=${f.to ?? scene.duration} onChange=${(e) => setF(i, 'to', Math.min(scene.duration, +e.target.value))} /></label>
+        <label title="Zoom while following">ZOOM<input type="number" step="0.05" min="1" max="4" value=${f.zoom ?? 1.6} onChange=${(e) => setF(i, 'zoom', Math.max(1, +e.target.value))} /></label>
+        <label title="Smoothing: how far the camera trails the target, in seconds">LAG<input type="number" step="0.05" min="0" max="2" value=${f.lag ?? 0.35} onChange=${(e) => setF(i, 'lag', Math.max(0, +e.target.value))} /></label>
+        <label title="Look-ahead: frame where the target is going, in seconds">LEAD<input type="number" step="0.05" min="0" max="1.5" value=${f.lead ?? 0.2} onChange=${(e) => setF(i, 'lead', Math.max(0, +e.target.value))} /></label>
+        <label title="Framing offset x in % (rule of thirds: -12 or 12)">OFF X<input type="number" step="1" value=${f.offsetX || 0} onChange=${(e) => setF(i, 'offsetX', +e.target.value)} /></label>
+        <label title="Framing offset y in %">OFF Y<input type="number" step="1" value=${f.offsetY || 0} onChange=${(e) => setF(i, 'offsetY', +e.target.value)} /></label>
+        <label title="Keep the horizon still, follow sideways only" class="chk"><input type="checkbox" checked=${!!f.lockY} onChange=${(e) => setF(i, 'lockY', e.target.checked)} />Lock height</label>
+      </div></div>`)}
+    ${follow.length ? html`<div class="muted" style=${{ fontSize: '11px' }}>Overlapping follows blend from one target to the next, so you can hand the camera from character to character.</div>` : null}
   </div>`;
 }
 

@@ -459,7 +459,37 @@
     return { x, facing, pose, speed, smear, expr, air, talk };
   }
 
+  const FIG_PRESETS = {
+    schoolgirl: { hair: 'twintails', hairColor: '#3b2a3c', outfit: 'uniform', coat: '#24345e', accent: '#e23d4c', accessory: 'ribbon', iris: '#6c4a8a' },
+    schoolboy: { hair: 'messy', hairColor: '#1d1b26', outfit: 'uniform', coat: '#1f2a44', accent: '#c9472f', accessory: 'tie', iris: '#5d4334' },
+    delinquent: { hair: 'spiky', hairColor: '#c9a227', outfit: 'jacket', coat: '#2b2b2b', accent: '#d8343c', accessory: 'headband', iris: '#b5523a', expression: 'determined' },
+    idol: { hair: 'long', hairColor: '#e86f92', outfit: 'dress', coat: '#ff6fa8', accent: '#ffe066', accessory: 'hairclip', iris: '#ff4f6e', expression: 'smile' },
+    'shrine-maiden': { hair: 'long', hairColor: '#141218', outfit: 'kimono', coat: '#f4f1ec', accent: '#d8343c', accessory: 'ribbon', iris: '#7a3a3a' },
+    samurai: { hair: 'bun', hairColor: '#141218', outfit: 'kimono', coat: '#2d3a5c', accent: '#c9472f', accessory: 'none', iris: '#5a4030', expression: 'determined' },
+    ninja: { hair: 'short', hairColor: '#14181d', outfit: 'hoodie', coat: '#22262e', accent: '#d8343c', accessory: 'scarf', iris: '#8a2c2c', expression: 'determined' },
+    ronin: { hair: 'messy', hairColor: '#2a2a2e', outfit: 'kimono', coat: '#5a4a3a', accent: '#a83232', accessory: 'scarf', iris: '#6a5a4a' },
+    knight: { hair: 'short', hairColor: '#c9a46a', outfit: 'armor', coat: '#9aa6b5', accent: '#3a6ab8', accessory: 'none', iris: '#3a6ab8', expression: 'determined' },
+    mage: { hair: 'long', hairColor: '#e6e9f2', outfit: 'coat', coat: '#4a2f7a', accent: '#f3c56c', accessory: 'none', iris: '#7a5ae0' },
+    witch: { hair: 'long', hairColor: '#5a2a6a', outfit: 'dress', coat: '#24182e', accent: '#7ae06a', accessory: 'ribbon', iris: '#7ae06a', expression: 'smile' },
+    detective: { hair: 'short', hairColor: '#3a2a1d', outfit: 'coat', coat: '#8a6a44', accent: '#2b2620', accessory: 'tie', iris: '#5d4334', expression: 'determined' },
+    'office-worker': { hair: 'short', hairColor: '#20202a', outfit: 'shirt', coat: '#e9eef5', pants: '#2b3346', accent: '#3a6ab8', accessory: 'tie', iris: '#4a4a5a' },
+    hacker: { hair: 'messy', hairColor: '#3ff0e0', outfit: 'hoodie', coat: '#1b1b2e', accent: '#3ff0e0', accessory: 'glasses', iris: '#3ff0e0' },
+    athlete: { hair: 'ponytail', hairColor: '#4a2a1a', outfit: 'shirt', coat: '#ff7a1a', pants: '#1d2433', accent: '#ffffff', accessory: 'headband', iris: '#7a5a3a', expression: 'happy' },
+    rocker: { hair: 'spiky', hairColor: '#d8343c', outfit: 'jacket', coat: '#141414', accent: '#c0c0c0', accessory: 'none', iris: '#d8343c', expression: 'shout' },
+    chef: { hair: 'short', hairColor: '#2a1a1c', outfit: 'shirt', coat: '#ffffff', pants: '#2b2b2b', accent: '#d8343c', accessory: 'scarf', iris: '#5d4334', expression: 'happy' },
+    doctor: { hair: 'bob', hairColor: '#2b2335', outfit: 'coat', coat: '#f6f7fa', accent: '#3fa7d6', accessory: 'glasses', iris: '#5a8fb0' },
+    soldier: { hair: 'short', hairColor: '#2a2418', outfit: 'jacket', coat: '#566b3a', pants: '#3f4a2a', accent: '#c9a227', accessory: 'none', iris: '#4a5a3a', expression: 'determined' },
+    pilot: { hair: 'short', hairColor: '#6a4a2a', outfit: 'jacket', coat: '#7a5a3a', accent: '#ffffff', accessory: 'scarf', iris: '#3a6ab8' },
+    princess: { hair: 'long', hairColor: '#f3d27a', outfit: 'dress', coat: '#f7a8c8', accent: '#ffd36e', accessory: 'hairclip', iris: '#3fa7d6', expression: 'smile' },
+    butler: { hair: 'short', hairColor: '#e4ecf2', outfit: 'coat', coat: '#141418', accent: '#ffffff', accessory: 'tie', iris: '#4a4a5a' },
+    sensei: { hair: 'messy', hairColor: '#cfd4dc', outfit: 'jacket', coat: '#2f3e5c', accent: '#ef6a4a', accessory: 'glasses', iris: '#5a6a8a', expression: 'smile' },
+    cyberpunk: { hair: 'bob', hairColor: '#ff3fa4', outfit: 'jacket', coat: '#1b1036', accent: '#3ff0e0', accessory: 'glasses', iris: '#ff3fa4' },
+    'street-fighter': { hair: 'spiky', hairColor: '#141218', outfit: 'shirt', coat: '#d8343c', pants: '#2a2a3a', accent: '#ffffff', accessory: 'headband', iris: '#5a3a2a', expression: 'determined' },
+    'sakura-girl': { hair: 'bob', hairColor: '#e86f92', outfit: 'uniform', coat: '#f4f1ec', accent: '#e86f92', accessory: 'hairclip', iris: '#6c4a8a', expression: 'blush' }
+  };
+
   const FIG_PARAMS = {
+    preset: { type: 'enum', default: '', options: [''].concat(Object.keys(FIG_PRESETS)), doc: 'ready-made character look; any hair, outfit or colour you set overrides it' },
     script: FACE_PARAMS.script,
     x: { type: 'number', default: 50, doc: 'feet centre in % of frame width' }, y: { type: 'number', default: 90, doc: 'ground line in % of frame height' },
     h: { type: 'number', default: 60, doc: 'figure height in % of frame height' }, facing: { type: 'enum', default: 'right', options: ['right', 'left'] },
@@ -477,6 +507,8 @@
     params: FIG_PARAMS,
     example: "component('anime-figure', { layer: 'ren', script: 'indigo', hair: 'messy', outfit: 'coat', accessory: 'scarf', x: 20, h: 64, actions: [{ do: 'run', at: 0.2, duration: 1.4, to: 55 }, { do: 'strike', at: 1.8, duration: 1.2, to: 68, hold: true }] })"
   }, (ctx, p, h) => {
+    const pre = FIG_PRESETS[p.preset];
+    if (pre) Object.keys(pre).forEach((k) => { const d = FIG_PARAMS[k] ? FIG_PARAMS[k].default : undefined; if (p[k] == null || p[k] === '' || p[k] === d) p[k] = pre[k]; });
     const P = paints(p), c = castColors(p, P);
     const id = ++uid;
     const hpx = (p.h || 60) / 100 * ctx.H;
@@ -588,6 +620,63 @@
       case 'sky':
         out.back += [[300, 700, 1], [1200, 820, 1.3], [1600, 420, 0.8], [600, 300, 0.7]].map(([x, y, s]) => `<g transform="translate(${x} ${y}) scale(${s})"><path d="M-260 60 Q-260 -40 -150 -40 Q-120 -140 0 -130 Q120 -170 170 -60 Q280 -60 280 60 Z" fill="${P.moon}"/><path d="M-260 60 Q-100 20 280 60 L280 70 H-260 Z" fill="${P.ink}" opacity=".15"/></g>`).join('');
         break;
+      case 'city-day':
+        out.back += `<circle cx="1500" cy="230" r="90" fill="${P.moon}" opacity=".9"/>` + skylineLayer(rnd, 820, 160, 480, P.ink, 0.25, 0.04, P.sky) + skylineLayer(rnd, 900, 100, 340, P.ink, 0.5, 0.08, P.sky2)
+          + `<path d="M0 900 H1920 V1080 H0 Z" fill="${P.ink}" opacity=".8"/>` + Array.from({ length: 8 }, (_, i) => `<rect x="${60 + i * 240}" y="980" width="120" height="10" fill="${P.moon}" opacity=".5"/>`).join('');
+        break;
+      case 'train-platform':
+        out.back += hills(700, 70, P.ink, 0.3, 9) + `<path d="M0 760 H1920 V1080 H0 Z" fill="${P.ink}" opacity=".55"/>`
+          + `<path d="M0 820 H1920 M0 880 H1920" stroke="${P.line}" stroke-width="6" opacity=".55"/>` + Array.from({ length: 24 }, (_, i) => `<rect x="${i * 84}" y="826" width="40" height="50" fill="${P.ink}" opacity=".5"/>`).join('')
+          + `<path d="M0 900 H1920 V1080 H0 Z" fill="${P.ink}"/><path d="M0 900 H1920" stroke="${P.practical}" stroke-width="8" stroke-dasharray="60 30"/>`
+          + `<path d="M200 900 V420 M1720 900 V420 M140 420 H1780 L1720 360 H200 Z" fill="${P.ink}" stroke="${P.ink}" stroke-width="18"/><rect x="820" y="470" width="280" height="70" rx="10" fill="${P.practical}" opacity=".9"/>`;
+        break;
+      case 'convenience-store':
+        out.back += stars() + skylineLayer(rnd, 700, 120, 380, P.ink, 0.5, 0.06, P.practical)
+          + `<rect x="420" y="380" width="1080" height="520" fill="${P.ink}"/><rect x="460" y="500" width="1000" height="400" fill="${P.practical}" opacity=".85"/><rect x="420" y="400" width="1080" height="70" fill="${P.accent}"/>`
+          + Array.from({ length: 5 }, (_, i) => `<rect x="${500 + i * 190}" y="560" width="150" height="16" fill="${P.ink}" opacity=".35"/><rect x="${500 + i * 190}" y="680" width="150" height="16" fill="${P.ink}" opacity=".35"/>`).join('')
+          + `<path d="M0 900 H1920 V1080 H0 Z" fill="${P.ink}"/><path d="M460 900 L300 1080 H1620 L1460 900 Z" fill="${P.practical}" opacity=".18"/>`;
+        break;
+      case 'forest-path':
+        out.back += hills(620, 90, P.ink, 0.25, 11) + `<path d="M800 1080 Q900 820 960 640 Q1020 820 1120 1080 Z" fill="${P.moon}" opacity=".35"/>`
+          + Array.from({ length: 14 }, (_, i) => { const x = i < 7 ? 40 + i * 110 : 1100 + (i - 7) * 120, s = 0.7 + rnd() * 0.6; return `<g transform="translate(${f1(x)} 1080) scale(${f1(s)})"><rect x="-14" y="-420" width="28" height="420" fill="${P.ink}"/><path d="M0 -720 L-140 -380 H140 Z M0 -600 L-170 -260 H170 Z" fill="${P.ink}" opacity=".9"/></g>`; }).join('');
+        break;
+      case 'mountain-pass':
+        out.back += `<path d="M0 780 L320 340 L520 560 L820 220 L1120 600 L1400 300 L1920 760 V1080 H0 Z" fill="${P.ink}" opacity=".35"/><path d="M820 220 L760 300 L860 290 L900 330 Z M1400 300 L1350 360 L1450 350 Z" fill="${P.moon}"/>`
+          + hills(820, 120, P.ink, 0.6, 12) + `<path d="M0 1080 L0 900 Q600 860 1100 940 T1920 920 V1080 Z" fill="${P.ink}"/>`;
+        break;
+      case 'beach-day':
+        out.back += `<circle cx="1480" cy="260" r="110" fill="${P.moon}"/>` + `<path d="M0 560 H1920 V820 H0 Z" fill="${P.sky}" opacity=".9"/><path d="M0 560 H1920" stroke="${P.line}" stroke-width="4" opacity=".6"/>`
+          + Array.from({ length: 8 }, (_, i) => `<path d="M${i * 260} ${640 + (i % 3) * 50} q40 -14 80 0" stroke="${P.moon}" stroke-width="6" fill="none" opacity=".7"/>`).join('')
+          + `<path d="M0 820 Q960 760 1920 820 V1080 H0 Z" fill="${P.practical}"/><path d="M300 1080 V700 M300 700 Q200 640 120 690 M300 700 Q380 620 470 670 M300 700 Q260 600 180 600" stroke="${P.ink}" stroke-width="18" fill="none"/>`;
+        break;
+      case 'school-roof':
+        out.back += `<circle cx="1460" cy="300" r="80" fill="${P.moon}" opacity=".8"/>` + skylineLayer(rnd, 900, 60, 260, P.ink, 0.35, 0.03, P.sky)
+          + `<path d="M0 860 H1920 V1080 H0 Z" fill="${P.ink}" opacity=".9"/>` + `<path d="M0 640 H1920 M0 860 H1920" stroke="${P.ink}" stroke-width="10"/>` + Array.from({ length: 33 }, (_, i) => `<path d="M${i * 60} 640 V860" stroke="${P.ink}" stroke-width="6"/>`).join('');
+        break;
+      case 'temple-stairs':
+        out.back += moon(1480, 230, 64) + hills(620, 140, P.ink, 0.45, 13)
+          + `<g fill="${P.accent}" stroke="${P.ink}" stroke-width="6"><path d="M760 300 H1160 L1176 276 H744 Z"/><rect x="784" y="330" width="352" height="22"/><rect x="814" y="300" width="34" height="300"/><rect x="1072" y="300" width="34" height="300"/></g>`
+          + Array.from({ length: 12 }, (_, i) => `<rect x="${f1(700 - i * 40)}" y="${600 + i * 40}" width="${f1(520 + i * 80)}" height="40" fill="${P.ink}" opacity="${f1(0.55 + i * 0.035)}" stroke="${P.line}" stroke-opacity=".25" stroke-width="2"/>`).join('');
+        break;
+      case 'snow-field':
+        out.back += hills(640, 110, P.moon, 0.5, 14) + hills(760, 80, P.moon, 0.8, 15) + `<path d="M0 860 Q960 820 1920 860 V1080 H0 Z" fill="${P.moon}"/>`
+          + Array.from({ length: 6 }, (_, i) => `<g transform="translate(${180 + i * 320} 860)"><rect x="-8" y="-120" width="16" height="120" fill="${P.ink}"/><path d="M0 -330 L-80 -110 H80 Z" fill="${P.ink}" opacity=".8"/><path d="M0 -330 L-30 -250 H30 Z" fill="${P.moon}"/></g>`).join('');
+        break;
+      case 'festival-street':
+        out.back += stars() + skylineLayer(rnd, 760, 160, 380, P.ink, 0.6, 0.1, P.practical) + `<path d="M0 860 H1920 V1080 H0 Z" fill="${P.ink}"/>`
+          + [380, 520].map((y, j) => `<path d="M0 ${y} Q480 ${y + 70} 960 ${y} T1920 ${y}" stroke="${P.ink}" stroke-width="5" fill="none"/>` + Array.from({ length: 12 }, (_, i) => { const x = 80 + i * 160 + j * 60; const yy = y + Math.sin(i * 0.9) * 26 + 40; return `<ellipse cx="${x}" cy="${f1(yy)}" rx="28" ry="38" fill="${i % 2 ? P.accent : P.practical}"/><ellipse cx="${x}" cy="${f1(yy)}" rx="60" ry="70" fill="${P.practical}" opacity=".12"/>`; }).join('')).join('');
+        break;
+      case 'space':
+        out.back += stars() + stars() + `<circle cx="1420" cy="760" r="420" fill="${P.accent}" opacity=".55"/><path d="M960 820 Q1420 640 1900 700" stroke="${P.moon}" stroke-width="10" fill="none" opacity=".45"/>`
+          + moon(420, 260, 70) + `<circle cx="1420" cy="760" r="420" fill="none" stroke="${P.moon}" stroke-width="3" opacity=".4"/>`;
+        break;
+      case 'desert-dunes':
+        out.back += `<circle cx="1380" cy="330" r="120" fill="${P.practical}"/>` + hills(720, 120, P.accent, 0.35, 16) + hills(820, 90, P.practical, 0.55, 17) + hills(930, 60, P.ink, 0.8, 18);
+        break;
+      case 'hallway':
+        out.back += `<path d="M0 0 H1920 V1080 H0 Z" fill="${P.sky}" opacity=".35"/><path d="M0 0 L760 360 H1160 L1920 0 Z" fill="${P.ink}" opacity=".25"/><path d="M0 1080 L760 720 H1160 L1920 1080 Z" fill="${P.ink}" opacity=".75"/>`
+          + `<rect x="760" y="360" width="400" height="360" fill="${P.moon}" opacity=".85"/>` + [0, 1, 2, 3].map((i) => { const a = 120 + i * 150, b = a * 0.42; return `<path d="M${f1(a * 0.9)} ${f1(b + 40)} V${f1(1080 - b - 40)}" stroke="${P.ink}" stroke-width="${12 - i * 2}"/><path d="M${f1(1920 - a * 0.9)} ${f1(b + 40)} V${f1(1080 - b - 40)}" stroke="${P.ink}" stroke-width="${12 - i * 2}"/>`; }).join('');
+        break;
       case 'void': default:
         out.back += `<defs><radialGradient id="avoid${p.__id}" cx="50%" cy="52%" r="60%"><stop offset="0" stop-color="${P.moon}" stop-opacity=".42"/><stop offset="1" stop-color="${P.moon}" stop-opacity=".12"/></radialGradient></defs><rect x="0" y="0" width="1920" height="1080" fill="url(#avoid${p.__id})"/>`;
     }
@@ -596,7 +685,7 @@
 
   const SET_PARAMS = {
     script: FACE_PARAMS.script,
-    preset: { type: 'enum', default: 'city-night', options: ['city-night', 'rooftop', 'street-rain', 'field-dusk', 'shrine', 'classroom', 'bedroom', 'seaside', 'sakura-path', 'ruins', 'sky', 'void'] },
+    preset: { type: 'enum', default: 'city-night', options: ['city-night', 'rooftop', 'street-rain', 'field-dusk', 'shrine', 'classroom', 'bedroom', 'seaside', 'sakura-path', 'ruins', 'sky', 'city-day', 'train-platform', 'convenience-store', 'forest-path', 'mountain-pass', 'beach-day', 'school-roof', 'temple-stairs', 'snow-field', 'festival-street', 'space', 'desert-dunes', 'hallway', 'void'] },
     weather: { type: 'enum', default: 'none', options: ['none', 'rain', 'snow', 'petals', 'embers', 'fireflies'], doc: 'rain and embers on ones, snow and petals on twos; positions are seeded' },
     push: { type: 'number', default: 1, doc: 'camera push across the shot, 1.06 at most (only on holds; cut closer instead of zooming)' },
     letterbox: { type: 'boolean', default: false }, seed: { type: 'number', default: 0 }

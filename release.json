@@ -1,7 +1,7 @@
 {
   "name": "AuteurFrame",
-  "version": "1.2.0",
-  "released": "2026-11-14",
+  "version": "1.3.0",
+  "released": "2026-11-15",
   "channel": "stable",
   "license": "AGPL-3.0-only",
   "copyright": "Copyright (c) 2026 Abdur Rahman Maheer",
@@ -10,19 +10,20 @@
   "download": "https://github.com/joyghoshs/auteurframe/releases/latest",
   "feed": "https://raw.githubusercontent.com/joyghoshs/auteurframe/main/release.json",
   "notes": [
-    "Anime films: a new anime medium with cel-painted close-ups, full-body acting in held drawings on twos, painted anime sets with weather, speed lines, slashes and impacts, a closed colour script per film and shot sheets with one sakuga action shot per sequence.",
-    "Every film runs as a scene relay: one lead animator per scene in story order, each continuing from the accepted scene before it, while the Finisher polishes accepted scenes and renders run in parallel.",
-    "Original scores for every film: 12 genres chosen from the brief, mood, style and medium, with sections, risers and a peak that follow the scene cuts, so motion graphics films no longer share one sound.",
-    "Desktop app: a new animated splash screen, Every Story, One Frame, that lights up the studio as it starts and hands over to an already loaded studio window with no blank screen.",
-    "Agents no longer get stuck: the workshop tracks notes that keep coming back, escalates its advice and restores the best earlier version when the preview budget runs out.",
-    "Scene memory: a fast local retrieval store learns from every accepted scene and shows animators the closest examples. It seeds itself from your existing projects.",
-    "Studio tools for people: add any character, animal, set, prop or 3D model from the Components panel, edit it with a settings form, and animate any layer with keyframes, easing, 14 motion presets or Record mode.",
-    "New cast: 20 toon characters (teacher, nurse, firefighter, astronaut, pirate, wizard, king, queen, princess, ninja and more), 11 hats, 13 props and 7 animals (bear, mouse, lion, sheep, cow, horse, panda).",
-    "3D models from code: ModelSpec builds real 3D animals, vehicles, buildings and furniture from named parts, with a ready library and validation that rejects blobs and missing limbs.",
-    "Sharper critic: it describes frames as a stranger would and writes notes as concrete changes with numbers.",
-    "Faster, safer rendering: direct seeks, overlapped encoding, tuned encoder threads, throttled previews, memory-aware page count, and render caches that refresh when any runtime file changes.",
-    "Fixes: QA drafts now show in the QA tab, 3D requests stay 3D, text is measured against its own box, user layers starting at 0 s are visible, and the scene check no longer breaks on a stray package.json.",
-    "Desktop app: films with hard cuts between scenes now join frame-exactly with the bundled FFmpeg 9, and crossfades keep a safe margin."
+    "Animate with the agent: select one or more layers on the stage and describe the motion. The animator changes only those layers, can set up a follow camera, and returns a draft you play, then apply or discard. Quick commands like faster, slower, bouncier, fade in, float and stagger apply instantly.",
+    "Multi-track timeline: every stacking level is its own video track with scenery on V1, plus voice, score and stackable audio tracks. Drag clips sideways to retime and up or down to change tracks, and resize the timeline.",
+    "Follow camera: a game-style camera locks onto a character or any layer with zoom, smoothing, look-ahead and framing, stays inside the scene and hands off between targets.",
+    "Library with thumbnails: 36 cartoon characters, 26 anime characters, stick figures, 13 animals, 55 cartoon sets, 25 anime sets, about 100 props, 3D models and 24 effects, by click or drag.",
+    "Intros and outros: 16 title designs including neon flicker, line draw, retro 80s, glitch, countdown, terminal, cinematic and an end card, added as their own scene or over a scene.",
+    "Text and effects: 30 text styles, 18 text entrances such as stomp, block reveal, bungee and count-up, new 3D extrude, retro, chrome, sticker and glitch designs, and effects like light leak, film grain, VHS, RGB split, lens flare, camera shake and letterbox.",
+    "Character action lane: walk, run, wave, talk, jump and other moves are blocks you drag and stretch, with walk targets, directions and expressions. A Layers panel adds rename, hide, lock, reorder and camera follow.",
+    "New scene from the timeline: right-click a scene or the scene track, name it, set its duration and optionally describe it for the agent.",
+    "Subtitle edits and scenes: scenes remember their captions. Moving a caption flags any scene that no longer lines up, Re-flow scenes to captions re-times every cut in one step, and Scenes follow captions keeps them moving together automatically.",
+    "Blank project: start from an empty studio with the format, look, frame rate and number of blank scenes you choose, and build it yourself with or without the agent.",
+    "Workspaces: group projects into workspaces from the start page sidebar. Create, rename and delete them (projects are kept), move projects between them, and new projects land in the workspace you have open.",
+    "Auteur-Free: with no API key, small tasks run on free public models from LLM7.io, OVHcloud, Kilo, Pollinations and BlockRun, routed within their limits. You can also choose it with your own model, or make a whole film on it after agreeing to its limits.",
+    "More reliable models: replies that think inside the text are cleaned, models that think too long are asked again with thinking off, and planning roles answer through forced tool calls with a JSON fallback.",
+    "Fixes: characters, props and sets get entrance, exit and loop effects like text, and animals and full-frame props can be clicked on the stage."
   ],
   "templates": [
     {

@@ -293,3 +293,40 @@ def verify_overlay(project: dict[str, Any], info: dict[str, Any]) -> dict[str, A
         if on != want:
             bad.append({"cue": cues[i].get("id", i), "frame": k, "t": round(k / fps, 3), "expected": "visible" if want else "hidden", "text": cues[i].get("text", "")[:60]})
     return {"ok": not bad, "frames": len(got), "bad": bad[:20]}
+
+
+def reflow_plan(project: dict[str, Any]) -> dict[str, Any]:
+    fps = int(project.get("fps") or 30)
+    scenes = project.get("scenes") or []
+    cues = sorted(project.get("cues") or [], key=lambda c: float(c["start"]))
+    by_id = {c.get("id"): c for c in cues}
+    if not scenes:
+        return {"durations": [], "changes": [], "linked": 0}
+    starts: list[float] = []
+    linked = 0
+    for i, s in enumerate(scenes):
+        own = [by_id[c] for c in (s.get("cue_ids") or []) if c in by_id]
+        if own:
+            linked += 1
+        if i == 0:
+            starts.append(0.0)
+            continue
+        prev = starts[-1]
+        if own:
+            first = min(own, key=lambda c: float(c["start"]))
+            before = [c for c in cues if float(c["end"]) <= float(first["start"]) + 1e-6]
+            gap = max(0.0, float(first["start"]) - (float(before[-1]["end"]) if before else 0.0))
+            start = _snap(float(first["start"]) - min(0.12, gap / 2), fps)
+        else:
+            start = prev + float(scenes[i - 1]["duration"])
+        starts.append(max(prev + 0.5, start))
+    last = scenes[-1]
+    own_last = [by_id[c] for c in (last.get("cue_ids") or []) if c in by_id]
+    old_end = float(last["start"]) + float(last["duration"])
+    end = max(old_end, max(float(c["end"]) for c in own_last) + 0.3) if own_last else starts[-1] + float(last["duration"])
+    bounds = starts + [max(starts[-1] + 0.5, end)]
+    durations = [_snap(bounds[i + 1] - bounds[i], fps) for i in range(len(scenes))]
+    changes = [{"index": i, "id": s["id"], "title": s.get("title", ""), "from": round(float(s["duration"]), 3), "to": durations[i],
+                "start_from": round(float(s.get("start") or 0), 3), "start_to": round(starts[i], 3)}
+               for i, s in enumerate(scenes) if abs(durations[i] - float(s["duration"])) > 0.5 / fps]
+    return {"durations": durations, "changes": changes, "linked": linked}

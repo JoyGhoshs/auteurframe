@@ -1,11 +1,13 @@
-import { html, useState, useEffect, useRef, Icon, api, toast, ARCH_ICON } from './lib.js';
+import { html, useState, useEffect, useRef, Icon, api, toast, ARCH_ICON, Modal } from './lib.js';
 import { FontSelect } from './fontpicker.js';
-import { ComponentParams, MotionSection } from './motiontools.js';
+import { ComponentParams, MotionSection, ActionLane } from './motiontools.js';
 
 const ARCHS = ['kinetic-title', 'word-stack', 'big-number', 'bar-race', 'line-chart', 'donut', 'versus', 'timeline', 'quote', 'list-reveal', 'process-flow', 'icon-grid', 'doodle-explain', 'equation', 'image-focus', 'scale-zoom', 'map-pins', 'ui-mockup', 'lower-third', 'end-card', 'phone-showcase', 'ui-cascade', 'code-typing', 'shape-morph', 'particles-type', 'photo-stack', 'music-visualizer', 'paper-cut', 'vox-board', 'three-hero', 'logo-reveal', 'kinetic-beat', 'diagram-build', 'mascot-talk', 'line-art'];
 const TRANS = ['fade', 'smoothleft', 'smoothright', 'smoothup', 'slideleft', 'slideup', 'wipeleft', 'wiperight', 'circleopen', 'zoomin', 'fadeblack', 'fadewhite', 'dissolve', 'pixelize', 'hlslice', 'radial', 'squeezeh', 'hblur', 'cut'];
 const ENTERS = ['rise', 'fade', 'pop', 'drop', 'slideLeft', 'slideRight', 'zoom', 'blur', 'wipe', 'iris', 'spin', 'none'];
 const EXITS = ['none', 'fade', 'sink', 'lift', 'shrink', 'blur', 'slideLeft', 'slideRight', 'wipe'];
+const TEXT_ENTERS = ['chars', 'words', 'typewriter', 'scramble', 'bounce', 'mask', 'block', 'burst', 'roll', 'skate', 'stomp', 'tumble', 'flicker', 'scrapbook', 'bungee', 'tracking', 'wave', 'count'];
+const TEXT_EFFECTS = ['none', 'outline', 'neon', 'gradient', 'shadow', 'highlight', 'glass', 'stroke-fill', 'extrude', 'retro', 'chrome', 'sticker', 'glitch', 'underline', 'soft-shadow'];
 
 function Num({ label, value, onChange, step, min, max, unit }) {
   const [v, setV] = useState(value ?? '');
@@ -81,6 +83,7 @@ export function LayerTab({ project, scene, selected, onOverride, onLayerPatch, o
         ${L.kind === 'text' ? html`<${Text} rows=${2} value=${L.text} onCommit=${(v) => p({ text: v })} />` : null}
         ${L.kind === 'icon' ? html`<${Text} value=${L.icon} placeholder="lucide icon name" onCommit=${(v) => p({ icon: v })} />` : null}
       </div>
+      ${L.kind === 'component' ? html`<${ActionLane} layer=${L} sceneDuration=${scene.duration} localTime=${localTime} onPatch=${p} Num=${Num} />` : null}
       ${L.kind === 'component' ? html`<${ComponentParams} layer=${L} onPatch=${p} />` : null}
       <${MotionSection} layer=${L} sceneDuration=${scene.duration} localTime=${localTime} onPatch=${p} record=${record} onRecord=${onRecord} Num=${Num} />
       <div class="insp-sec"><div class="section-title">Transform · % of stage</div>
@@ -91,7 +94,7 @@ export function LayerTab({ project, scene, selected, onOverride, onLayerPatch, o
           <button class=${'btn sm ' + (L.back ? 'on' : '')} onClick=${() => p({ back: !L.back })}><${Icon} name="send-to-back" size=${12} />${L.back ? 'Behind the scene' : 'In front'}</button></div>` : null}</div>
       <div class="insp-sec"><div class="section-title">Timing · seconds in scene</div>
         <div class="grid2"><${Num} label="IN" value=${L.start || 0} step=${0.1} onChange=${(v) => p({ start: v })} /><${Num} label="OUT" value=${L.end ?? scene.duration} step=${0.1} onChange=${(v) => p({ end: v })} /></div>
-        <div class="grid3"><select class="select sm" value=${(L.enter && L.enter.preset) || L.enter || 'rise'} onChange=${(e) => p({ enter: { preset: e.target.value, duration: 0.7 } })}>${ENTERS.map((x) => html`<option value=${x}>in: ${x}</option>`)}</select>
+        <div class="grid3"><select class="select sm" value=${(L.enter && L.enter.preset) || L.enter || 'rise'} onChange=${(e) => p({ enter: { preset: e.target.value, duration: 0.7 } })}>${(L.kind === 'text' ? TEXT_ENTERS.concat(ENTERS) : ENTERS).map((x) => html`<option value=${x}>in: ${x}</option>`)}</select>
           <select class="select sm" value=${(L.exit && L.exit.preset) || L.exit || 'none'} onChange=${(e) => p({ exit: { preset: e.target.value, duration: 0.4 } })}>${EXITS.map((x) => html`<option value=${x}>out: ${x}</option>`)}</select>
           <select class="select sm" value=${L.emphasis || 'none'} onChange=${(e) => p({ emphasis: e.target.value })}>${['none', 'pulse', 'float', 'sway', 'spin'].map((x) => html`<option value=${x}>loop: ${x}</option>`)}</select></div></div>
       ${L.kind === 'text' || L.kind === 'shape' || L.kind === 'icon' ? html`<div class="insp-sec"><div class="section-title">Style</div>
@@ -99,7 +102,8 @@ export function LayerTab({ project, scene, selected, onOverride, onLayerPatch, o
           ${L.kind === 'text' ? html`<span>Size</span><${Num} label="PX" value=${s.size || 64} onChange=${(v) => ps({ size: v })} />
           <span>Weight</span><select class="select sm" value=${s.weight || 700} onChange=${(e) => ps({ weight: +e.target.value })}>${[300, 400, 500, 600, 700, 800, 900].map((w) => html`<option value=${w}>${w}</option>`)}</select>
           <span>Font</span><${FontSelect} sm value=${s.font || 'var(--font-display)'} scripts=${[]} extra=${[['var(--font-display)', 'Theme display'], ['var(--font-body)', 'Theme body'], ['var(--font-mono)', 'Theme mono']]} onChange=${(v) => ps({ font: v })} />
-          <span>Align</span><div class="seg">${['left', 'center', 'right'].map((a) => html`<button class=${(s.align || 'left') === a ? 'on' : ''} onClick=${() => ps({ align: a })}><${Icon} name=${'align-' + a} size=${12} /></button>`)}</div>` : null}
+          <span>Align</span><div class="seg">${['left', 'center', 'right'].map((a) => html`<button class=${(s.align || 'left') === a ? 'on' : ''} onClick=${() => ps({ align: a })}><${Icon} name=${'align-' + a} size=${12} /></button>`)}</div>
+          <span>Design</span><select class="select sm" value=${s.effect || 'none'} onChange=${(e) => ps({ effect: e.target.value })}>${TEXT_EFFECTS.map((x) => html`<option value=${x}>${x}</option>`)}</select>` : null}
           <span>Colour</span><div class="row"><input type="color" value=${/^#/.test(s.color || '') ? s.color : '#111111'} onInput=${(e) => ps({ color: e.target.value })} /><button class="btn ghost sm" onClick=${() => ps({ color: 'var(--accent)' })}>accent</button><button class="btn ghost sm" onClick=${() => ps({ color: 'var(--ink)' })}>ink</button></div>
           ${L.kind !== 'icon' ? html`<span>Fill</span><div class="row"><input type="color" value=${/^#/.test(s.bg || '') ? s.bg : '#ffffff'} onInput=${(e) => ps({ bg: e.target.value })} /><button class="btn ghost sm" onClick=${() => ps({ bg: L.kind === 'shape' ? 'var(--accent)' : '' })}>reset</button></div>
           <span>Radius</span><${Num} label="PX" value=${s.radius ?? (L.kind === 'shape' ? 24 : 0)} onChange=${(v) => ps({ radius: v })} />` : null}
@@ -145,21 +149,46 @@ export function CodeTab({ project, scene, patch }) {
 
 const SUGGEST = ['Make it punchier and faster', 'Use a chart for the number', 'Add a slow camera push and depth', 'More whitespace, fewer elements', 'Hand-drawn doodle style', 'Make the key word huge'];
 
-export function ChatTab({ project, scene, messages, onSend, llm, busy }) {
+function ChatBody({ scene, mine, onSend, llm, busy, big }) {
   const [text, setText] = useState('');
+  const [ideas, setIdeas] = useState(false);
   const log = useRef(null);
-  const mine = messages.filter((m) => !m.scene || m.scene === scene.id);
-  useEffect(() => { if (log.current) log.current.scrollTop = log.current.scrollHeight; }, [mine.length]);
-  const send = (msg) => { const m = (msg || text).trim(); if (!m) return; onSend(scene.id, m); setText(''); };
-  return html`<div class="chat">
+  const box = useRef(null);
+  const started = mine.some((m) => m.who === 'user');
+  useEffect(() => { if (log.current) log.current.scrollTop = log.current.scrollHeight; }, [mine.length, busy]);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(big ? 220 : 140, Math.max(40, el.scrollHeight)) + 'px';
+  }, [text, big]);
+  const send = (msg) => { const m = (msg || text).trim(); if (!m) return; onSend(scene.id, m); setText(''); setIdeas(false); };
+  return html`<div class=${'chat ' + (big ? 'big' : '')}>
     <div class="chat-log" ref=${log}>
       <div class="msg sys">Direct scene ${scene.index + 1}. ${llm ? 'The animator rewrites the composition, QA checks it, and the stage updates live.' : 'No model connected: the house director re-cuts the scene (archetype, pacing, variant).'}</div>
       ${mine.map((m, i) => html`<div class=${'msg ' + m.who} key=${i}>${m.text}</div>`)}
       ${busy ? html`<div class="msg agent"><${Icon} name="loader-circle" cls="spin" size=${13} /> working on it…</div>` : null}
     </div>
-    <div class="suggest">${SUGGEST.map((s) => html`<button onClick=${() => send(s)}>${s}</button>`)}</div>
-    <div class="chat-input"><input class="input" placeholder="Tell the agent what to change…" value=${text} onInput=${(e) => setText(e.target.value)} onKeyDown=${(e) => { if (e.key === 'Enter') send(); }} />
-      <button class="btn primary icon" onClick=${() => send()}><${Icon} name="send" size=${14} /></button></div>
+    ${!started || ideas ? html`<div class="suggest">${SUGGEST.map((s) => html`<button onClick=${() => send(s)}>${s}</button>`)}</div>` : null}
+    <div class="chat-input">
+      <textarea ref=${box} class="input chat-box" rows="2" placeholder="Tell the agent what to change… (Enter sends, Shift+Enter for a new line)" value=${text}
+        onInput=${(e) => setText(e.target.value)} onKeyDown=${(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}></textarea>
+      <div class="chat-actions">
+        ${started ? html`<button class=${'btn ghost icon sm ' + (ideas ? 'on' : '')} title="Show suggestions" onClick=${() => setIdeas(!ideas)}><${Icon} name="lightbulb" size=${14} /></button>` : null}
+        <button class="btn primary icon" title="Send" onClick=${() => send()}><${Icon} name="send" size=${14} /></button></div></div>
+  </div>`;
+}
+
+export function ChatTab({ project, scene, messages, onSend, llm, busy }) {
+  const [wide, setWide] = useState(false);
+  const mine = messages.filter((m) => !m.scene || m.scene === scene.id);
+  return html`<div class="chat-wrap">
+    <div class="chat-head"><b>Scene ${scene.index + 1}</b><span class="muted ellipsis">${scene.title || ''}</span><span class="spacer"></span>
+      <button class="btn ghost sm" title="Open the conversation in a large window" onClick=${() => setWide(true)}><${Icon} name="maximize-2" size=${12} />Expand</button></div>
+    ${wide ? html`<div class="chat-placeholder muted">The conversation is open in the large window.</div>` : html`<${ChatBody} scene=${scene} mine=${mine} onSend=${onSend} llm=${llm} busy=${busy} />`}
+    ${wide ? html`<${Modal} title=${`Direct scene ${scene.index + 1}${scene.title ? ': ' + scene.title : ''}`} icon="message-circle" width="min(820px, 94vw)" onClose=${() => setWide(false)}>
+      <div style=${{ height: 'min(70vh, 640px)', display: 'flex', flexDirection: 'column' }}><${ChatBody} scene=${scene} mine=${mine} onSend=${onSend} llm=${llm} busy=${busy} big /></div>
+    </${Modal}>` : null}
   </div>`;
 }
 
